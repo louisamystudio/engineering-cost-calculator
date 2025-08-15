@@ -56,3 +56,18 @@ export const insertEngineeringCostsSchema = createInsertSchema(engineeringCosts)
 
 export type InsertEngineeringCosts = z.infer<typeof insertEngineeringCostsSchema>;
 export type EngineeringCosts = typeof engineeringCosts.$inferSelect;
+
+export const buildingTypes = pgTable("Building_Types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  buildingUse: text("building_use").notNull(),
+  buildingType: text("building_type").notNull(),
+  feeCategory: text("fee_category").notNull(),
+  costCategory: text("cost_category").notNull(),
+});
+
+export const insertBuildingTypesSchema = createInsertSchema(buildingTypes).omit({
+  id: true,
+});
+
+export type InsertBuildingTypes = z.infer<typeof insertBuildingTypesSchema>;
+export type BuildingTypes = typeof buildingTypes.$inferSelect;

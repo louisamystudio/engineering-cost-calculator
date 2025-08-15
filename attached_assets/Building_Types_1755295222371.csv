@@ -1,0 +1,73 @@
+Building Use,Building Type,Fee Category,Cost Category
+Agriculture/Utility,Utility structure,Category 1,IX
+Agriculture/Utility,Garages,Category 1,IX
+Agriculture/Utility,Project Developments,Category 1,XVII
+Institutional,City & town halls,Category 4,VII
+Institutional,Penal structure,Category 2,III
+Institutional,Correctional Facilities,Category 3,III
+Institutional,Court houses,Category 4,XI
+Institutional,Churches,Category 4,XI
+Industrial,Religious building,Category 4,XI
+Institutional,State capitols,Category 5,III
+Institutional,Civic & Country Clubs,Category 5,VII
+Institutional,Funeral structures,Category 5,VII
+Commercial,Retail,Category 2,VIII
+Commercial,Galleries,Category 2,VII
+Commercial,Cafeterias,Category 3,VIII
+Commercial,Restaurants and Bars,Category 4,VIII
+Recreational,Bowling alleys,Category 2,VII
+Recreational,Convention Center,Category 3,VII
+Recreational,Playgrounds,Category 3,VII
+Recreational,Parks,Category 3,VIII
+Recreational,Swimming pools,Category 3,VII
+Recreational,Stadiums,Category 3,I
+Recreational,Coliseums,Category 4,I
+Recreational,Movie Theaters,Category 4,III
+Cultural,Performing Arts Theaters,Category 4,III
+Cultural,Art galleries,Category 4,II
+Cultural,Memorials,Category 5,VII
+Cultural,Museums,Category 5,VII
+Cultural,Historic Restoration,Category 5,XIX
+Cultural,Landmark projects,Category 5,XIX
+Institutional,Armories,Category 2,III
+Educational,Schools,Category 4,XI
+Educational,Universities & Colleges,Category 4,XVI
+Educational,Libraries,Category 3,XI
+Educational,Dormitories,Category 3,XI
+Educational,Child Care Centers,Category 3,VI
+Healthcare,Asylums,Category 2,III
+Healthcare,Sanitariums,Category 2,III
+Healthcare,Laboratories,Category 3,XII
+Healthcare,Clinics,Category 3,XII
+Healthcare,Senior Care Centers,Category 3,V
+Healthcare,Medical Offices,Category 3,XII
+Healthcare,Nursing Homes,Category 3,V
+Healthcare,Research,Category 3,XII
+Healthcare,Hospitals,Category 4,XII
+Hospitality,Apartments hotels,Category 2,XV
+Hospitality,Resort structures,Category 2,XV
+Hospitality,Motels,Category 2,XV
+Hospitality,Hotels (below 100 rooms),Category 2,XV
+Industrial,Manufacturing,Category 1,XIV
+Industrial,Warehouses,Category 1,XIII
+Industrial,Light Industries,Category 2,XIII
+Industrial,Heavy Industries,Category 3,XIV
+Industrial,Farm buildings,Category 4,X
+Corporate,Administration building,Category 2,IV
+Corporate,Gateways,Category 3,IV
+Corporate,Finance Institutions,Category 3,IV
+Corporate,Banks,Category 3,IV
+Corporate,Office Buildings,Category 3,IV
+Remodels/Additions,Remodeling and additions to existing structures,Category 5,XIX
+Residential,Condominiums,Category 2,X
+Residential,Apartments,Category 2,X
+Residential,Housing - Public,Category 2,XVIII
+Residential,Residence - Private,Category 5,XIX
+Transportation,Small airport,Category 2,I
+Transportation,Bus Stations ,Category 2,I
+Transportation,Gas stations,Category 2,XII
+Transportation,Radio & TV Stations,Category 4,XIII
+Transportation,Parking Buildings,Category 4,VIII
+Transportation,Airports,Category 4,I
+Transportation,Large airports,Category 4,I
+Transportation,Police stations,Category 4,XI
