@@ -7,8 +7,8 @@ export interface CalculationResult {
 }
 
 export interface RangeData extends CalculationResult {
-  difference: number | null;
-  differenceAlt?: number | null;
+  hoursDifference: number | null;
+  hoursDifferenceAlt?: number | null;
 }
 
 export type EquationType = 'original' | 'alternative' | 'both';
@@ -35,34 +35,36 @@ export function generateRangeData(
   equationType: EquationType = 'original'
 ): RangeData[] {
   const results: RangeData[] = [];
-  let previousValue: number | null = null;
-  let previousAltValue: number | null = null;
+  let previousTotalHours: number | null = null;
+  let previousAltTotalHours: number | null = null;
 
   for (let sqFt = start; sqFt <= end; sqFt += interval) {
     const calculations = calculateBothEquations(sqFt);
     const hf = calculations.original;
     const hfAlt = calculations.alternative;
+    const totalHours = hf * sqFt;
+    const totalHoursAlt = hfAlt * sqFt;
     
-    const difference = previousValue !== null ? hf - previousValue : null;
-    const differenceAlt = previousAltValue !== null ? hfAlt - previousAltValue : null;
+    const hoursDifference = previousTotalHours !== null ? totalHours - previousTotalHours : null;
+    const hoursDifferenceAlt = previousAltTotalHours !== null ? totalHoursAlt - previousAltTotalHours : null;
     
     const result: RangeData = {
       squareFeet: sqFt,
       hourlyFactor: hf,
-      totalHours: hf * sqFt,
-      difference
+      totalHours: totalHours,
+      hoursDifference
     };
     
     if (equationType === 'alternative' || equationType === 'both') {
       result.hourlyFactorAlt = hfAlt;
-      result.totalHoursAlt = hfAlt * sqFt;
-      result.differenceAlt = differenceAlt;
+      result.totalHoursAlt = totalHoursAlt;
+      result.hoursDifferenceAlt = hoursDifferenceAlt;
     }
     
     results.push(result);
     
-    previousValue = hf;
-    previousAltValue = hfAlt;
+    previousTotalHours = totalHours;
+    previousAltTotalHours = totalHoursAlt;
   }
 
   return results;
@@ -95,12 +97,12 @@ export function generateChartData(
 }
 
 export function exportToCSV(data: RangeData[], equationType: EquationType = 'original'): string {
-  let headers = ['Square Feet', 'Hourly Factor (Original)', 'Total Hours (Original)', 'Difference (Original)'];
+  let headers = ['Square Feet', 'Hourly Factor (Original)', 'Total Hours (Original)', 'Hours Difference (Original)'];
   
   if (equationType === 'alternative') {
-    headers = ['Square Feet', 'Hourly Factor (Alternative)', 'Total Hours (Alternative)', 'Difference (Alternative)'];
+    headers = ['Square Feet', 'Hourly Factor (Alternative)', 'Total Hours (Alternative)', 'Hours Difference (Alternative)'];
   } else if (equationType === 'both') {
-    headers = ['Square Feet', 'Hourly Factor (Original)', 'Total Hours (Original)', 'Difference (Original)', 'Hourly Factor (Alternative)', 'Total Hours (Alternative)', 'Difference (Alternative)'];
+    headers = ['Square Feet', 'Hourly Factor (Original)', 'Total Hours (Original)', 'Hours Difference (Original)', 'Hourly Factor (Alternative)', 'Total Hours (Alternative)', 'Hours Difference (Alternative)'];
   }
   
   const csvContent = [
@@ -111,24 +113,24 @@ export function exportToCSV(data: RangeData[], equationType: EquationType = 'ori
           row.squareFeet.toFixed(0),
           row.hourlyFactorAlt?.toFixed(5) || '-',
           row.totalHoursAlt?.toFixed(2) || '-',
-          row.differenceAlt?.toFixed(5) || '-'
+          row.hoursDifferenceAlt?.toFixed(2) || '-'
         ].join(',');
       } else if (equationType === 'both') {
         return [
           row.squareFeet.toFixed(0),
           row.hourlyFactor.toFixed(5),
           row.totalHours.toFixed(2),
-          row.difference?.toFixed(5) || '-',
+          row.hoursDifference?.toFixed(2) || '-',
           row.hourlyFactorAlt?.toFixed(5) || '-',
           row.totalHoursAlt?.toFixed(2) || '-',
-          row.differenceAlt?.toFixed(5) || '-'
+          row.hoursDifferenceAlt?.toFixed(2) || '-'
         ].join(',');
       } else {
         return [
           row.squareFeet.toFixed(0),
           row.hourlyFactor.toFixed(5),
           row.totalHours.toFixed(2),
-          row.difference?.toFixed(5) || '-'
+          row.hoursDifference?.toFixed(2) || '-'
         ].join(',');
       }
     })

@@ -49,19 +49,19 @@ export default function Calculator() {
       let csvContent = '';
       if (selectedEquation === 'both') {
         csvContent = tableData.map(row => 
-          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.totalHours.toFixed(2)},${row.difference?.toFixed(5) || '-'},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.totalHoursAlt?.toFixed(2) || '-'},${row.differenceAlt?.toFixed(5) || '-'}`
+          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.totalHours.toFixed(2)},${row.hoursDifference?.toFixed(2) || '-'},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.totalHoursAlt?.toFixed(2) || '-'},${row.hoursDifferenceAlt?.toFixed(2) || '-'}`
         ).join('\n');
-        csvContent = `Square Feet,Original HF,Original Hours,Original Diff,Alternative HF,Alternative Hours,Alternative Diff\n${csvContent}`;
+        csvContent = `Square Feet,Original HF,Original Hours,Original Hours Diff,Alternative HF,Alternative Hours,Alternative Hours Diff\n${csvContent}`;
       } else if (selectedEquation === 'alternative') {
         csvContent = tableData.map(row => 
-          `${row.squareFeet},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.totalHoursAlt?.toFixed(2) || '-'},${row.differenceAlt?.toFixed(5) || '-'}`
+          `${row.squareFeet},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.totalHoursAlt?.toFixed(2) || '-'},${row.hoursDifferenceAlt?.toFixed(2) || '-'}`
         ).join('\n');
-        csvContent = `Square Feet,Hourly Factor,Total Hours,Difference\n${csvContent}`;
+        csvContent = `Square Feet,Hourly Factor,Total Hours,Hours Difference\n${csvContent}`;
       } else {
         csvContent = tableData.map(row => 
-          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.totalHours.toFixed(2)},${row.difference?.toFixed(5) || '-'}`
+          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.totalHours.toFixed(2)},${row.hoursDifference?.toFixed(2) || '-'}`
         ).join('\n');
-        csvContent = `Square Feet,Hourly Factor,Total Hours,Difference\n${csvContent}`;
+        csvContent = `Square Feet,Hourly Factor,Total Hours,Hours Difference\n${csvContent}`;
       }
       
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

@@ -49,24 +49,24 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
                   <>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Total Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hours Diff</th>
                   </>
                 )}
                 {selectedEquation === 'alternative' && (
                   <>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Total Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hours Diff</th>
                   </>
                 )}
                 {selectedEquation === 'both' && (
                   <>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original HF</th>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Diff</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Hours Diff</th>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative HF</th>
                     <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative Hours</th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative Diff</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative Hours Diff</th>
                   </>
                 )}
               </tr>
@@ -84,7 +84,7 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
                         {row.totalHours.toFixed(2)}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
-                        {row.difference?.toFixed(5) || '-'}
+                        {row.hoursDifference?.toFixed(2) || '-'}
                       </td>
                     </>
                   )}
@@ -97,7 +97,7 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
                         {row.totalHoursAlt?.toFixed(2) || '-'}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
-                        {row.differenceAlt?.toFixed(5) || '-'}
+                        {row.hoursDifferenceAlt?.toFixed(2) || '-'}
                       </td>
                     </>
                   )}
@@ -110,7 +110,7 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
                         {row.totalHours.toFixed(2)}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
-                        {row.difference?.toFixed(5) || '-'}
+                        {row.hoursDifference?.toFixed(2) || '-'}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-red-500 font-medium">
                         {row.hourlyFactorAlt?.toFixed(5) || '-'}
@@ -119,7 +119,7 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
                         {row.totalHoursAlt?.toFixed(2) || '-'}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
-                        {row.differenceAlt?.toFixed(5) || '-'}
+                        {row.hoursDifferenceAlt?.toFixed(2) || '-'}
                       </td>
                     </>
                   )}
