@@ -1,0 +1,420 @@
+Awesome—let’s turn your spreadsheet into **Part 1: Project Minimum Budget Calculation** for the Project Quote App and give the Replit Code Agent a clear, build-ready ticket.
+
+Below I (1) lock in the **calculation model** that replicates your Excel, (2) specify **database tables** + seed steps (using the CSVs you shared), (3) define **API contracts**, (4) sketch a simple **UI**, and (5) list **questions** I still need you to answer.
+
+---
+
+## 1) Calculation model (replicates your Excel)
+
+### Inputs (from the form)
+
+* `new_area_ft2` (number)
+* `existing_area_ft2` (number)
+* `site_area_m2` (number, optional for now)
+* `building_type` (string; choose from data)
+* `tier` (integer; 1, 2, or 3)
+
+> **Key**: `building_type | tier` (and for engineering rows: `building_type | tier | discipline`).
+
+### Data sources (from DB tables seeded from your CSVs)
+
+* **Cost ranges** (from `Building-Cost-2025-Parcial.csv`)
+
+  * `AllInMin`, `AllInMax` (USD/ft²)
+  * Shares: `ArchShare` (shell), `IntShare`, `LandShare` (should sum ≈ 1)
+* **Engineering costs** (from `Engineering_Costs.csv`)
+
+  * `PercentAvg` per discipline (Structural, Civil & Site, Mechanical, Electrical, Plumbing, Low‑Voltage)
+* **Building types** (from `Building_Types.csv`) – used to populate selector and optional metadata.
+
+### Formulas
+
+Let:
+
+* `total_sf = new_area_ft2 + existing_area_ft2`
+* `all_in_min_psf`, `all_in_max_psf` ← lookup by (`building_type`,`tier`)
+* `total_cost_low  = total_sf * all_in_min_psf`
+* `total_cost_high = total_sf * all_in_max_psf`
+* `proposed = (total_cost_low + total_cost_high) / 2`
+
+Shares:
+
+* `shell_share` = `ArchShare`
+* `interior_share` = `IntShare`
+* `land_share` = `LandShare`
+
+**Minimum budgets** (split of the proposed figure):
+
+* `shell_min_budget     = proposed * shell_share`
+* `interior_min_budget  = proposed * interior_share`
+* `landscape_min_budget = proposed * land_share`
+
+**Engineering share by discipline** (lookup `PercentAvg` → decimal; missing → 0.0):
+
+```
+eng_pct = {
+  "Civil & Site": p_civil,
+  "Structural":   p_struct,
+  "Mechanical":   p_mech,
+  "Electrical":   p_elec,
+  "Plumbing":     p_plumb,
+  "Low-Voltage":  p_lowvol
+}
+```
+
+**Design shares** (percent of the *whole project* that belongs to each discipline family):
+
+* Architecture design share (as in your Excel “(1 - sum(eng)) \* ShellShare”):
+
+  * `arch_design_share = shell_share * (1 - sum(eng_pct.values()))`
+* `interior_design_share  = interior_share`
+* `landscape_design_share = land_share`
+* For each engineering discipline `d`:
+  `design_share[d] = shell_share * eng_pct[d]`
+
+> These nine design shares should sum to \~1.0.
+
+**Engineering budgets** (your sheet multiplies *proposed* by `PercentAvg`, not by shell share):
+
+* For each discipline `d`: `eng_budget[d] = proposed * eng_pct[d]`
+* `sum_eng_budgets = Σ eng_budget[d]`
+
+**Architecture budget**
+
+* From the sheet logic: `architecture_budget = shell_min_budget - sum_eng_budgets`
+
+  * (This matches the Excel behavior where engineering budgets are taken off the shell pot; if negative, clamp to 0 and flag a warning.)
+
+**Final working budget**
+
+* `working_budget = architecture_budget + interior_min_budget + landscape_min_budget + sum_eng_budgets`
+* This should equal `proposed`.
+
+### Example (your sample row)
+
+Input:
+
+* `building_type`: **Mid-Range Standard Residential**
+* `tier`: **1**
+* `new_area_ft2 = 1000`, `existing_area_ft2 = 4407`
+
+From your CSVs:
+
+* `AllInMin = 300`, `AllInMax = 320` USD/ft²
+* `ArchShare = 0.66`, `IntShare = 0.22`, `LandShare = 0.12`
+* Engineering `%Avg` for tier 1: Civil 5.0%, Structural 14.5%, Mechanical 6.0%, Electrical 4.5% (Plumbing, LV = 0)
+
+Computed:
+
+* `total_sf = 5407`
+
+* `total_cost_low = 1,622,100`
+
+* `total_cost_high = 1,730,240`
+
+* `proposed = 1,676,170`
+
+* `shell_min_budget = 1,106,272.20`
+
+* `interior_min_budget = 368,757.40`
+
+* `landscape_min_budget = 201,140.40`
+
+* `sum_eng_budgets = 502,851.00`
+
+  * Civil: 83,808.50
+  * Structural: 243,044.65
+  * Mechanical: 100,570.20
+  * Electrical: 75,427.65
+
+* `architecture_budget = 603,421.20`
+
+* `working_budget = 1,676,170.00` (matches proposed)
+
+These are the numbers the API should return for this case.
+
+---
+
+## 2) Database & seeding (Postgres on Replit)
+
+> You wrote “SQPstgrade” — I’m assuming **PostgreSQL**. If that’s wrong, I’ll adapt.
+
+### Tables
+
+**`building_types`**
+
+```sql
+CREATE TABLE IF NOT EXISTS building_types (
+  id SERIAL PRIMARY KEY,
+  building_use TEXT,
+  building_type TEXT UNIQUE,
+  fee_category TEXT,
+  cost_category TEXT
+);
+```
+
+**`building_cost_ranges`**  (from *Building-Cost-2025-Parcial.csv*)
+
+```sql
+CREATE TABLE IF NOT EXISTS building_cost_ranges (
+  id SERIAL PRIMARY KEY,
+  building_type TEXT NOT NULL,
+  tier INT NOT NULL,
+  shell_min NUMERIC,
+  shell_max NUMERIC,
+  all_in_min NUMERIC,
+  all_in_max NUMERIC,
+  arch_share NUMERIC,   -- shell share
+  int_share NUMERIC,
+  land_share NUMERIC,
+  UNIQUE (building_type, tier)
+);
+CREATE INDEX IF NOT EXISTS idx_bcr_type_tier ON building_cost_ranges(building_type, tier);
+```
+
+**`engineering_costs`**  (from *Engineering\_Costs.csv*)
+
+```sql
+CREATE TABLE IF NOT EXISTS engineering_costs (
+  id SERIAL PRIMARY KEY,
+  building_type TEXT NOT NULL,
+  tier INT NOT NULL,
+  category TEXT NOT NULL,     -- "Structural", "Civil & Site", "Mechanical", "Electrical", "Plumbing", "Low-Voltage"
+  percent_avg NUMERIC,        -- store as decimal (e.g., 0.145)
+  percent_min NUMERIC,
+  percent_max NUMERIC,
+  cost_min_psf NUMERIC,
+  cost_max_psf NUMERIC,
+  UNIQUE (building_type, tier, category)
+);
+CREATE INDEX IF NOT EXISTS idx_eng_type_tier_cat ON engineering_costs(building_type, tier, category);
+```
+
+*(Optional) persist quotes*
+**`quotes`** (store each run, useful for audit and next steps for fee calc)
+
+```sql
+CREATE TABLE IF NOT EXISTS quotes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  payload JSONB NOT NULL,   -- the request and computed response
+  building_type TEXT,
+  tier INT
+);
+CREATE INDEX IF NOT EXISTS idx_quotes_created ON quotes(created_at);
+```
+
+### Seeding script
+
+* Language: Python (SQLAlchemy or psycopg2).
+* Load from the four CSVs located on disk:
+
+  * `/mnt/data/Building_Types.csv`
+  * `/mnt/data/Building-Cost-2025-Parcial.csv`
+  * `/mnt/data/Engineering_Costs.csv`
+* Convert `PercentAvg` like `"6.0%"` to decimal `0.06`.
+* Upsert by the `UNIQUE` keys.
+* Validate shares: if `arch_share + int_share + land_share` ≠ 1.0 within ±0.005, normalize and log a warning.
+
+---
+
+## 3) Backend (FastAPI) – endpoints & contracts
+
+**Stack**
+
+* Python 3.12
+* FastAPI + Uvicorn
+* SQLAlchemy
+* Psycopg2-binary
+* Pydantic
+* (Optional) Alembic for migrations
+
+**Environment**
+
+* `DATABASE_URL` in Replit Secrets (Postgres connection)
+
+**Routes**
+
+1. **GET `/api/building-types`**
+   Returns distinct building types (and optional metadata).
+
+   ```json
+   [{ "building_type": "Mid-Range Standard Residential", "building_use":"Residential", "fee_category":"...", "cost_category":"..." }, ...]
+   ```
+
+2. **GET `/api/building-types/{building_type}/tiers`**
+   Returns available tiers for a type.
+
+   ```json
+   { "building_type":"Mid-Range Standard Residential", "tiers":[1,2,3] }
+   ```
+
+3. **POST `/api/calc/minimum-budget`**
+   **Request**
+
+   ```json
+   {
+     "building_type": "Mid-Range Standard Residential",
+     "tier": 1,
+     "new_area_ft2": 1000,
+     "existing_area_ft2": 4407,
+     "site_area_m2": 972.98
+   }
+   ```
+
+   **Response (example)**
+
+   ```json
+   {
+     "inputs": {
+       "building_type": "Mid-Range Standard Residential",
+       "tier": 1,
+       "new_area_ft2": 1000,
+       "existing_area_ft2": 4407,
+       "site_area_m2": 972.98
+     },
+     "all_in": { "min_psf": 300.0, "max_psf": 320.0 },
+     "area": { "total_sf": 5407 },
+     "total_cost": {
+       "low": 1622100.00,
+       "high": 1730240.00,
+       "proposed": 1676170.00
+     },
+     "shares": {
+       "shell": 0.66,
+       "interior": 0.22,
+       "landscape": 0.12
+     },
+     "minimum_budgets": {
+       "shell": 1106272.20,
+       "interior": 368757.40,
+       "landscape": 201140.40
+     },
+     "design_shares": {
+       "Architecture": 0.4620,
+       "Interior": 0.2200,
+       "Landscape": 0.1200,
+       "Civil & Site": 0.0330,
+       "Structural": 0.0957,
+       "Mechanical": 0.0396,
+       "Electrical": 0.0297,
+       "Plumbing": 0.0000,
+       "Low-Voltage": 0.0000
+     },
+     "engineering_budgets": {
+       "Civil & Site": 83808.50,
+       "Structural": 243044.65,
+       "Mechanical": 100570.20,
+       "Electrical": 75427.65,
+       "Plumbing": 0.00,
+       "Low-Voltage": 0.00,
+       "sum": 502851.00
+     },
+     "architecture_budget": 603421.20,
+     "working_budget": 1676170.00,
+     "notes": []
+   }
+   ```
+
+   **Validation & warnings**
+
+   * If engineering rows are missing, treat their `%` as 0 and add a note (e.g., “No Plumbing/LV data for selection”).
+   * If `architecture_budget < 0`, set to `0` and add a warning note.
+
+4. **POST `/api/quotes`** (optional)
+
+   * Accepts the same payload as `/api/calc/minimum-budget`, performs the calc, stores the full input/output in `quotes` and returns the result plus a `quote_id`.
+
+---
+
+## 4) UI (one screen for Part 1)
+
+A simple single-page view (Vanilla HTML or React) with:
+
+* Dropdown: **Building Type** (populated from `/api/building-types`)
+* Radio or select: **Tier** (from `/tiers`)
+* Numeric inputs: **New Building Area (ft²)**, **Existing Building Area (ft²)**, **Site Area (m²)**
+* Button “**Calculate Minimum Budget**” → calls `/api/calc/minimum-budget`
+
+**Result panel**
+
+* Show All‑In \$/ft² (min & max)
+* Show Total Cost Low/High + **Proposed**
+* Show **shares** and **minimum budgets** (Shell / Interior / Landscape)
+* Table of **Design Shares** (9 rows)
+* Table of **Budgets** (Architecture + each Engineering + Interior + Landscape + Sum/Working)
+* Footer note area for warnings (“Engineering data missing for LV”, etc.)
+
+**Formatting**
+
+* Currency: USD with thousand separators, 2 decimals.
+* Percent: show as %, 1 decimal (e.g., 9.6%).
+
+---
+
+## 5) Build steps for the Replit Code Agent (copy/paste to the agent)
+
+1. **Project setup**
+
+   * Create a Python FastAPI project.
+   * Add dependencies: `fastapi uvicorn sqlalchemy psycopg2-binary pydantic alembic python-dotenv pandas`.
+   * Configure `DATABASE_URL` secret.
+
+2. **DB & models**
+
+   * Create the three tables above (`building_types`, `building_cost_ranges`, `engineering_costs`) and optional `quotes`.
+   * Add SQLAlchemy models + metadata.
+   * Run migrations (alembic) or `CREATE TABLE IF NOT EXISTS` on startup.
+
+3. **Seeding**
+
+   * Add a script `scripts/seed_db.py` that:
+
+     * Reads the CSVs from `/mnt/data/`
+     * Upserts into each table
+     * Converts `PercentAvg` from `"N%”` → `N/100.0`
+     * Logs any anomalies and normalizes shares if needed.
+   * Execute the seed script once.
+
+4. **Business logic**
+
+   * Implement `services/min_budget.py` with a `compute_min_budget(params)` function that performs the formulas above, using DB lookups.
+   * Include safeguards (missing rows → 0.0, clamp negative architecture budget).
+
+5. **API**
+
+   * `GET /api/building-types`, `GET /api/building-types/{building_type}/tiers`
+   * `POST /api/calc/minimum-budget` (Pydantic request/response models)
+   * Optional: `POST /api/quotes` persists the result in `quotes`.
+
+6. **UI**
+
+   * Simple frontend `/` that calls the API and renders the result tables with clean formatting.
+
+7. **Tests**
+
+   * Add a unit test with the provided sample producing:
+
+     * `proposed = 1,676,170.00`
+     * `architecture_budget = 603,421.20`
+     * `working_budget = 1,676,170.00`
+   * Test missing Plumbing/LV case (they should resolve to 0 and not break sums).
+
+---
+
+## 6) Open questions for you
+
+1. **Database**: Please confirm this is **PostgreSQL** on Replit (and the DB name/URL).
+2. **Existing area**: Your Excel uses `(New + Existing)` sf for the all‑in calc. Confirm that’s intended for all cases.
+3. **Site area (m²)**: Not used in your current math. Keep it stored only, or should Civil & Site scale with site area when available?
+4. **Rounding**: Do you prefer rounding currency to the nearest **\$100**, **\$1,000**, or leave at cents?
+5. **Plumbing / Low‑Voltage gaps**: For some types/tiers these are missing in your CSV. OK to treat as `0%` and surface a warning?
+6. **Shares sanity**: If `ArchShare + IntShare + LandShare != 1.0`, should we normalize or hard‑fail?
+7. **Persistence**: Do you want every calculation stored in `quotes` for later fee proposals and PDFs?
+8. **UX polish**: Any preferred styling, color palette, or branding to match Louis Amy AE Studio?
+9. **Access**: Private behind a password, or public read-only calculator?
+10. **Labels**: Keep the engineering discipline names exactly as in the sheet, including “Civil & Site” and “Low‑Voltage”?
+
+---
+
+If you confirm the answers (especially 1–3 and 4), I’ll finalize the exact rounding rules and (if you want) extend the ticket to **Part 2: Design Fee calculation** using these outputs as the baseline.

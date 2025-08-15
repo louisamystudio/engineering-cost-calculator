@@ -73,29 +73,25 @@ export type InsertBuildingTypes = z.infer<typeof insertBuildingTypesSchema>;
 export type BuildingTypes = typeof buildingTypes.$inferSelect;
 
 // Database Views for Budget Calculator
-export const buildingCostRangesView = pgView("building_cost_ranges").as((qb) => {
-  return qb.select({
-    buildingType: buildingCost2025Parcial.buildingType,
-    tier: buildingCost2025Parcial.tier,
-    allInMin: buildingCost2025Parcial.allInMin,
-    allInMax: buildingCost2025Parcial.allInMax,
-    archShare: buildingCost2025Parcial.archShare,
-    intShare: buildingCost2025Parcial.intShare,
-    landShare: buildingCost2025Parcial.landShare,
-  }).from(buildingCost2025Parcial);
+export const buildingCostRangesView = pgTable("building_cost_ranges", {
+  buildingType: text("building_type").notNull(),
+  tier: integer("tier").notNull(),
+  allInMin: integer("all_in_min").notNull(),
+  allInMax: integer("all_in_max").notNull(),
+  archShare: decimal("arch_share").notNull(),
+  intShare: decimal("int_share").notNull(),
+  landShare: decimal("land_share").notNull(),
 });
 
-export const engineeringCostsView = pgView("engineering_costs_v").as((qb) => {
-  return qb.select({
-    buildingType: engineeringCosts.buildingType,
-    tier: engineeringCosts.numericTier,
-    category: engineeringCosts.categorySimple,
-    percentAvg: engineeringCosts.percentAvg,
-    percentMin: engineeringCosts.percentMin,
-    percentMax: engineeringCosts.percentMax,
-    costMinPsf: engineeringCosts.costMinPSF,
-    costMaxPsf: engineeringCosts.costMaxPSF,
-  }).from(engineeringCosts);
+export const engineeringCostsView = pgTable("engineering_costs_v", {
+  buildingType: text("building_type").notNull(),
+  tier: integer("tier").notNull(),
+  category: text("category").notNull(),
+  percentAvg: text("percent_avg").notNull(),
+  percentMin: decimal("percent_min").notNull(),
+  percentMax: decimal("percent_max").notNull(),
+  costMinPsf: decimal("cost_min_psf").notNull(),
+  costMaxPsf: decimal("cost_max_psf").notNull(),
 });
 
 export const buildingTypesView = pgView("building_types_v").as((qb) => {
