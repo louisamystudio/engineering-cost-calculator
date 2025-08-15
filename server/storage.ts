@@ -49,8 +49,8 @@ export class DatabaseStorage implements IStorage {
   // Budget Calculator methods
   async getAllBuildingTypes(): Promise<string[]> {
     const results = await db
-      .selectDistinct({ buildingType: buildingTypesView.buildingType })
-      .from(buildingTypesView);
+      .selectDistinct({ buildingType: buildingCostRangesView.buildingType })
+      .from(buildingCostRangesView);
     return results.map(r => r.buildingType);
   }
 
