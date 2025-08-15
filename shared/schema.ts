@@ -36,3 +36,23 @@ export const insertBuildingCostSchema = createInsertSchema(buildingCost2025Parci
 
 export type InsertBuildingCost = z.infer<typeof insertBuildingCostSchema>;
 export type BuildingCost = typeof buildingCost2025Parcial.$inferSelect;
+
+export const engineeringCosts = pgTable("Engineering_Costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull(),
+  buildingType: text("building_type").notNull(),
+  numericTier: integer("numeric_tier").notNull(),
+  categorySimple: text("category_simple").notNull(),
+  percentAvg: text("percent_avg").notNull(),
+  percentMin: integer("percent_min").notNull(),
+  percentMax: integer("percent_max").notNull(),
+  costMinPSF: decimal("cost_min_psf", { precision: 8, scale: 2 }).notNull(),
+  costMaxPSF: decimal("cost_max_psf", { precision: 8, scale: 2 }).notNull(),
+});
+
+export const insertEngineeringCostsSchema = createInsertSchema(engineeringCosts).omit({
+  id: true,
+});
+
+export type InsertEngineeringCosts = z.infer<typeof insertEngineeringCostsSchema>;
+export type EngineeringCosts = typeof engineeringCosts.$inferSelect;

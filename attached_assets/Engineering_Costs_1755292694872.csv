@@ -1,0 +1,49 @@
+﻿Key,Building Type,Numeric Tier,Category Simple,PercentAvg,PercentMin,PercentMax,CostMinPSF,CostMaxPSF
+High-End Custom Residential|1|Civil & Site,High-End Custom Residential,1,Civil & Site,6.0%,5,7,15,28
+High-End Custom Residential|1|Structural,High-End Custom Residential,1,Structural,13.5%,10,17,30,48
+High-End Custom Residential|1|Mechanical,High-End Custom Residential,1,Mechanical,8.0%,7,9,24,40
+High-End Custom Residential|1|Electrical,High-End Custom Residential,1,Electrical,5.0%,4,6,12,24
+High-End Custom Residential|1|Plumbing,High-End Custom Residential,1,Plumbing,4.0%,3,5,9,20
+High-End Custom Residential|1|Low-Voltage,High-End Custom Residential,1,Low-Voltage,2.5%,2,3,6,12
+High-End Custom Residential|2|Civil & Site,High-End Custom Residential,2,Civil & Site,7.0%,6,8,24,40
+High-End Custom Residential|2|Structural,High-End Custom Residential,2,Structural,14.5%,11,18,44,65
+High-End Custom Residential|2|Mechanical,High-End Custom Residential,2,Mechanical,9.0%,8,10,36,55
+High-End Custom Residential|2|Electrical,High-End Custom Residential,2,Electrical,6.0%,5,7,20,35
+High-End Custom Residential|2|Plumbing,High-End Custom Residential,2,Plumbing,5.0%,4,6,16,30
+High-End Custom Residential|2|Low-Voltage,High-End Custom Residential,2,Low-Voltage,3.5%,3,4,12,20
+High-End Custom Residential|3|Civil & Site,High-End Custom Residential,3,Civil & Site,7.5%,6,9,30,54
+High-End Custom Residential|3|Structural,High-End Custom Residential,3,Structural,16.0%,12,20,60,90
+High-End Custom Residential|3|Mechanical,High-End Custom Residential,3,Mechanical,10.0%,9,11,50,72
+High-End Custom Residential|3|Electrical,High-End Custom Residential,3,Electrical,7.0%,6,8,30,48
+High-End Custom Residential|3|Plumbing,High-End Custom Residential,3,Plumbing,5.0%,4,6,20,36
+High-End Custom Residential|3|Low-Voltage,High-End Custom Residential,3,Low-Voltage,4.0%,3,5,15,30
+Mid-Range Standard Residential|1|Civil & Site,Mid-Range Standard Residential,1,Civil & Site,5.0%,4,6,12,22.4
+Mid-Range Standard Residential|1|Structural,Mid-Range Standard Residential,1,Structural,14.5%,11,18,24,38.4
+Mid-Range Standard Residential|1|Mechanical,Mid-Range Standard Residential,1,Mechanical,6.0%,5,7,19.2,32
+Mid-Range Standard Residential|1|Electrical,Mid-Range Standard Residential,1,Electrical,4.5%,4,5,9.6,19.2
+Mid-Range Standard Residential|1|Plumbing,Mid-Range Residential,1,Plumbing,3.5%,3,4,7.2,16
+Mid-Range Standard Residential|1|Low-Voltage,Mid-Range Residential,1,Low-Voltage,1.5%,1,2,4.8,9.6
+Mid-Range Standard Residential|2|Civil & Site,Mid-Range Standard Residential,2,Civil & Site,5.0%,4,6,19.2,32
+Mid-Range Standard Residential|2|Structural,Mid-Range Standard Residential,2,Structural,14.5%,11,18,35.2,52
+Mid-Range Standard Residential|2|Mechanical,Mid-Range Standard Residential,2,Mechanical,6.0%,5,7,28.8,44
+Mid-Range Standard Residential|2|Electrical,Mid-Range Standard Residential,2,Electrical,4.5%,4,5,16,28
+Mid-Range Standard Residential|2|Plumbing,Mid-Range Residential,2,Plumbing,3.5%,3,4,12.8,24
+Mid-Range Standard Residential|2|Low-Voltage,Mid-Range Residential,2,Low-Voltage,1.5%,1,2,9.6,16
+Mid-Range Standard Residential|3|Civil & Site,Mid-Range Standard Residential,3,Civil & Site,5.0%,4,6,24,43.2
+Mid-Range Standard Residential|3|Structural,Mid-Range Standard Residential,3,Structural,14.5%,11,18,48,72
+Mid-Range Standard Residential|3|Mechanical,Mid-Range Standard Residential,3,Mechanical,6.0%,5,7,40,57.6
+Mid-Range Standard Residential|3|Electrical,Mid-Range Standard Residential,3,Electrical,4.5%,4,5,24,38.4
+Mid-Range Standard Residential|3|Plumbing,Mid-Range Residential,3,Plumbing,3.5%,3,4,16,28.8
+Mid-Range Standard Residential|3|Low-Voltage,Mid-Range Residential,3,Low-Voltage,1.5%,1,2,12,24
+Hospitality 4-Star|1|Civil & Site,Hospitality 4-Star,1,Civil & Site,6.5%,5,8,18,40
+Hospitality 4-Star|1|Structural,Hospitality 4-Star,1,Structural,19.0%,15,23,53,90
+Hospitality 4-Star|1|Mechanical,Hospitality 4-Star,1,Mechanical,12.5%,11,14,42,75
+Hospitality 4-Star|1|Electrical,Hospitality 4-Star,1,Electrical,7.5%,6,9,21,45
+Hospitality 4-Star|1|Plumbing,Hospitality 4-Star,1,Plumbing,4.0%,3,5,10,25
+Hospitality 4-Star|1|Low-Voltage,Hospitality 4-Star,1,Low-Voltage,3.5%,3,4,10,20
+Commercial Class A|2|Civil & Site,Commercial Class A,2,Civil & Site,5.0%,4,6,10,20
+Commercial Class A|2|Structural,Commercial Class A,2,Structural,20.0%,15,25,38,66
+Commercial Class A|2|Mechanical,Commercial Class A,2,Mechanical,11.5%,9,14,25,50
+Commercial Class A|2|Electrical,Commercial Class A,2,Electrical,10.0%,8,12,20,40
+Commercial Class A|2|Plumbing,Commercial Class A,2,Plumbing,3.0%,2,4,5,13
+Commercial Class A|2|Low-Voltage,Commercial Class A,2,Low-Voltage,3.5%,3,4,8,13
