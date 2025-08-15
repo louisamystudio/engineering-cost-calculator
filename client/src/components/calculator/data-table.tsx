@@ -45,20 +45,28 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
             <thead>
               <tr className="border-b border-light-border">
                 <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Square Feet</th>
-                {(selectedEquation === 'original' || selectedEquation === 'both') && (
+                {selectedEquation === 'original' && (
                   <>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original HF</th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Diff</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Total Hours</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
                   </>
                 )}
-                {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
+                {selectedEquation === 'alternative' && (
                   <>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">
-                      {selectedEquation === 'alternative' ? 'Hourly Factor' : 'Alternative HF'}
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">
-                      {selectedEquation === 'alternative' ? 'Difference' : 'Alternative Diff'}
-                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Total Hours</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
+                  </>
+                )}
+                {selectedEquation === 'both' && (
+                  <>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original HF</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Hours</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Diff</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative HF</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative Hours</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Alternative Diff</th>
                   </>
                 )}
               </tr>
@@ -67,20 +75,48 @@ export default function DataTable({ data, onExportCSV, selectedEquation }: DataT
               {data.map((row, index) => (
                 <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
                   <td className="py-3 px-4 font-mono text-sm">{row.squareFeet.toFixed(0)}</td>
-                  {(selectedEquation === 'original' || selectedEquation === 'both') && (
+                  {selectedEquation === 'original' && (
                     <>
                       <td className="py-3 px-4 font-mono text-sm text-scientific-blue font-medium">
                         {row.hourlyFactor.toFixed(5)}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-calculation-green font-medium">
+                        {row.totalHours.toFixed(2)}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
                         {row.difference?.toFixed(5) || '-'}
                       </td>
                     </>
                   )}
-                  {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
+                  {selectedEquation === 'alternative' && (
                     <>
                       <td className="py-3 px-4 font-mono text-sm text-red-500 font-medium">
                         {row.hourlyFactorAlt?.toFixed(5) || '-'}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-calculation-green font-medium">
+                        {row.totalHoursAlt?.toFixed(2) || '-'}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-600">
+                        {row.differenceAlt?.toFixed(5) || '-'}
+                      </td>
+                    </>
+                  )}
+                  {selectedEquation === 'both' && (
+                    <>
+                      <td className="py-3 px-4 font-mono text-sm text-scientific-blue font-medium">
+                        {row.hourlyFactor.toFixed(5)}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-calculation-green font-medium">
+                        {row.totalHours.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-600">
+                        {row.difference?.toFixed(5) || '-'}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-red-500 font-medium">
+                        {row.hourlyFactorAlt?.toFixed(5) || '-'}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-calculation-green font-medium">
+                        {row.totalHoursAlt?.toFixed(2) || '-'}
                       </td>
                       <td className="py-3 px-4 font-mono text-sm text-gray-600">
                         {row.differenceAlt?.toFixed(5) || '-'}
