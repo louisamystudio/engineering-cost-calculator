@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, pgView, text, varchar, integer, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -71,3 +71,67 @@ export const insertBuildingTypesSchema = createInsertSchema(buildingTypes).omit(
 
 export type InsertBuildingTypes = z.infer<typeof insertBuildingTypesSchema>;
 export type BuildingTypes = typeof buildingTypes.$inferSelect;
+
+// Database Views for Budget Calculator
+export const buildingCostRangesView = pgView("building_cost_ranges").as((qb) => {
+  return qb.select({
+    buildingType: buildingCost2025Parcial.buildingType,
+    tier: buildingCost2025Parcial.tier,
+    allInMin: buildingCost2025Parcial.allInMin,
+    allInMax: buildingCost2025Parcial.allInMax,
+    archShare: buildingCost2025Parcial.archShare,
+    intShare: buildingCost2025Parcial.intShare,
+    landShare: buildingCost2025Parcial.landShare,
+  }).from(buildingCost2025Parcial);
+});
+
+export const engineeringCostsView = pgView("engineering_costs_v").as((qb) => {
+  return qb.select({
+    buildingType: engineeringCosts.buildingType,
+    tier: engineeringCosts.numericTier,
+    category: engineeringCosts.categorySimple,
+    percentAvg: engineeringCosts.percentAvg,
+    percentMin: engineeringCosts.percentMin,
+    percentMax: engineeringCosts.percentMax,
+    costMinPsf: engineeringCosts.costMinPSF,
+    costMaxPsf: engineeringCosts.costMaxPSF,
+  }).from(engineeringCosts);
+});
+
+export const buildingTypesView = pgView("building_types_v").as((qb) => {
+  return qb.select({
+    buildingType: buildingTypes.buildingType,
+    buildingUse: buildingTypes.buildingUse,
+    feeCategory: buildingTypes.feeCategory,
+    costCategory: buildingTypes.costCategory,
+  }).from(buildingTypes);
+});
+
+// Budget Calculator Types
+export const budgetInputSchema = z.object({
+  building_type: z.string(),
+  tier: z.number().int().min(1).max(3),
+  new_area_ft2: z.number().positive(),
+  existing_area_ft2: z.number().min(0),
+  site_area_m2: z.number().optional(),
+});
+
+export type BudgetInput = z.infer<typeof budgetInputSchema>;
+
+export type BudgetCalculationResult = {
+  inputs: BudgetInput;
+  all_in: { min_psf: number; max_psf: number };
+  area: { total_sf: number };
+  total_cost: { low: number; high: number; proposed: number };
+  shares: { shell: number; interior: number; landscape: number };
+  minimum_budgets: { shell: number; interior: number; landscape: number };
+  design_shares: Record<string, number>;
+  engineering_budgets: Record<string, number> & { sum: number };
+  architecture_budget: number;
+  working_budget: number;
+  notes: string[];
+};
+
+export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
+export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
+export type BuildingTypeView = typeof buildingTypesView.$inferSelect;

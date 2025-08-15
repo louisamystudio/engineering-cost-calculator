@@ -1,0 +1,129 @@
+Pasted-Here-s-a-clean-first-prompt-you-can-paste-into-the-Replit-Code-Agent-to-get-a-plan-proposal-be-1755298958536_1755298958537.txt
+Here’s a clean **first prompt** you can paste into the Replit Code Agent to get a plan + proposal before it starts coding.
+
+---
+
+**Prompt to Replit Agent**
+
+> **Goal**
+> Plan and propose the implementation for **Part 1: Project Minimum Budget Calculation** of the Project Quote App. We’re using **Neon Postgres + Drizzle (TypeScript) + Node/Express + React/Tailwind** inside this Replit. Please reply with:
+>
+> 1. a concise build plan, 2) the data contracts (DB → API → UI), 3) risks/assumptions, and 4) a short list of clarifying questions. After I confirm, you’ll implement.
+
+### Context
+
+* We already have Neon tables visible in Database Studio:
+
+  * `"Building-Cost-2025-Parcial"` (cost ranges; contains `all_in_min`, `all_in_max`, `arch_share`, `int_share`, `land_share` by `building_type` & `tier`)
+  * `"Engineering_Costs"` (percent averages per discipline by `building_type` & `tier`)
+  * `"Building_Types"`
+* Front-end style reference (match the card layout and typography):
+  `https://b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev/` (Hourly Factor Calculator page)
+
+### Data normalization (recommended)
+
+Create stable **snake\_case views** to avoid quoted identifiers in Drizzle:
+
+```sql
+CREATE OR REPLACE VIEW building_cost_ranges AS
+SELECT building_type, tier::int AS tier,
+       all_in_min::numeric, all_in_max::numeric,
+       arch_share::numeric, int_share::numeric, land_share::numeric
+FROM "Building-Cost-2025-Parcial";
+
+CREATE OR REPLACE VIEW engineering_costs_v AS
+SELECT building_type, tier::int AS tier, category,
+       percent_avg::numeric, percent_min::numeric, percent_max::numeric,
+       cost_min_psf::numeric, cost_max_psf::numeric
+FROM "Engineering_Costs";
+
+CREATE OR REPLACE VIEW building_types_v AS
+SELECT building_type, building_use, fee_category, cost_category
+FROM "Building_Types";
+```
+
+If `percent_avg` is stored as strings like `"6.0%"`, parse to decimals in code (`0.06`).
+
+### Required calculation (Excel parity)
+
+Inputs:
+
+* `building_type` (string)
+* `tier` (1|2|3)
+* `new_area_ft2` (number)
+* `existing_area_ft2` (number)
+* `site_area_m2` (optional; stored only for now)
+
+Lookups by `(building_type, tier)`:
+
+* `all_in_min_psf`, `all_in_max_psf`
+* shares: `shell (arch_share)`, `interior`, `landscape`
+* engineering `%` by discipline: **Civil & Site, Structural, Mechanical, Electrical, Plumbing, Low‑Voltage** (missing → 0%)
+
+Formulas:
+
+```
+total_sf = new_area_ft2 + existing_area_ft2
+total_low  = total_sf * all_in_min_psf
+total_high = total_sf * all_in_max_psf
+proposed   = (total_low + total_high) / 2
+
+shell_min     = proposed * shell_share
+interior_min  = proposed * interior_share
+land_min      = proposed * land_share
+
+eng_budget[d] = proposed * percent_avg[d]   // each discipline
+sum_eng       = Σ eng_budget[d]
+
+architecture_budget = max(0, shell_min - sum_eng)
+working_budget = architecture_budget + interior_min + land_min + sum_eng   // should equal proposed
+
+// Design shares (should sum to ~1.00)
+arch_design_share = shell_share * (1 - Σ percent_avg[d])
+design_share[d]   = shell_share * percent_avg[d]
+```
+
+### API (Fast, typed)
+
+* `GET /api/building-types` → `string[]`
+* `GET /api/building-types/:type/tiers` → `{ building_type, tiers:number[] }`
+* `POST /api/calc/minimum-budget`
+
+  * Request: `{ building_type, tier, new_area_ft2, existing_area_ft2, site_area_m2? }`
+  * Response:
+
+    ```json
+    {
+      "inputs": {...},
+      "all_in": {"min_psf":300,"max_psf":320},
+      "area": {"total_sf":5407},
+      "total_cost": {"low":1622100,"high":1730240,"proposed":1676170},
+      "shares": {"shell":0.66,"interior":0.22,"landscape":0.12},
+      "minimum_budgets": {"shell":1106272.2,"interior":368757.4,"landscape":201140.4},
+      "design_shares": {
+        "Architecture":0.462,"Interior":0.22,"Landscape":0.12,
+        "Civil & Site":0.033,"Structural":0.0957,"Mechanical":0.0396,"Electrical":0.0297,
+        "Plumbing":0,"Low-Voltage":0
+      },
+      "engineering_budgets": {
+        "Civil & Site":83808.5,"Structural":243044.65,"Mechanical":100570.2,"Electrical":75427.65,
+        "Plumbing":0,"Low-Voltage":0,"sum":502851
+      },
+      "architecture_budget":603421.2,
+      "working_budget":1676170,
+      "notes":[]
+    }
+    ```
+  * **Acceptance test (must pass using DB data):**
+    For `building_type = "Mid-Range Standard Residential"`, `tier = 1`, `new_area_ft2 = 1000`, `existing_area_ft2 = 4407`, the response values above must match (within ±\$0.01).
+
+### UI (one page)
+
+Create a page **“Project Minimum Budget”** styled like the Hourly Factor Calculator:
+
+* Inputs: building type (dropdown from API), tier (dependent), new/existing/site areas.
+* “Calculate” button → calls POST and renders:
+
+  * Stat cards: All‑In min/max \$/ft², Total Low/High, Proposed, Total SF
+  * **Minimum Budgets** table: Shell, Interior, Landscape
+  * **Detailed Budgets** table: Architectu...
