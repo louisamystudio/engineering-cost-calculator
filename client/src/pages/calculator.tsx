@@ -4,9 +4,12 @@ import EquationDisplay from '@/components/calculator/equation-display';
 import ControlPanel from '@/components/calculator/control-panel';
 import InteractiveGraph from '@/components/calculator/interactive-graph';
 import DataTable from '@/components/calculator/data-table';
-import { generateRangeData, calculateHourlyFactor, RangeData } from '@/lib/calculations';
+import { generateRangeData, calculateBothEquations, RangeData, EquationType } from '@/lib/calculations';
 
 export default function Calculator() {
+  // Equation selection state
+  const [selectedEquation, setSelectedEquation] = useState<EquationType>('original');
+  
   // Single value calculator state
   const [singleValue, setSingleValue] = useState(1000);
   
@@ -24,13 +27,15 @@ export default function Calculator() {
   const [tableData, setTableData] = useState<RangeData[]>([]);
 
   // Calculate current point for graph
+  const calculations = calculateBothEquations(singleValue);
   const currentPoint = {
     x: singleValue,
-    y: calculateHourlyFactor(singleValue)
+    y: calculations.original,
+    yAlt: calculations.alternative
   };
 
   const handleGenerateRange = () => {
-    const data = generateRangeData(rangeStart, rangeEnd, rangeInterval);
+    const data = generateRangeData(rangeStart, rangeEnd, rangeInterval, selectedEquation);
     setTableData(data);
   };
 
@@ -41,13 +46,25 @@ export default function Calculator() {
 
   const handleExportData = () => {
     if (tableData.length > 0) {
-      const csvContent = tableData.map(row => 
-        `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.difference?.toFixed(5) || '-'}`
-      ).join('\n');
+      let csvContent = '';
+      if (selectedEquation === 'both') {
+        csvContent = tableData.map(row => 
+          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.difference?.toFixed(5) || '-'},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.differenceAlt?.toFixed(5) || '-'}`
+        ).join('\n');
+        csvContent = `Square Feet,Original HF,Original Diff,Alternative HF,Alternative Diff\n${csvContent}`;
+      } else if (selectedEquation === 'alternative') {
+        csvContent = tableData.map(row => 
+          `${row.squareFeet},${row.hourlyFactorAlt?.toFixed(5) || '-'},${row.differenceAlt?.toFixed(5) || '-'}`
+        ).join('\n');
+        csvContent = `Square Feet,Hourly Factor (Alt),Difference\n${csvContent}`;
+      } else {
+        csvContent = tableData.map(row => 
+          `${row.squareFeet},${row.hourlyFactor.toFixed(5)},${row.difference?.toFixed(5) || '-'}`
+        ).join('\n');
+        csvContent = `Square Feet,Hourly Factor,Difference\n${csvContent}`;
+      }
       
-      const blob = new Blob([`Square Feet,Hourly Factor,Difference\n${csvContent}`], { 
-        type: 'text/csv;charset=utf-8;' 
-      });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
@@ -94,7 +111,7 @@ export default function Calculator() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <EquationDisplay />
+        <EquationDisplay selectedEquation={selectedEquation} />
 
         {/* Split Panel Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -114,6 +131,8 @@ export default function Calculator() {
             setGraphXMax={setGraphXMax}
             showGrid={showGrid}
             setShowGrid={setShowGrid}
+            selectedEquation={selectedEquation}
+            setSelectedEquation={setSelectedEquation}
           />
 
           {/* Right Panel: Graph and Data Table */}
@@ -124,11 +143,13 @@ export default function Calculator() {
               graphXMax={graphXMax}
               showGrid={showGrid}
               onResetZoom={handleResetZoom}
+              selectedEquation={selectedEquation}
             />
 
             <DataTable
               data={tableData}
               onExportCSV={handleExportData}
+              selectedEquation={selectedEquation}
             />
           </div>
         </div>

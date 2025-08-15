@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { calculateHourlyFactor } from '@/lib/calculations';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { calculateHourlyFactor, calculateBothEquations, EquationType } from '@/lib/calculations';
 
 interface ControlPanelProps {
   singleValue: number;
@@ -21,6 +22,8 @@ interface ControlPanelProps {
   setGraphXMax: (value: number) => void;
   showGrid: boolean;
   setShowGrid: (value: boolean) => void;
+  selectedEquation: EquationType;
+  setSelectedEquation: (value: EquationType) => void;
 }
 
 export default function ControlPanel({
@@ -38,15 +41,17 @@ export default function ControlPanel({
   graphXMax,
   setGraphXMax,
   showGrid,
-  setShowGrid
+  setShowGrid,
+  selectedEquation,
+  setSelectedEquation
 }: ControlPanelProps) {
-  const [singleResult, setSingleResult] = useState(0);
+  const [singleResult, setSingleResult] = useState({ original: 0, alternative: 0 });
 
   useEffect(() => {
     if (singleValue > 0) {
-      setSingleResult(calculateHourlyFactor(singleValue));
+      setSingleResult(calculateBothEquations(singleValue));
     } else {
-      setSingleResult(0);
+      setSingleResult({ original: 0, alternative: 0 });
     }
   }, [singleValue]);
 
@@ -64,6 +69,31 @@ export default function ControlPanel({
 
   return (
     <div className="lg:col-span-1 space-y-6">
+      {/* Equation Selection */}
+      <div className="bg-white rounded-xl shadow-lg border border-light-border p-6">
+        <h3 className="text-lg font-semibold text-dark-slate mb-4 flex items-center">
+          <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+          Equation Selection
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="equationSelect" className="block text-sm font-medium text-dark-slate mb-2">
+              Choose Equation(s)
+            </Label>
+            <Select value={selectedEquation} onValueChange={setSelectedEquation}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select equation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="original">Original Equation</SelectItem>
+                <SelectItem value="alternative">Alternative Equation (Original - 0.08)</SelectItem>
+                <SelectItem value="both">Both Equations</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       {/* Single Value Calculator */}
       <div className="bg-white rounded-xl shadow-lg border border-light-border p-6">
         <h3 className="text-lg font-semibold text-dark-slate mb-4 flex items-center">
@@ -86,11 +116,23 @@ export default function ControlPanel({
               onChange={(e) => setSingleValue(parseFloat(e.target.value) || 0)}
             />
           </div>
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-light-border">
-            <div className="text-sm font-medium text-gray-600 mb-1">Hourly Factor Result</div>
-            <div className="font-mono text-2xl font-bold text-dark-slate">
-              {singleResult.toFixed(5)}
-            </div>
+          <div className="space-y-3">
+            {(selectedEquation === 'original' || selectedEquation === 'both') && (
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-light-border">
+                <div className="text-sm font-medium text-gray-600 mb-1">Original Equation Result</div>
+                <div className="font-mono text-2xl font-bold text-dark-slate">
+                  {singleResult.original.toFixed(5)}
+                </div>
+              </div>
+            )}
+            {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-light-border">
+                <div className="text-sm font-medium text-gray-600 mb-1">Alternative Equation Result</div>
+                <div className="font-mono text-2xl font-bold text-dark-slate">
+                  {singleResult.alternative.toFixed(5)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

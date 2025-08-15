@@ -1,15 +1,16 @@
 import { Button } from '@/components/ui/button';
-import { RangeData, downloadCSV } from '@/lib/calculations';
+import { RangeData, downloadCSV, EquationType } from '@/lib/calculations';
 
 interface DataTableProps {
   data: RangeData[];
   onExportCSV: () => void;
+  selectedEquation: EquationType;
 }
 
-export default function DataTable({ data, onExportCSV }: DataTableProps) {
+export default function DataTable({ data, onExportCSV, selectedEquation }: DataTableProps) {
   const handleExportCSV = () => {
     if (data.length > 0) {
-      downloadCSV(data);
+      downloadCSV(data, selectedEquation);
     }
   };
 
@@ -44,20 +45,48 @@ export default function DataTable({ data, onExportCSV }: DataTableProps) {
             <thead>
               <tr className="border-b border-light-border">
                 <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Square Feet</th>
-                <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
-                <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
+                {(selectedEquation === 'original' || selectedEquation === 'both') && (
+                  <>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original HF</th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Original Diff</th>
+                  </>
+                )}
+                {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
+                  <>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">
+                      {selectedEquation === 'alternative' ? 'Hourly Factor' : 'Alternative HF'}
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-dark-slate text-sm">
+                      {selectedEquation === 'alternative' ? 'Difference' : 'Alternative Diff'}
+                    </th>
+                  </>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-light-border">
               {data.map((row, index) => (
                 <tr key={index} className="hover:bg-gray-50 transition-colors duration-200">
                   <td className="py-3 px-4 font-mono text-sm">{row.squareFeet.toFixed(0)}</td>
-                  <td className="py-3 px-4 font-mono text-sm text-calculation-green font-medium">
-                    {row.hourlyFactor.toFixed(5)}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-sm text-gray-600">
-                    {row.difference?.toFixed(5) || '-'}
-                  </td>
+                  {(selectedEquation === 'original' || selectedEquation === 'both') && (
+                    <>
+                      <td className="py-3 px-4 font-mono text-sm text-scientific-blue font-medium">
+                        {row.hourlyFactor.toFixed(5)}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-600">
+                        {row.difference?.toFixed(5) || '-'}
+                      </td>
+                    </>
+                  )}
+                  {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
+                    <>
+                      <td className="py-3 px-4 font-mono text-sm text-red-500 font-medium">
+                        {row.hourlyFactorAlt?.toFixed(5) || '-'}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-600">
+                        {row.differenceAlt?.toFixed(5) || '-'}
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>

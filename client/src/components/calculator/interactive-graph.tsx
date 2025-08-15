@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { generateChartData } from '@/lib/calculations';
+import { generateChartData, EquationType } from '@/lib/calculations';
 
 interface InteractiveGraphProps {
-  currentPoint: { x: number; y: number };
+  currentPoint: { x: number; y: number; yAlt?: number };
   graphXMin: number;
   graphXMax: number;
   showGrid: boolean;
   onResetZoom: () => void;
+  selectedEquation: EquationType;
 }
 
 declare global {
@@ -21,7 +22,8 @@ export default function InteractiveGraph({
   graphXMin,
   graphXMax,
   showGrid,
-  onResetZoom
+  onResetZoom,
+  selectedEquation
 }: InteractiveGraphProps) {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<any>(null);
@@ -52,34 +54,77 @@ export default function InteractiveGraph({
 
       const min = graphXMin || 100;
       const max = graphXMax || 10000;
+      const chartData = generateChartData(min, max, 100, selectedEquation);
+      
+      const datasets: any[] = [];
+      
+      // Original equation dataset
+      if (selectedEquation === 'original' || selectedEquation === 'both') {
+        datasets.push({
+          label: 'Original Equation',
+          data: chartData.map(point => ({ x: point.x, y: point.y })),
+          borderColor: '#2563EB',
+          backgroundColor: 'rgba(37, 99, 235, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#2563EB',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2
+        });
+      }
+      
+      // Alternative equation dataset
+      if (selectedEquation === 'alternative' || selectedEquation === 'both') {
+        datasets.push({
+          label: 'Alternative Equation',
+          data: chartData.map(point => ({ x: point.x, y: point.yAlt || point.y - 0.08 })),
+          borderColor: '#EF4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#EF4444',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2
+        });
+      }
+      
+      // Current point for original equation
+      if (selectedEquation === 'original' || selectedEquation === 'both') {
+        datasets.push({
+          label: 'Current Point (Original)',
+          data: [{ x: currentPoint.x, y: currentPoint.y }],
+          borderColor: '#10B981',
+          backgroundColor: '#10B981',
+          borderWidth: 0,
+          pointRadius: 8,
+          pointHoverRadius: 10,
+          showLine: false
+        });
+      }
+      
+      // Current point for alternative equation
+      if ((selectedEquation === 'alternative' || selectedEquation === 'both') && currentPoint.yAlt !== undefined) {
+        datasets.push({
+          label: 'Current Point (Alternative)',
+          data: [{ x: currentPoint.x, y: currentPoint.yAlt }],
+          borderColor: '#F97316',
+          backgroundColor: '#F97316',
+          borderWidth: 0,
+          pointRadius: 8,
+          pointHoverRadius: 10,
+          showLine: false
+        });
+      }
       
       chartInstance.current = new window.Chart(ctx, {
         type: 'line',
-        data: {
-          datasets: [{
-            label: 'Hourly Factor',
-            data: generateChartData(min, max),
-            borderColor: '#2563EB',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            borderWidth: 2,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            pointHoverBackgroundColor: '#2563EB',
-            pointHoverBorderColor: '#ffffff',
-            pointHoverBorderWidth: 2
-          }, {
-            label: 'Current Point',
-            data: [currentPoint],
-            borderColor: '#10B981',
-            backgroundColor: '#10B981',
-            borderWidth: 0,
-            pointRadius: 8,
-            pointHoverRadius: 10,
-            showLine: false
-          }]
-        },
+        data: { datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -170,14 +215,28 @@ export default function InteractiveGraph({
         chartInstance.current.destroy();
       }
     };
-  }, [graphXMin, graphXMax, showGrid]);
+  }, [graphXMin, graphXMax, showGrid, selectedEquation]);
 
   useEffect(() => {
-    if (chartInstance.current) {
-      chartInstance.current.data.datasets[1].data = [currentPoint];
+    if (chartInstance.current && chartInstance.current.data && chartInstance.current.data.datasets) {
+      // Update current point datasets based on selected equation
+      const datasets = chartInstance.current.data.datasets;
+      
+      // Find and update original current point dataset
+      const originalPointIndex = datasets.findIndex((d: any) => d.label === 'Current Point (Original)');
+      if (originalPointIndex !== -1 && (selectedEquation === 'original' || selectedEquation === 'both')) {
+        datasets[originalPointIndex].data = [{ x: currentPoint.x, y: currentPoint.y }];
+      }
+      
+      // Find and update alternative current point dataset
+      const altPointIndex = datasets.findIndex((d: any) => d.label === 'Current Point (Alternative)');
+      if (altPointIndex !== -1 && (selectedEquation === 'alternative' || selectedEquation === 'both') && currentPoint.yAlt !== undefined) {
+        datasets[altPointIndex].data = [{ x: currentPoint.x, y: currentPoint.yAlt }];
+      }
+      
       chartInstance.current.update('none');
     }
-  }, [currentPoint]);
+  }, [currentPoint, selectedEquation]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-light-border p-6">
