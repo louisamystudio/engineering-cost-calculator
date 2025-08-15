@@ -51,6 +51,9 @@ export default function MinimumBudgetCalculator() {
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
   const queryClient = useQueryClient();
 
+  // Calculate total area immediately from form inputs
+  const totalArea = formData.new_area_ft2 + formData.existing_area_ft2;
+
   // Fetch building types
   const { data: buildingTypes = [] } = useQuery<string[]>({
     queryKey: ['/api/building-types'],
@@ -273,7 +276,7 @@ export default function MinimumBudgetCalculator() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <StatCard
                     title="Total Area"
-                    value={`${result.area.total_sf.toLocaleString()} ft²`}
+                    value={`${totalArea.toLocaleString()} ft²`}
                     icon={Building}
                   />
                   <StatCard
@@ -444,15 +447,26 @@ export default function MinimumBudgetCalculator() {
             )}
 
             {!result && !calculateBudget.isPending && (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Calculate</h3>
-                  <p className="text-gray-500">
-                    Select a building type and tier to start calculating your project budget.
-                  </p>
-                </CardContent>
-              </Card>
+              <>
+                {/* Show Total Area even before calculation */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <StatCard
+                    title="Total Area"
+                    value={`${totalArea.toLocaleString()} ft²`}
+                    icon={Building}
+                  />
+                </div>
+                
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Calculate</h3>
+                    <p className="text-gray-500">
+                      Select a building type and tier to start calculating your project budget.
+                    </p>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </div>
         </div>
