@@ -123,6 +123,10 @@ export default function ControlPanel({
                 <div className="font-mono text-2xl font-bold text-dark-slate">
                   {singleResult.original.toFixed(5)}
                 </div>
+                <div className="text-sm font-medium text-gray-600 mt-3 mb-1">Total Hours</div>
+                <div className="font-mono text-lg font-semibold text-calculation-green">
+                  {(singleResult.original * singleValue).toFixed(2)}
+                </div>
               </div>
             )}
             {(selectedEquation === 'alternative' || selectedEquation === 'both') && (
@@ -130,6 +134,10 @@ export default function ControlPanel({
                 <div className="text-sm font-medium text-gray-600 mb-1">Alternative Equation Result</div>
                 <div className="font-mono text-2xl font-bold text-dark-slate">
                   {singleResult.alternative.toFixed(5)}
+                </div>
+                <div className="text-sm font-medium text-gray-600 mt-3 mb-1">Total Hours</div>
+                <div className="font-mono text-lg font-semibold text-calculation-green">
+                  {(singleResult.alternative * singleValue).toFixed(2)}
                 </div>
               </div>
             )}
