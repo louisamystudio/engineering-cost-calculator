@@ -1,0 +1,79 @@
+﻿Minimum Budget Calculator,,
+,,
+New Building Area (ft²),0,
+Existing Building Area (ft²),4407,
+Site Area (m2),972.98,
+Building Type,Mid-Range Standard Residential,
+"Tier (1, 2, 3)",1,
+,,
+Key,"=B6 & ""|"" & B7",
+All-In Min $/ft²,"=VLOOKUP(B9, '[New Project Cost Calculator Luis de jesus.xlsx]Cost_Ranges'!$A$2:$J$13,6,FALSE)",
+All-In Max $/ft²,"=VLOOKUP(B9, '[New Project Cost Calculator Luis de jesus.xlsx]Cost_Ranges'!$A$2:$J$13,7,FALSE)",
+,,
+Total Cost (Low),=(B3+B4) * B10,
+Total Cost (High),=(B3+B4) * B11,
+Proposed Construction Figure (Mid-range),=(B13 + B14)/2,
+,,
+Project Shell  Share,"=VLOOKUP(B9, '[New Project Cost Calculator Luis de jesus.xlsx]Cost_Ranges'!$A$2:$J$13,8,FALSE)",
+Project Interior Share,"=VLOOKUP(B9, '[New Project Cost Calculator Luis de jesus.xlsx]Cost_Ranges'!$A$2:$J$13,9,FALSE)",
+Project Landscape Share,"=VLOOKUP(B9, '[New Project Cost Calculator Luis de jesus.xlsx]Cost_Ranges'!$A$2:$J$13,10,FALSE)",
+,,
+Building Shell Minimum Budget,=B15 * B17,
+Interior Minimum Budget,=B15 * B18,
+Landscape Minimum Budget,=B15 * B19,
+,,
+New Construction,=B3/(B3+B4),
+Existing to Remodel,=B4/(B3+B4),
+Architectural Design Share,"=(1-(IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Structural"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Civil & Site"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Mechanical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Electrical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Plumbing"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Low-Voltage"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)))*$B$17",
+Interior Design Share,=B18,
+Landscape Design Share,=B19,
+Structural Design Share,"= IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Structural"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+Civil Design Share,"= IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Civil & Site"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+Mechanical Design Share,"=IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Mechanical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+Electrical Design Share,"=IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Electrical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+Plumbing Design Share,"=IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Plumbing"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+Telecomunication Design,"=IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Low-Voltage"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0)*$B$17",
+,,
+Architecture Budget,=B21-SUM(B49:B69),Dropdown card
+New Construction,=B37*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B37*$B$26,Hidden inside - display number and graphically 
+,,
+Interior Budget,=B22,Dropdown card
+New Construction,=B41*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B41*$B$26,Hidden inside - display number and graphically 
+,,
+Landscape Budget,=B23,Dropdown card
+New Construction,=B45*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B45*$B$26,Hidden inside - display number and graphically 
+,,
+Structural Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Structural"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Structural"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B49*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B49*$B$26,Hidden inside - display number and graphically 
+,,
+Civil Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Civil & Site"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Civil & Site"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B53*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B53*$B$26,Hidden inside - display number and graphically 
+,,
+Mechanical Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Mechanical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Mechanical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B57*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B57*$B$26,Hidden inside - display number and graphically 
+,,
+Electrical Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Electrical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Electrical"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B61*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B61*$B$26,Hidden inside - display number and graphically 
+,,
+Plumbing Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Plumbing"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Plumbing"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B65*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B65*$B$26,Hidden inside - display number and graphically 
+,,
+Telecomunication Budget,"=($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Low-Voltage"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B25+($B$15 * IFERROR(VLOOKUP($B$6 & ""|"" & $B$7 & ""|"" & ""Low-Voltage"", '[New Project Cost Calculator Luis de jesus.xlsx]Engineering_Costs'!$A$2:$I$55, 5, FALSE), 0))*B26*0.5",Dropdown card
+New Construction,=B69*$B$25,Hidden inside - display number and graphically 
+Existing to Remodel,=B69*$B$26,Hidden inside - display number and graphically 
+,,
+Working Budget,=B37+B41+B45+B49+B53+B57+B61+B65+B69,
+,,
+,,
+,,
+,,
+,,
+,,

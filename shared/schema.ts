@@ -125,6 +125,15 @@ export type BudgetCalculationResult = {
   engineering_budgets: Record<string, number> & { sum: number };
   architecture_budget: number;
   working_budget: number;
+  // New construction vs existing breakdown
+  construction_ratios: { new_construction: number; existing_remodel: number };
+  // Detailed breakdown for each discipline
+  discipline_breakdown: {
+    architecture: { total: number; new_construction: number; existing_remodel: number };
+    interior: { total: number; new_construction: number; existing_remodel: number };
+    landscape: { total: number; new_construction: number; existing_remodel: number };
+    [discipline: string]: { total: number; new_construction: number; existing_remodel: number };
+  };
   notes: string[];
 };
 

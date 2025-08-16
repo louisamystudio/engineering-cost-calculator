@@ -10,7 +10,8 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, Calculator, Building, DollarSign, PieChart, BarChart3, AlertTriangle } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { TrendingUp, TrendingDown, Calculator, Building, DollarSign, PieChart, BarChart3, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import type { BudgetInput, BudgetCalculationResult } from '@shared/schema';
 
@@ -50,6 +51,7 @@ export default function MinimumBudgetCalculator() {
 
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
   const [selectedDisciplines, setSelectedDisciplines] = useState<Set<string>>(new Set());
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // Calculate total area immediately from form inputs
@@ -115,10 +117,20 @@ export default function MinimumBudgetCalculator() {
 
   // Reset tier when building type changes
   useEffect(() => {
-    if (tiersData?.tiers?.length > 0 && !tiersData.tiers.includes(formData.tier)) {
+    if (tiersData?.tiers && tiersData.tiers.length > 0 && !tiersData.tiers.includes(formData.tier)) {
       setFormData(prev => ({ ...prev, tier: tiersData.tiers[0] }));
     }
   }, [tiersData, formData.tier]);
+
+  const toggleCardExpansion = (cardId: string) => {
+    const newExpanded = new Set(expandedCards);
+    if (newExpanded.has(cardId)) {
+      newExpanded.delete(cardId);
+    } else {
+      newExpanded.add(cardId);
+    }
+    setExpandedCards(newExpanded);
+  };
 
   const StatCard = ({ title, value, change, icon: Icon, trend }: {
     title: string;
@@ -146,6 +158,93 @@ export default function MinimumBudgetCalculator() {
       </CardContent>
     </Card>
   );
+
+  const DisciplineCard = ({ 
+    title, 
+    budget, 
+    share, 
+    breakdown, 
+    isSelected, 
+    onToggleSelection, 
+    cardId 
+  }: {
+    title: string;
+    budget: number;
+    share: number;
+    breakdown: { total: number; new_construction: number; existing_remodel: number };
+    isSelected: boolean;
+    onToggleSelection: () => void;
+    cardId: string;
+  }) => {
+    const isExpanded = expandedCards.has(cardId);
+    
+    return (
+      <Collapsible>
+        <Card className={`cursor-pointer transition-all hover:shadow-md ${
+          isSelected 
+            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
+            : 'border-gray-200 hover:border-gray-300'
+        }`}>
+          <CollapsibleTrigger asChild>
+            <div className="p-4" onClick={() => toggleCardExpansion(cardId)}>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium">{title}</h4>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="p-1 h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleSelection();
+                    }}
+                  >
+                    {isSelected ? '✓' : '+'}
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">
+                    {formatPercent(share)}
+                  </span>
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+              <div className="text-lg font-bold text-gray-900">
+                {formatCurrency(budget)}
+              </div>
+              <Progress 
+                value={(budget / (result?.total_cost.proposed || 1)) * 100} 
+                className="h-1 mt-2" 
+              />
+              {isSelected && (
+                <div className="mt-2 text-xs text-blue-600 font-medium">
+                  ✓ Selected
+                </div>
+              )}
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 pb-4 border-t border-gray-100">
+              <div className="mt-3 space-y-2">
+                <div className="text-xs font-semibold text-gray-700 mb-2">Project Breakdown:</div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">New Construction ({formatPercent(result?.construction_ratios.new_construction || 0)})</span>
+                  <span className="text-xs font-medium">{formatCurrency(breakdown.new_construction)}</span>
+                </div>
+                <Progress value={(breakdown.new_construction / budget) * 100} className="h-1" />
+                
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs text-gray-600">Existing Remodel ({formatPercent(result?.construction_ratios.existing_remodel || 0)})</span>
+                  <span className="text-xs font-medium">{formatCurrency(breakdown.existing_remodel)}</span>
+                </div>
+                <Progress value={(breakdown.existing_remodel / budget) * 100} className="h-1" />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+    );
+  };
 
   return (
     <div className="bg-gray-50 font-inter text-dark-slate min-h-screen">
@@ -387,61 +486,66 @@ export default function MinimumBudgetCalculator() {
                       Design Discipline Selection
                     </CardTitle>
                     <CardDescription>
-                      Click to select the disciplines Louis Amy will provide services for
+                      Click + to select disciplines, expand cards to see breakdown details
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Architecture */}
+                      <DisciplineCard
+                        title="Architecture"
+                        budget={result.architecture_budget}
+                        share={result.design_shares.Architecture || 0}
+                        breakdown={result.discipline_breakdown.architecture}
+                        isSelected={selectedDisciplines.has('Architecture')}
+                        onToggleSelection={() => {
+                          const newSelected = new Set(selectedDisciplines);
+                          if (newSelected.has('Architecture')) {
+                            newSelected.delete('Architecture');
+                          } else {
+                            newSelected.add('Architecture');
+                          }
+                          setSelectedDisciplines(newSelected);
+                        }}
+                        cardId="architecture"
+                      />
+                      
                       {/* Engineering Disciplines */}
                       {Object.entries(result.engineering_budgets)
                         .filter(([key]) => key !== 'sum')
-                        .map(([discipline, budget]) => (
-                          <div 
-                            key={discipline} 
-                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                              selectedDisciplines.has(discipline) 
-                                ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                            onClick={() => {
-                              const newSelected = new Set(selectedDisciplines);
-                              if (newSelected.has(discipline)) {
-                                newSelected.delete(discipline);
-                              } else {
-                                newSelected.add(discipline);
-                              }
-                              setSelectedDisciplines(newSelected);
-                            }}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className="text-sm font-medium">{discipline}</h4>
-                              <span className="text-xs text-gray-500">
-                                {formatPercent(result.design_shares[discipline] || 0)}
-                              </span>
-                            </div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {formatCurrency(budget)}
-                            </div>
-                            <Progress 
-                              value={(budget / result.total_cost.proposed) * 100} 
-                              className="h-1 mt-2" 
+                        .map(([discipline, budget]) => {
+                          const disciplineKey = discipline.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                          const breakdown = result.discipline_breakdown[disciplineKey] || { total: budget, new_construction: 0, existing_remodel: 0 };
+                          return (
+                            <DisciplineCard
+                              key={discipline}
+                              title={discipline}
+                              budget={budget}
+                              share={result.design_shares[discipline] || 0}
+                              breakdown={breakdown}
+                              isSelected={selectedDisciplines.has(discipline)}
+                              onToggleSelection={() => {
+                                const newSelected = new Set(selectedDisciplines);
+                                if (newSelected.has(discipline)) {
+                                  newSelected.delete(discipline);
+                                } else {
+                                  newSelected.add(discipline);
+                                }
+                                setSelectedDisciplines(newSelected);
+                              }}
+                              cardId={disciplineKey}
                             />
-                            {selectedDisciplines.has(discipline) && (
-                              <div className="mt-2 text-xs text-blue-600 font-medium">
-                                ✓ Selected
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       
-                      {/* Interior Discipline */}
-                      <div 
-                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                          selectedDisciplines.has('Interior') 
-                            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => {
+                      {/* Interior */}
+                      <DisciplineCard
+                        title="Interior"
+                        budget={result.minimum_budgets.interior}
+                        share={result.design_shares.Interior || 0}
+                        breakdown={result.discipline_breakdown.interior}
+                        isSelected={selectedDisciplines.has('Interior')}
+                        onToggleSelection={() => {
                           const newSelected = new Set(selectedDisciplines);
                           if (newSelected.has('Interior')) {
                             newSelected.delete('Interior');
@@ -450,35 +554,17 @@ export default function MinimumBudgetCalculator() {
                           }
                           setSelectedDisciplines(newSelected);
                         }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="text-sm font-medium">Interior</h4>
-                          <span className="text-xs text-gray-500">
-                            {formatPercent(result.design_shares.Interior || 0)}
-                          </span>
-                        </div>
-                        <div className="text-lg font-bold text-gray-900">
-                          {formatCurrency(result.minimum_budgets.interior)}
-                        </div>
-                        <Progress 
-                          value={(result.minimum_budgets.interior / result.total_cost.proposed) * 100} 
-                          className="h-1 mt-2" 
-                        />
-                        {selectedDisciplines.has('Interior') && (
-                          <div className="mt-2 text-xs text-blue-600 font-medium">
-                            ✓ Selected
-                          </div>
-                        )}
-                      </div>
+                        cardId="interior"
+                      />
                       
-                      {/* Landscape Discipline */}
-                      <div 
-                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                          selectedDisciplines.has('Landscape') 
-                            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => {
+                      {/* Landscape */}
+                      <DisciplineCard
+                        title="Landscape"
+                        budget={result.minimum_budgets.landscape}
+                        share={result.design_shares.Landscape || 0}
+                        breakdown={result.discipline_breakdown.landscape}
+                        isSelected={selectedDisciplines.has('Landscape')}
+                        onToggleSelection={() => {
                           const newSelected = new Set(selectedDisciplines);
                           if (newSelected.has('Landscape')) {
                             newSelected.delete('Landscape');
@@ -487,26 +573,8 @@ export default function MinimumBudgetCalculator() {
                           }
                           setSelectedDisciplines(newSelected);
                         }}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="text-sm font-medium">Landscape</h4>
-                          <span className="text-xs text-gray-500">
-                            {formatPercent(result.design_shares.Landscape || 0)}
-                          </span>
-                        </div>
-                        <div className="text-lg font-bold text-gray-900">
-                          {formatCurrency(result.minimum_budgets.landscape)}
-                        </div>
-                        <Progress 
-                          value={(result.minimum_budgets.landscape / result.total_cost.proposed) * 100} 
-                          className="h-1 mt-2" 
-                        />
-                        {selectedDisciplines.has('Landscape') && (
-                          <div className="mt-2 text-xs text-blue-600 font-medium">
-                            ✓ Selected
-                          </div>
-                        )}
-                      </div>
+                        cardId="landscape"
+                      />
                     </div>
                     
                     {selectedDisciplines.size > 0 && (
@@ -520,6 +588,10 @@ export default function MinimumBudgetCalculator() {
                               {discipline}
                             </Badge>
                           ))}
+                        </div>
+                        <div className="mt-3 text-sm text-blue-700">
+                          <strong>New Construction:</strong> {formatPercent(result.construction_ratios.new_construction)} • 
+                          <strong>Existing Remodel:</strong> {formatPercent(result.construction_ratios.existing_remodel)}
                         </div>
                       </div>
                     )}

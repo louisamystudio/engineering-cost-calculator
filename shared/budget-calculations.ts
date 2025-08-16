@@ -31,6 +31,10 @@ export function calculateMinimumBudget(
   const total_high = total_sf * costRange.allInMax;
   const proposed = (total_low + total_high) / 2;
   
+  // Calculate construction ratios (New Construction vs Existing to Remodel)
+  const new_construction_ratio = input.new_area_ft2 / total_sf;
+  const existing_remodel_ratio = input.existing_area_ft2 / total_sf;
+  
   // Convert shares from decimal strings to numbers
   const shell_share = parseFloat(costRange.archShare.toString());
   const interior_share = parseFloat(costRange.intShare.toString());
@@ -47,7 +51,7 @@ export function calculateMinimumBudget(
   const interior_min = proposed * interior_share;
   const land_min = proposed * landscape_share;
   
-  // Process engineering costs
+  // Process engineering costs with enhanced formula
   const engineering_budgets: Record<string, number> & { sum: number } = { sum: 0 };
   const design_shares: Record<string, number> = {};
   
@@ -58,13 +62,16 @@ export function calculateMinimumBudget(
     engineering_budgets[discipline] = 0;
   });
   
-  // Process available engineering cost data
+  // Process available engineering cost data with enhanced formula
+  // Formula: (proposed * percentage * new_ratio) + (proposed * percentage * existing_ratio * 0.5)
   engineeringCosts.forEach(engCost => {
     const category = engCost.category;
     const percent = parsePercentage(engCost.percentAvg);
     
     if (ENGINEERING_DISCIPLINES.includes(category)) {
-      engineering_budgets[category] = proposed * percent;
+      const new_portion = proposed * percent * new_construction_ratio;
+      const existing_portion = proposed * percent * existing_remodel_ratio * 0.5;
+      engineering_budgets[category] = new_portion + existing_portion;
       total_eng_percent += percent;
     }
   });
@@ -105,7 +112,47 @@ export function calculateMinimumBudget(
     }
   });
   
-  // Working budget should equal proposed
+  // Calculate detailed breakdown for each discipline
+  const discipline_breakdown: any = {};
+  
+  // Architecture breakdown
+  discipline_breakdown.architecture = {
+    total: architecture_budget,
+    new_construction: architecture_budget * new_construction_ratio,
+    existing_remodel: architecture_budget * existing_remodel_ratio,
+  };
+  
+  // Interior breakdown
+  discipline_breakdown.interior = {
+    total: interior_min,
+    new_construction: interior_min * new_construction_ratio,
+    existing_remodel: interior_min * existing_remodel_ratio,
+  };
+  
+  // Landscape breakdown
+  discipline_breakdown.landscape = {
+    total: land_min,
+    new_construction: land_min * new_construction_ratio,
+    existing_remodel: land_min * existing_remodel_ratio,
+  };
+  
+  // Engineering disciplines breakdown
+  ENGINEERING_DISCIPLINES.forEach(discipline => {
+    const engCost = engineeringCosts.find(ec => ec.category === discipline);
+    if (engCost) {
+      const percent = parsePercentage(engCost.percentAvg);
+      const new_portion = proposed * percent * new_construction_ratio;
+      const existing_portion = proposed * percent * existing_remodel_ratio * 0.5;
+      
+      discipline_breakdown[discipline.toLowerCase().replace(/[^a-z0-9]/g, '_')] = {
+        total: engineering_budgets[discipline],
+        new_construction: new_portion,
+        existing_remodel: existing_portion,
+      };
+    }
+  });
+  
+  // Working budget calculation (sum of all disciplines)
   const working_budget = architecture_budget + interior_min + land_min + engineering_budgets.sum;
   
   return {
@@ -141,6 +188,20 @@ export function calculateMinimumBudget(
     ) as Record<string, number> & { sum: number },
     architecture_budget: Math.round(architecture_budget * 100) / 100,
     working_budget: Math.round(working_budget * 100) / 100,
+    construction_ratios: {
+      new_construction: Math.round(new_construction_ratio * 1000) / 1000,
+      existing_remodel: Math.round(existing_remodel_ratio * 1000) / 1000,
+    },
+    discipline_breakdown: Object.fromEntries(
+      Object.entries(discipline_breakdown).map(([key, breakdown]: [string, any]) => [
+        key,
+        {
+          total: Math.round(breakdown.total * 100) / 100,
+          new_construction: Math.round(breakdown.new_construction * 100) / 100,
+          existing_remodel: Math.round(breakdown.existing_remodel * 100) / 100,
+        }
+      ])
+    ) as any,
     notes
   };
 }
