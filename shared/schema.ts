@@ -139,23 +139,49 @@ export type BudgetCalculationResult = {
 
 export const hoursLeverage = pgTable("hours_leverage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  projectPhase: text("project_phase").notNull(),
-  hoursAllocation: decimal("hours_allocation", { precision: 5, scale: 2 }),
-  adminPercent: decimal("admin_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  designer1Percent: decimal("designer1_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  designer2Percent: decimal("designer2_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  architectPercent: decimal("architect_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  engineerPercent: decimal("engineer_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  principalPercent: decimal("principal_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-  totalPercent: decimal("total_percent", { precision: 5, scale: 2 }).default("100"),
+  phase: text("phase").notNull(),
+  hoursPct: decimal("hours_pct", { precision: 5, scale: 4 }),
+  adminPct: decimal("admin_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  designer1Pct: decimal("designer1_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  designer2Pct: decimal("designer2_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  architectPct: decimal("architect_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  engineerPct: decimal("engineer_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  principalPct: decimal("principal_pct", { precision: 5, scale: 4 }).default("0").notNull(),
+  totalPercent: decimal("total_percent", { precision: 5, scale: 4 }).default("1"),
+});
+
+export const laborOverhead = pgTable("labor_overhead", {
+  role: text("role").primaryKey(),
+  laborAnnual: decimal("labor_annual", { precision: 10, scale: 2 }).notNull(),
+  overheadAnnual: decimal("overhead_annual", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const hourlyRates = pgTable("hourly_rates", {
+  role: text("role").primaryKey(),
+  louisAmyRate: decimal("louis_amy_rate", { precision: 8, scale: 2 }),
+  marketRate: decimal("market_rate", { precision: 8, scale: 2 }),
+});
+
+export const feeConfig = pgTable("fee_config", {
+  settingKey: text("setting_key").primaryKey(),
+  settingValue: decimal("setting_value", { precision: 8, scale: 4 }).notNull(),
 });
 
 export const insertHoursLeverageSchema = createInsertSchema(hoursLeverage).omit({
   id: true,
 });
+export const insertLaborOverheadSchema = createInsertSchema(laborOverhead);
+export const insertHourlyRatesSchema = createInsertSchema(hourlyRates);
+export const insertFeeConfigSchema = createInsertSchema(feeConfig);
 
 export type InsertHoursLeverage = z.infer<typeof insertHoursLeverageSchema>;
 export type HoursLeverage = typeof hoursLeverage.$inferSelect;
+export type InsertLaborOverhead = z.infer<typeof insertLaborOverheadSchema>;
+export type LaborOverhead = typeof laborOverhead.$inferSelect;
+export type InsertHourlyRates = z.infer<typeof insertHourlyRatesSchema>;
+export type HourlyRates = typeof hourlyRates.$inferSelect;
+export type InsertFeeConfig = z.infer<typeof insertFeeConfigSchema>;
+export type FeeConfig = typeof feeConfig.$inferSelect;
 
 export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
 export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
@@ -214,4 +240,87 @@ export type FeeMatrixResult = {
     interior_cost_base: number;
     landscape_cost_base: number;
   };
+};
+
+// Fee Matrix V2 Types (Bottom-Up)
+export const feeMatrixV2InputSchema = z.object({
+  totalAreaFt2: z.number().positive(),
+  hoursFactor: z.number().positive().default(0.220),
+  totalHours: z.number().int().positive().optional(),
+  complexityMultiplier: z.number().min(0).max(2).default(0.3),
+  scenarioDiscountLouisAmy: z.number().min(0).max(1).default(0.35),
+  scenarioDiscountMarket: z.number().min(0).max(1).default(0.35),
+});
+
+export type FeeMatrixV2Input = z.infer<typeof feeMatrixV2InputSchema>;
+
+export type SectionII = {
+  roles: Record<string, {
+    laborPerHour: number;
+    overheadPerHour: number;
+    costPerHour: number;
+    pricePerHour: number;
+  }>;
+  simpleAverageRate: number;
+  weightedAverageRate: number;
+};
+
+export type SectionIII = {
+  totalAreaFt2: number;
+  hoursFactor: number;
+  totalHoursPlanned: number;
+  phases: Array<{
+    name: string;
+    months: number | null;
+    percent: number | null;
+    hours: number;
+  }>;
+  totalMonths: number;
+};
+
+export type SectionIV = {
+  matrix: Record<string, Record<string, number>>;
+  roleTotalsRounded: Record<string, number>;
+  roundedGrandTotal: number;
+  plannedGrandTotal: number;
+};
+
+export type SectionV = {
+  byRole: Record<string, {
+    hours: number;
+    pricePerHour: number;
+    pricing: number;
+    labor: number;
+    overhead: number;
+    totalCost: number;
+    profit: number;
+    margin: number;
+  }>;
+  totals: {
+    hours: number;
+    pricing: number;
+    labor: number;
+    overhead: number;
+    totalCost: number;
+    profit: number;
+    margin: number;
+  };
+};
+
+export type SectionVI = {
+  scenarios: Array<{
+    name: string;
+    byRole: Record<string, number>;
+    total: number;
+    pctOfProjectBudget: number;
+  }>;
+};
+
+export type FeeMatrixV2Result = {
+  inputs: FeeMatrixV2Input;
+  sectionII: SectionII;
+  sectionIII: SectionIII;
+  sectionIV: SectionIV;
+  sectionV: SectionV;
+  sectionVI: SectionVI;
 };

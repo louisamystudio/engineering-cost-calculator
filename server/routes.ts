@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { budgetInputSchema, feeMatrixInputSchema } from "@shared/schema";
+import { budgetInputSchema, feeMatrixInputSchema, feeMatrixV2InputSchema } from "@shared/schema";
 import { calculateMinimumBudget } from "@shared/budget-calculations";
 import { calculateFeeMatrix } from "@shared/fee-matrix-calculations";
+import { computeFeeMatrixV2 } from "./services/feeMatrixV2";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Budget Calculator API Routes
@@ -87,6 +88,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error calculating fee matrix:", error);
       res.status(500).json({ error: "Failed to calculate fee matrix" });
+    }
+  });
+
+  // Fee Matrix V2 (Bottom-Up) API Routes
+  
+  // Get all hours leverage data
+  app.get("/api/datasets/hours-leverage", async (req, res) => {
+    try {
+      const hoursLeverage = await storage.getAllHoursLeverage();
+      res.json(hoursLeverage);
+    } catch (error) {
+      console.error("Error fetching hours leverage data:", error);
+      res.status(500).json({ error: "Failed to fetch hours leverage data" });
+    }
+  });
+
+  // Calculate fee matrix v2 (bottom-up)
+  app.post("/api/calc/fee-matrix/v2", async (req, res) => {
+    try {
+      // Validate input
+      const validationResult = feeMatrixV2InputSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid input", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const input = validationResult.data;
+
+      // Calculate fee matrix v2
+      const result = await computeFeeMatrixV2(input);
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error calculating fee matrix v2:", error);
+      res.status(500).json({ error: "Failed to calculate fee matrix v2" });
+    }
+  });
+
+  // Get fee calculation defaults
+  app.get("/api/fee-defaults", async (req, res) => {
+    try {
+      const [laborOverhead, hourlyRates, feeConfig] = await Promise.all([
+        storage.getAllLaborOverhead(),
+        storage.getAllHourlyRates(),
+        storage.getAllFeeConfig(),
+      ]);
+
+      const configMap = Object.fromEntries(
+        feeConfig.map(item => [item.settingKey, parseFloat(item.settingValue)])
+      );
+
+      res.json({
+        laborOverhead,
+        hourlyRates,
+        config: configMap,
+      });
+    } catch (error) {
+      console.error("Error fetching fee defaults:", error);
+      res.status(500).json({ error: "Failed to fetch fee defaults" });
     }
   });
 

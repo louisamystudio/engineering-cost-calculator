@@ -1,0 +1,227 @@
+Here are the **step‑by‑step instructions** for the Replit Code Agent to implement **Sections II–VI** of the Fee Matrix (bottom‑up) using the supplied `Hours_Leverage.csv` database and the logic from the Excel workbook. This will ensure correct calculations and complete table displays:
+
+---
+
+## 1. Database Setup
+
+1. **Create / Normalize Hours Leverage Table**
+
+   * Table name: `hours_leverage` (snake case).
+   * Columns:
+
+     * `phase` (`TEXT`) — names such as “Kick-Off”, “Discovery”, etc.
+     * `hours_pct` (`NUMERIC`) — phase percentage as a decimal (e.g. 6.0% → 0.06). `NULL` for phases without a %.
+     * `admin_pct`, `designer1_pct`, `designer2_pct`, `architect_pct`, `engineer_pct`, `principal_pct` (`NUMERIC`) — each role’s weight per phase as a decimal (e.g. “37%” → 0.37).
+   * Seed this table by parsing `/mnt/data/Hours_Leverage.csv`:
+
+     ```python
+     import pandas as pd
+     df = pd.read_csv('/mnt/data/Hours_Leverage.csv')
+     df = df.drop(columns=['Unnamed: 9'])      # drop trailing empty column
+     df.rename(columns={
+       'III. Project Hours & Leverage': 'phase',
+       'Hours % Allocation': 'hours_pct',
+       'Admin': 'admin_pct',
+       'Designer': 'designer1_pct',
+       'Designer.1': 'designer2_pct',
+       'Architect': 'architect_pct',
+       'Engineer ': 'engineer_pct',
+       'Principal': 'principal_pct'
+     }, inplace=True)
+     # strip %, convert to decimals
+     pct_cols = ['hours_pct','admin_pct','designer1_pct','designer2_pct','architect_pct','engineer_pct','principal_pct']
+     for col in pct_cols:
+         df[col] = df[col].str.rstrip('%').astype(float)/100.0
+     ```
+   * Persist all rows for later queries. Rows where `hours_pct` is `NULL` represent hourly‑rate phases (“Pre‑Construction (Hourly Rate)” and “Construction Observation (Hourly Rate)”); treat their months as `NULL` and hours as zero by default.
+
+2. **Costs & Rates Tables**
+
+   * Create tables to hold **annual labour cost** and **annual overhead cost** per role. Example structure:
+
+     ```sql
+     CREATE TABLE IF NOT EXISTS labor_overhead (
+       role TEXT PRIMARY KEY,
+       labor_annual NUMERIC,
+       overhead_annual NUMERIC
+     );
+     ```
+   * Insert default values (numbers can come from your existing config or allow the user to set them in the UI).
+   * Create a `markup` parameter table or configuration file. Default markup = **1.00** (100 % increase).
+
+3. **Hourly Rates Table** (optional)
+
+   * Create table `hourly_rates` with `role TEXT PRIMARY KEY`, `louis_amy_rate NUMERIC`, `market_rate NUMERIC`.
+   * If absent, compute louis\_amy\_rate from Section II (pricing per hour) and use it for both LA and Market by default.
+
+4. **Scenario Discount Settings**
+
+   * Provide UI inputs or config table for `scenarioDiscountLouisAmy` and `scenarioDiscountMarket` (default 0.35).
+
+---
+
+## 2. API & Calculation Service
+
+Create a service `computeFeeMatrixV2` that accepts `FeeMatrixInputs` (as defined in the previous instructions) and returns `FeeMatrixResult` with Sections II–VI.
+
+### 2.1 Section II — Cost & Pricing Per Hour
+
+For each role:
+
+```ts
+laborPerHour    = labor_annual / 2080;
+overheadPerHour = overhead_annual / 2080;
+costPerHour     = laborPerHour + overheadPerHour;
+pricePerHour    = costPerHour * (1 + markup);
+```
+
+Compute:
+
+* `simpleAverageRate = average(pricePerHour across roles)`
+* After Section IV, compute `weightedAverageRate = Σ (roleHoursTotal × pricePerHour) / Σ roleHoursTotal`.
+
+Return `sectionII` containing per‑role rates and both average rates.
+
+### 2.2 Section III — Project Hours & Leverage
+
+Inputs: `totalAreaFt2`, `hoursFactor` (default 0.220), `totalHours` (optional).
+Compute:
+
+```ts
+totalHoursPlanned = totalHours ?? Math.round(totalAreaFt2 * hoursFactor);
+```
+
+Retrieve `phase`, `hours_pct` and `phaseMonths` (map from Excel: Kick-Off 0, Discovery 1, Creative Conceptual 1, Creative Schematic 3, Creative Preliminary 1, Technical Schematic 3, Technical Preliminary 1, Pre‑Construction null, Construction Observation null).
+For each phase with non‑null `hours_pct`, compute `hoursRaw = totalHoursPlanned × hours_pct`. Round to integer; for the last non‑null phase, set `hours = totalHoursPlanned − Σ previous rounded hours` to ensure the sum of hours matches `totalHoursPlanned`.
+
+Return `sectionIII` with `totalAreaFt2`, `hoursFactor`, `totalHoursPlanned`, list of phases (`name`, `months`, `percent`, `hours`) and `totalMonths` (sum of non‑null months).
+
+### 2.3 Section IV — Project Hours Distribution
+
+For each phase and each role:
+
+```ts
+weight = roleWeights[phase][role];      // from hours_leverage table
+raw = sectionIII.phases[phase].hours * weight;
+if role === 'Admin':
+    hoursRolePhase = Math.round(raw);   // matching Excel rounding for Admin (0 or 1)
+else:
+    hoursRolePhase = Math.ceil(raw);    // round up for staff
+```
+
+Sum across phases for each role (`roleTotalsRounded`).
+Compute `roundedGrandTotal = Σ roleTotalsRounded`.
+`plannedGrandTotal = sectionIII.totalHoursPlanned`.
+Return `sectionIV` with `matrix` of `phase × role → hoursRolePhase`, `roleTotalsRounded`, `roundedGrandTotal`, and `plannedGrandTotal`.
+
+### 2.4 Section V — Project Budget
+
+For each role:
+
+```ts
+hours = roleTotalsRounded[role];
+pricePerHour = sectionII.pricingPerHour[role];
+laborPerHour = sectionII.laborPerHour[role];
+overheadPerHour = sectionII.overheadPerHour[role];
+
+pricing   = hours * pricePerHour;
+labor     = hours * laborPerHour;
+overhead  = hours * overheadPerHour;
+totalCost = labor + overhead;
+profit    = pricing - totalCost;
+margin    = profit / pricing;            // decimal
+```
+
+Aggregate totals across roles.
+Return `sectionV` with `byRole` rows and `totals` row.
+
+### 2.5 Section VI — Scenarios
+
+Use the **same role hours** from Section IV and apply scenario‑specific rate tables:
+
+```ts
+ratesLA     = hourly_rates.louis_amy_rate ?? sectionII.pricingPerHour;
+ratesMarket = hourly_rates.market_rate   ?? ratesLA;
+
+rateS1 = { role: ratesLA[role] * (1 - scenarioDiscountLouisAmy) };
+rateS2 = { role: ratesLA[role] };
+rateS3 = { role: ratesMarket[role] };
+rateS4 = { role: ratesMarket[role] * (1 - scenarioDiscountMarket) };
+
+for each scenario in [S1..S4]:
+    byRole[role] = roleTotalsRounded[role] * rateScenario[role];
+    total = Σ byRole[role];
+    pctOfProjectBudget = total / projectBudget;
+```
+
+Return `sectionVI` with the four scenarios: **LouisAmy Discounted**, **LouisAmy Full Rate**, **Market Full Rate**, **Market Rate Discounted**.
+
+---
+
+## 3. API Endpoints
+
+Add these endpoints:
+
+1. `GET /api/datasets/hours-leverage` – returns all rows from `hours_leverage` to power the UI.
+2. `GET /api/calc/fee-matrix/v2` – accepts the `FeeMatrixInputs` payload and calls `computeFeeMatrixV2`, returning the complete `FeeMatrixResult`.
+3. Optional: `GET /api/fee-defaults` – returns defaults for labour cost, overhead, markup, hoursFactor, role weights, scenario discounts, etc., so the UI can populate initial form values.
+
+---
+
+## 4. UI Implementation (Pages/Components)
+
+Create a dedicated **Fee Matrix Bottom‑Up** tab or section. Display five tables/cards:
+
+1. **Cost & Pricing per Hour** (Section II)
+
+   * Table columns: Role | Annual Labour | Annual Overhead | Labour/hr | Overhead/hr | Cost/hr | Mark‑Up (e.g., 100 %) | **Price/hr**.
+   * Footer: Simple Average Rate, Weighted Average Rate.
+
+2. **Project Hours & Leverage** (Section III)
+
+   * Inputs: editable *Sq Ft*, *Hours Factor*, *Total Hours* (if user overrides).
+   * Table with columns: Phase | Months | % Allocation | **Hours per Stage**.
+   * Footer: Sum of months and confirm that % totals 100 %.
+   * Display `totalAreaFt2`, `hoursFactor`, `totalHoursPlanned`.
+
+3. **Project Hours Distribution** (Section IV)
+
+   * Matrix: phases as rows, roles as columns, cell = hours; highlight rounding differences.
+   * Totals row: show each role’s rounded total and grand total; show both planned grand total and rounded grand total; if different, badge the difference.
+
+4. **Project Budget** (Section V)
+
+   * Table with columns: Role | Hours | Price/hr | **Pricing** | Labour | Overhead | **Total Cost** | **Profit** | **Margin** (display as %).
+   * Totals row across roles.
+
+5. **Scenarios** (Section VI)
+
+   * Inputs: *Scenario Discount LouisAmy* and *Scenario Discount Market* (defaults 35 %).
+   * Table with roles as rows and scenarios as columns; show each role’s fee under each scenario and totals row.
+   * Footer row: Fee as % of Project Budget for each scenario.
+   * Show differences vs “LouisAmy Full Rate” (optional).
+
+Ensure currency fields use USD formatting with two decimal places; percentages display with no more than 1 decimal.
+
+---
+
+## 5. Validation & Testing
+
+1. **Unit tests** using sample values from the workbook:
+
+   * `totalAreaFt2 = 5000`, `hoursFactor = 0.220`, `totalHours = 1100` (should be computed).
+   * `roleWeights` as provided in `Hours_Leverage.csv` (0.37, 0.37, etc.).
+   * Use example labour and overhead annual costs from the workbook (e.g., Admin 74 318.15, Designer 74 318.15, Designer2 74 318.15, Architect 93 357, Engineer 175 579.5, Principal 523 707.05; Overhead 80 707, 80 707, 93 357, 93 357, 175 579.5, 523 707.05).
+   * After Section IV rounding, expect role totals around \[Admin: 0, Designer1: 304, Designer2: 304, Architect: 280, Engineer: 172, Principal: 55] and grand total \~1 115 hours.
+   * Ensure Section V totals align with the workbook: e.g., Pricing around \[29 455, 29 455, 29 455, 29 343, 18 025, 0], Labour cost around \[10 862, 10 862, 12 014, 12 014, 2 242, 2 242], etc.; Profit \~6 797 per designer and \~4 160 for principal; margin ≈23 %.
+   * Validate Section VI scenario totals match the workbook (e.g., S1 ≈ 114 868; S3 ≈ 226 450) when discount is 35 % and rates correspond to the workbook’s pricing per hour.
+
+2. **Round‑trip check**: The sum of Section V pricing should equal the Section VI “LouisAmy Full Rate” total when there is no discount and rates are the same.
+
+3. **Rounding**: Make sure the last non‑null phase in Section III is adjusted so the sum of hours exactly equals `totalHoursPlanned`. Use `ceil()` for roles except Admin (`round`).
+
+4. **Role Weight Sum**: Each phase’s role weights must sum to 1.0; validate when reading from the database.
+
+---
+
+By following these instructions, the Replit Code Agent will be able to correctly compute and display Sections II–VI of the Fee Matrix using the `Hours_Leverage.csv` database and the formulas from the Excel workbook.

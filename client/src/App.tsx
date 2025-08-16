@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Calculator from "@/pages/calculator";
 import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
+import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
 import ProjectDashboard from "@/pages/project-dashboard";
 import NotFound from "@/pages/not-found";
 
@@ -53,6 +54,15 @@ function NavBar() {
                 <span className="lg:hidden">Fees</span>
               </Button>
             </Link>
+            <Link href="/fee-matrix-bottom-up">
+              <Button 
+                variant={location === "/fee-matrix-bottom-up" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                <span className="hidden lg:inline">Fee Matrix v2</span>
+                <span className="lg:hidden">Fees v2</span>
+              </Button>
+            </Link>
             <Link href="/hourly-factor">
               <Button 
                 variant={location === "/hourly-factor" ? "default" : "ghost"}
@@ -79,6 +89,7 @@ function Router() {
         <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />
+        <Route path="/fee-matrix-bottom-up" component={FeeMatrixBottomUp} />
         <Route component={NotFound} />
       </Switch>
     </div>
