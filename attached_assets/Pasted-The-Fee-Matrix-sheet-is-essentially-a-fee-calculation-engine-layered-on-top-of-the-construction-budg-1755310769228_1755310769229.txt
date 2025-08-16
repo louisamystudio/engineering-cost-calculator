@@ -1,0 +1,125 @@
+The Fee Matrix sheet is essentially a fee‑calculation engine layered on top of the construction budgets you generated in Part 1.  It combines a top‑down fee curve (based on a complexity multiplier) with fixed‑rate scanning services and then overlays a bottom‑up cost base to derive internal vs. external fees and an average billing rate per hour.  Here’s how it works and how you can implement it:
+
+⸻
+
+1.  Key inputs
+	1.	Budgets from Part 1:
+	•	shell_budget, interior_budget, landscape_budget – the construction budgets for each major portion.
+	•	structural_budget, civil_budget, mechanical_budget, electrical_budget, plumbing_budget, low_voltage_budget – the engineering budgets from the Project Cost sheet (cells B49, B53, …, B69 in Project_Cost).
+	2.	Areas:
+	•	new_area_ft2, existing_area_ft2 – used to compute total_building_area = new + existing.
+	•	site_area – used for site scanning.
+	•	existing_building_area – used for “Existing Building Scan to BIM.”
+	3.	Complexity multiplier – user‑defined (B1 in Fee_Matrix).  This scales all fee percentages.  In the example sheet it is 0.3 (i.e., 30%).
+	4.	Discount rate – cell G37 is the discount applied to in‑house work.  In the sheet it is fixed at 0.15 (15 %).
+	5.	Constants for the fee curve – from the workbook:
+	•	a = 0.07498
+	•	b = 0.007824
+	•	c = -0.7495
+These produce a base fee % of roughly 8–10 % and taper down as budgets increase.
+
+⸻
+
+2.  Top‑down fee calculation
+
+For each discipline (architecture, interior design, landscape architecture, structural, civil/site, mechanical, electrical, plumbing, low‑voltage) the sheet computes a calculated percentage and an initial fee (Market Fee):
+
+percentage = (a + b * (budget / 1,000,000)^c) * (1 + complexity_multiplier)
+fee        = percentage * budget
+rate_psf   = fee / total_building_area
+
+	•	For architecture, interior design and landscape, budget is the corresponding construction budget (shell_budget, interior_budget, landscape_budget).
+	•	For engineering disciplines, budget comes from Project_Cost!B49:B69 (structural, civil, mechanical, electrical, plumbing, low‑voltage budgets).
+	•	The sheet uses this same curve for all disciplines; there is no bespoke factor per engineer.
+	•	The discounted fee equals fee × (1 − discount_rate) for disciplines handled in‑house.
+	•	Disciplines classed as “consultants” (external) keep their full fee; the sheet does not apply the discount and instead records the amount in the Consultants column (E).
+
+Disciplines’ classification
+
+Discipline	Fee column in sheet	Internal/discounted?	Consultants formula
+Existing Building Scan to BIM	D38 = 1.2 × existing_building_area	Yes	–
+Site Scan to BIM	D39 = 1.2 × site_area	Yes	–
+Architecture (design + admin)	D40 = B2 × B40	Yes	–
+Interior design	D41 = B41 × B3	Yes	–
+Landscape architecture	D42 = B42 × B4	Yes	–
+Structural engineer	E43 = B41 × E2	No – the sheet uses interior design % (B41) times structural budget (E2).	Yes
+Civil / site engineer	D44 = B44 × E3	Yes	–
+Mechanical engineer	E45 = B45 × E4	No	Yes
+Electrical engineer	E46 = B46 × E5	No	Yes
+Plumbing engineer	D47 = B47 × E6	Yes	–
+Low‑voltage / data / BMS	E48 = B48 × E7	No	Yes
+
+In the example, “consultants” are structural, mechanical, electrical and low‑voltage engineers; their fees go in column E and are not discounted.  Civil and plumbing engineers are treated as in‑house and are discounted.
+
+The Market Fee row (Row 49) sums all of these fees (SUM(D38:D48) and SUM(E38:E48)).  The discounted subtotal (F49) sums only the discounted fees.  The overall fee percentage (B49) is Market Fee ÷ project_budget and the rate per ft² (C49) is Market Fee ÷ total_building_area.  The example yields:
+	•	Market Fee = $177,542.41
+	•	Consultants = $32,174.06
+	•	Discounted (Louis Amy share) = $150,911.05
+	•	Overall fee % = 12.9956 %
+	•	Rate per ft² = $40.29
+
+⸻
+
+3.  Scanning services
+
+The first two rows of the matrix handle scanning:
+	•	Existing Building Scan to BIM: constant rate (1.2) × existing building area.
+fee = 1.2 × existing_building_area
+	•	Site Scan to BIM: constant rate (1.2) × site area (not ft²)
+fee = 1.2 × site_area
+
+These costs are treated like in‑house services (they’re discounted by 15 % in the example).
+
+⸻
+
+4.  Bottom‑up cost base and hourly factor
+
+Below the “Market Fee” section, the sheet estimates a cost base and an hourly factor:
+	1.	Cost base split:
+	•	Shell cost base = discounted total (F49) minus interior and landscape bases (F41, F42).
+	•	Interior cost base = discounted interior fee (F41).
+	•	Outdoor (landscape) cost base = discounted landscape fee (F42).
+These three sum to F55 (= discounted total).
+	2.	Hourly factor from SF curve:
+HF = 0.21767 + 11.21274 × (total_building_area ^ −0.53816) – 0.08
+With 5 000 ft² the HF is ≈ 0.252 hr/ft².  An alternative equation (without the –0.08) is also given.
+	3.	Raw design hours:
+raw_hours = HF × total_building_area.  For 5 000 ft² this is 1 661.20 hours.
+	4.	Labour & overhead costs:
+The sheet contains hard‑coded labour costs and operating costs per staff type (Admin, Designer, Architect, Engineer, Principal).  It divides these annual costs by 2 080 hrs/year to get cost per hour (Rate – Labor Cost per hour) and adds overhead per hour to get total cost per hour.  Then it applies a markup (D63, which is 1.0 = 100 %) to arrive at billing rates.  Averaging the billing rates across the five roles yields a mean billable rate (K63), which in the example is $172.17/hr.
+	5.	Hours for each scope:
+hours = discounted_fee / average_billable_rate.  For example, architecture discounted fee  $83,130.40 ÷ $172.17/hr ≈ 482.65 hr.
+
+This bottom‑up section is primarily used to derive the mean billable rate and convert the fee into hours.  Unless you want to reproduce staff‑category rates exactly, you can treat the average billable rate as a constant (e.g. $172.17/hr) or expose it as a configurable parameter.
+
+⸻
+
+5.  Recommendations for coding this section
+	1.	Extend your data model to include a complexity_multiplier and discount_rate.  Allow the user to adjust these parameters.
+	2.	Fetch budgets from the Part 1 calculations (shell, interior, landscape and each engineering discipline).  Also bring through existing_building_area, new_building_area and site_area.
+	3.	Implement the fee curve as a pure function:
+
+function feePercentage(budget: number, complexity: number): number {
+    const a = 0.07498, b = 0.007824, c = -0.7495;
+    return (a + b * Math.pow(budget / 1_000_000, c)) * (1 + complexity);
+}
+
+Then compute fee = percentage × budget and rate_psf = fee / total_building_area.
+
+	4.	Classify disciplines as internal vs. consultants.  Internal disciplines (Existing Building Scan, Site Scan, Architecture, Interior, Landscape, Civil, Plumbing) get discounted: discounted_fee = fee × (1 − discount_rate).  Consultant disciplines (Structural, Mechanical, Electrical, Low‑Voltage) should not be discounted; instead, their fee is considered an external consultant cost.  Note that the sheet uses the interior design percentage (B41) rather than the discipline‑specific percentage for Structural, Mechanical, Electrical and Low‑Voltage; decide whether to mirror that behaviour or to use the discipline‑specific percentage.
+	5.	Compute totals:
+	•	market_fee = Σ fee for all scopes
+	•	consultant_total = Σ fee for consultant scopes
+	•	discounted_total = Σ discounted_fee for internal scopes
+	•	overall_percentage = market_fee ÷ project_budget
+	•	rate_per_ft² = market_fee ÷ total_building_area.
+	6.	Hours calculation (optional):
+Define an average billable rate (you can compute it dynamically from labour + overhead costs as in the sheet or set it as a constant).  Then hours = discounted_fee / average_rate.  Also compute raw_design_hours = HF × total_building_area using the hourly‑factor equation.
+	7.	Expose results in the UI:
+	•	A table summarising each scope: percentage, fee, discounted fee (if applicable), consultants share, rate per ft² and hours.
+	•	A totals row for market fee, consultant fee, discounted fee and total hours.
+	•	Inputs for complexity multiplier and discount rate with explanations/tooltips.
+	•	Optionally, a comparison of top‑down (fee‑curve) hours vs. bottom‑up raw hours (from HF × area).
+	8.	Persist the fee matrix results in your quotes table so that downstream fee proposals and contracts can reference them.
+
+By following this breakdown you can implement the Fee Matrix logic in TypeScript/Drizzle using the budgets computed in Part 1.  Be sure to maintain the same constants and formulas so that your app matches the Excel output.

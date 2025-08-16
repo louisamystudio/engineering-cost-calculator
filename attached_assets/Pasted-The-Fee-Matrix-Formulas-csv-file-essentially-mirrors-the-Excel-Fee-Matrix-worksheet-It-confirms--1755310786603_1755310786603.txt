@@ -1,0 +1,54 @@
+The Fee Matrix Formulas.csv file essentially mirrors the Excel “Fee Matrix” worksheet.  It confirms that each discipline’s fee is driven by a complexity‑adjusted curve applied to the relevant construction budget, plus a few fixed‑rate scanning services.  Here’s how the formulas break down and how you can translate them into your code:
+
+1. Key parameters and budgets
+	•	Complexity multiplier (B1) – a user‐adjustable factor; defaults to 0.3 (30%).
+	•	Construction budgets – shell (B2), interior (B3), landscape (B4), structural (E2), civil (E3), mechanical (E4), electrical (E5), plumbing (E6), low‑voltage (E7).  These values come from the first part of your app (minimum budget calculation).
+	•	Areas – new building area (Project_Cost!B3), existing building area (Project_Cost!B4), site area (Project_Cost!B5); total building area = new + existing.
+	•	Discount rate (G37) – a constant 15 % used to compute the in‑house share (=D40*(1–$G$37) etc.).
+	•	Fee‑curve constants – from the formulas: a = 0.07498, b = 0.007824, c = -0.7495.
+
+2. Top‑down percentage formula
+
+For each discipline (Architecture, Interior Design, Landscape, Structural, Civil, Mechanical, Electrical, Plumbing, Low‑Voltage), the calculated percentage is:
+
+percentage = (a + b * (budget / 1,000,000) ^ c) * (1 + complexity_multiplier)
+
+In the CSV you can see formulas like:
+
+=(0.07498+0.007824*($B$2/1000000)^(-0.7495))*(1+$B$1)
+
+for architecture, substituting $B$2 with the relevant budget (shell, interior, landscape, E2 for structural, etc.).
+
+3. Fee and rate per ft²
+	•	Fee (Market Fee) = percentage × budget.  For example, the architecture fee is calculated in the sheet as =(B2 * B40) (shell budget × architecture percentage).
+	•	Rate per square foot = fee ÷ total building area.  The CSV shows formulas like =D40/('[...]Project_Cost'!$B$3 + '[...]Project_Cost'!$B$4).
+
+4. Discounted (in‑house) vs. consultant share
+	•	Most disciplines (Architecture, Interior, Landscape, Civil and Plumbing) are treated as in‑house: the discounted fee is fee × (1 – discount_rate).  See formulas like =D42*(1-$G$37).
+	•	Structural, Mechanical, Electrical and Low‑Voltage are marked as consultant fees; they do not apply the discount.  In the CSV these fees are placed in column E with formulas such as =B45 * E4 for mechanical.
+	•	Interestingly, structural, mechanical, electrical and low‑voltage use the interior design percentage (B41) multiplied by their budgets to derive the consultant fee (=B41 * E2 for Structural), instead of their own complexity curves.  You may want to mirror this behaviour or decide to use each discipline’s own percentage.
+
+5. Scanning services
+
+Two fixed‑rate services precede the discipline list:
+	•	Existing Building Scan to BIM – rate 1.2 × existing building area: =C38 * B28.
+	•	Site Scan to BIM – rate 1.2 × site area: ='[...Project_Cost'!B5 * C39.
+
+Both are treated as in‑house fees and discounted by (1 – $G$37).
+
+6. Totals and percentages
+	•	The Market Fee row sums all fees: =SUM(D38:D48) and =SUM(E38:E48).
+	•	Overall fee percentage = Market Fee ÷ Project Budget (=D49/B5).
+	•	Rate per ft² = Market Fee ÷ total building area.
+	•	Discounted totals (=SUM(F38:F48)) give the firm’s share; consultants’ totals sum the column of consultant fees.
+
+7. Implementation guidelines
+	1.	Load budgets and areas from Part 1 and the user.  Derive total building area.
+	2.	Expose complexity_multiplier and discount_rate as inputs.
+	3.	Implement the fee percentage function using the constants (a, b, c).  Map each discipline to the correct budget reference.
+	4.	Compute fees, rates and discounted amounts as per the formulas above.
+	5.	Classify disciplines into in‑house (apply discount) vs. consultants (no discount) according to the matrix.  Decide whether to adopt the CSV’s approach for structural/mechanical/electrical/low‑voltage or to use their own complexity curves.
+	6.	Calculate totals: Market Fee, Consultant Fee, Discounted Fee, overall % and rate per ft².
+	7.	Optionally replicate the bottom‑up cost‑base and hourly‑factor logic if you intend to convert fees into hours and average hourly rates.
+
+By structuring your code around these formulas, you’ll reproduce the Fee Matrix sheet programmatically and ensure that your Replit app’s fee calculation matches the behaviour of the original Excel file.

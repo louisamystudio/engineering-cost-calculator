@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import Calculator from "@/pages/calculator";
 import MinimumBudgetCalculator from "@/pages/minimum-budget";
+import FeeMatrix from "@/pages/fee-matrix";
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -29,8 +30,8 @@ function NavBar() {
                 variant={location === "/" ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden sm:inline">Hourly Factor Calculator</span>
-                <span className="sm:hidden">Hourly Factor</span>
+                <span className="hidden lg:inline">Hourly Factor Calculator</span>
+                <span className="lg:hidden">Hourly Factor</span>
               </Button>
             </Link>
             <Link href="/minimum-budget">
@@ -38,8 +39,17 @@ function NavBar() {
                 variant={location === "/minimum-budget" ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden sm:inline">Minimum Budget Calculator</span>
-                <span className="sm:hidden">Min Budget</span>
+                <span className="hidden lg:inline">Minimum Budget Calculator</span>
+                <span className="lg:hidden">Min Budget</span>
+              </Button>
+            </Link>
+            <Link href="/fee-matrix">
+              <Button 
+                variant={location === "/fee-matrix" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                <span className="hidden lg:inline">Fee Matrix Calculator</span>
+                <span className="lg:hidden">Fee Matrix</span>
               </Button>
             </Link>
           </nav>
@@ -56,6 +66,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
+        <Route path="/fee-matrix" component={FeeMatrix} />
         <Route component={NotFound} />
       </Switch>
     </div>

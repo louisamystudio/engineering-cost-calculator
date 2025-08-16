@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { budgetInputSchema } from "@shared/schema";
+import { budgetInputSchema, feeMatrixInputSchema } from "@shared/schema";
 import { calculateMinimumBudget } from "@shared/budget-calculations";
+import { calculateFeeMatrix } from "@shared/fee-matrix-calculations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Budget Calculator API Routes
@@ -62,6 +63,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error calculating minimum budget:", error);
       res.status(500).json({ error: "Failed to calculate budget" });
+    }
+  });
+
+  // Calculate fee matrix
+  app.post("/api/calc/fee-matrix", async (req, res) => {
+    try {
+      // Validate input
+      const validationResult = feeMatrixInputSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid input", 
+          details: validationResult.error.issues 
+        });
+      }
+
+      const input = validationResult.data;
+
+      // Calculate fee matrix
+      const result = calculateFeeMatrix(input);
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error calculating fee matrix:", error);
+      res.status(500).json({ error: "Failed to calculate fee matrix" });
     }
   });
 

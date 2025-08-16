@@ -109,7 +109,7 @@ export const budgetInputSchema = z.object({
   tier: z.number().int().min(1).max(3),
   new_area_ft2: z.number().positive(),
   existing_area_ft2: z.number().min(0),
-  site_area_m2: z.number().optional(),
+  site_area_m2: z.number().min(0).default(0),
 });
 
 export type BudgetInput = z.infer<typeof budgetInputSchema>;
@@ -140,3 +140,58 @@ export type BudgetCalculationResult = {
 export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
 export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
 export type BuildingTypeView = typeof buildingTypesView.$inferSelect;
+
+// Fee Matrix Types
+export const feeMatrixInputSchema = z.object({
+  budget_result: z.any(), // BudgetCalculationResult
+  complexity_multiplier: z.number().min(0).max(2).default(0.3),
+  discount_rate: z.number().min(0).max(1).default(0.15),
+  average_billable_rate: z.number().positive().default(172.17),
+});
+
+export type FeeMatrixInput = z.infer<typeof feeMatrixInputSchema>;
+
+export type DisciplineFee = {
+  discipline: string;
+  budget: number;
+  percentage: number;
+  fee: number;
+  discounted_fee?: number;
+  consultant_fee?: number;
+  rate_psf: number;
+  hours?: number;
+  is_internal: boolean;
+};
+
+export type ScanningFee = {
+  service: string;
+  area: number;
+  rate: number;
+  fee: number;
+  discounted_fee: number;
+  hours?: number;
+};
+
+export type FeeMatrixResult = {
+  inputs: FeeMatrixInput;
+  scanning_fees: ScanningFee[];
+  discipline_fees: DisciplineFee[];
+  totals: {
+    market_fee: number;
+    consultant_total: number;
+    discounted_total: number;
+    overall_percentage: number;
+    rate_per_ft2: number;
+    total_hours: number;
+  };
+  hourly_factor: {
+    hf_value: number;
+    raw_design_hours: number;
+    total_building_area: number;
+  };
+  cost_base: {
+    shell_cost_base: number;
+    interior_cost_base: number;
+    landscape_cost_base: number;
+  };
+};
