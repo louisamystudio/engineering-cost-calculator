@@ -179,6 +179,17 @@ export const forecast2026 = pgTable("forecast_2026", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
 });
 
+export const ratePricing = pgTable("rate_pricing", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  costCategory: text("cost_category").notNull(),
+  designer1Rate: decimal("designer1_rate", { precision: 12, scale: 8 }),
+  designer2Rate: decimal("designer2_rate", { precision: 12, scale: 8 }),
+  architectRate: decimal("architect_rate", { precision: 12, scale: 8 }),
+  engineerRate: decimal("engineer_rate", { precision: 12, scale: 8 }),
+  principalRate: decimal("principal_rate", { precision: 12, scale: 8 }),
+  averageRate: decimal("average_rate", { precision: 12, scale: 8 }),
+});
+
 export const insertHoursLeverageSchema = createInsertSchema(hoursLeverage).omit({
   id: true,
 });
@@ -186,6 +197,9 @@ export const insertLaborOverheadSchema = createInsertSchema(laborOverhead);
 export const insertHourlyRatesSchema = createInsertSchema(hourlyRates);
 export const insertFeeConfigSchema = createInsertSchema(feeConfig);
 export const insertForecast2026Schema = createInsertSchema(forecast2026).omit({
+  id: true,
+});
+export const insertRatePricingSchema = createInsertSchema(ratePricing).omit({
   id: true,
 });
 
@@ -199,6 +213,8 @@ export type InsertFeeConfig = z.infer<typeof insertFeeConfigSchema>;
 export type FeeConfig = typeof feeConfig.$inferSelect;
 export type InsertForecast2026 = z.infer<typeof insertForecast2026Schema>;
 export type Forecast2026 = typeof forecast2026.$inferSelect;
+export type InsertRatePricing = z.infer<typeof insertRatePricingSchema>;
+export type RatePricing = typeof ratePricing.$inferSelect;
 
 export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
 export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
