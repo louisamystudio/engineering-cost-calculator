@@ -51,7 +51,6 @@ export default function MinimumBudgetCalculator() {
 
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
   const [selectedDisciplines, setSelectedDisciplines] = useState<Set<string>>(new Set());
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [expandedTableRows, setExpandedTableRows] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
@@ -123,15 +122,6 @@ export default function MinimumBudgetCalculator() {
     }
   }, [tiersData, formData.tier]);
 
-  const toggleCardExpansion = (cardId: string) => {
-    const newExpanded = new Set(expandedCards);
-    if (newExpanded.has(cardId)) {
-      newExpanded.delete(cardId);
-    } else {
-      newExpanded.add(cardId);
-    }
-    setExpandedCards(newExpanded);
-  };
 
   const toggleTableRow = (rowId: string) => {
     const newExpanded = new Set(expandedTableRows);
@@ -141,6 +131,41 @@ export default function MinimumBudgetCalculator() {
       newExpanded.add(rowId);
     }
     setExpandedTableRows(newExpanded);
+  };
+
+  const toggleDisciplineSelection = (discipline: string) => {
+    const newSelected = new Set(selectedDisciplines);
+    if (newSelected.has(discipline)) {
+      newSelected.delete(discipline);
+    } else {
+      newSelected.add(discipline);
+    }
+    setSelectedDisciplines(newSelected);
+  };
+
+  const getSelectedBudgetTotal = () => {
+    if (!result) return 0;
+    let total = 0;
+    
+    if (selectedDisciplines.has('Architecture')) {
+      total += result.architecture_budget;
+    }
+    
+    Object.entries(result.engineering_budgets)
+      .filter(([key]) => key !== 'sum' && selectedDisciplines.has(key))
+      .forEach(([_, budget]) => {
+        total += budget;
+      });
+    
+    if (selectedDisciplines.has('Interior')) {
+      total += result.minimum_budgets.interior;
+    }
+    
+    if (selectedDisciplines.has('Landscape')) {
+      total += result.minimum_budgets.landscape;
+    }
+    
+    return total;
   };
 
   const StatCard = ({ title, value, change, icon: Icon, trend }: {
@@ -170,92 +195,6 @@ export default function MinimumBudgetCalculator() {
     </Card>
   );
 
-  const DisciplineCard = ({ 
-    title, 
-    budget, 
-    share, 
-    breakdown, 
-    isSelected, 
-    onToggleSelection, 
-    cardId 
-  }: {
-    title: string;
-    budget: number;
-    share: number;
-    breakdown: { total: number; new_construction: number; existing_remodel: number };
-    isSelected: boolean;
-    onToggleSelection: () => void;
-    cardId: string;
-  }) => {
-    const isExpanded = expandedCards.has(cardId);
-    
-    return (
-      <Collapsible>
-        <Card className={`cursor-pointer transition-all hover:shadow-md ${
-          isSelected 
-            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
-            : 'border-gray-200 hover:border-gray-300'
-        }`}>
-          <CollapsibleTrigger asChild>
-            <div className="p-4" onClick={() => toggleCardExpansion(cardId)}>
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium">{title}</h4>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="p-1 h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleSelection();
-                    }}
-                  >
-                    {isSelected ? '✓' : '+'}
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">
-                    {formatPercent(share)}
-                  </span>
-                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </div>
-              </div>
-              <div className="text-lg font-bold text-gray-900">
-                {formatCurrency(budget)}
-              </div>
-              <Progress 
-                value={(budget / (result?.total_cost.proposed || 1)) * 100} 
-                className="h-1 mt-2" 
-              />
-              {isSelected && (
-                <div className="mt-2 text-xs text-blue-600 font-medium">
-                  ✓ Selected
-                </div>
-              )}
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-4 pb-4 border-t border-gray-100">
-              <div className="mt-3 space-y-2">
-                <div className="text-xs font-semibold text-gray-700 mb-2">Project Breakdown:</div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">New Construction ({formatPercent(result?.construction_ratios.new_construction || 0)})</span>
-                  <span className="text-xs font-medium">{formatCurrency(breakdown.new_construction)}</span>
-                </div>
-                <Progress value={(breakdown.new_construction / budget) * 100} className="h-1" />
-                
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-xs text-gray-600">Existing Remodel ({formatPercent(result?.construction_ratios.existing_remodel || 0)})</span>
-                  <span className="text-xs font-medium">{formatCurrency(breakdown.existing_remodel)}</span>
-                </div>
-                <Progress value={(breakdown.existing_remodel / budget) * 100} className="h-1" />
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-    );
-  };
 
   return (
     <div className="bg-gray-50 font-inter text-dark-slate min-h-screen">
@@ -408,45 +347,38 @@ export default function MinimumBudgetCalculator() {
                   />
                 </div>
 
-                {/* Project Shares Visualization */}
+                {/* Discipline Selection & Budget Breakdown */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <PieChart className="h-5 w-5" />
-                      Project Budget Distribution
-                    </CardTitle>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <PieChart className="h-5 w-5" />
+                          Discipline Selection & Budget Breakdown
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          Select disciplines and view detailed budget allocation
+                        </CardDescription>
+                      </div>
+                      {selectedDisciplines.size > 0 && (
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">Selected Budget</div>
+                          <div className="text-lg font-bold text-scientific-blue">
+                            {formatCurrency(getSelectedBudgetTotal())}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {selectedDisciplines.size} discipline{selectedDisciplines.size !== 1 ? 's' : ''} selected
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium">Shell ({formatPercent(result.shares.shell)})</span>
-                            <span className="text-sm text-gray-500">{formatCurrency(result.minimum_budgets.shell)}</span>
-                          </div>
-                          <Progress value={result.shares.shell * 100} className="h-2" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium">Interior ({formatPercent(result.shares.interior)})</span>
-                            <span className="text-sm text-gray-500">{formatCurrency(result.minimum_budgets.interior)}</span>
-                          </div>
-                          <Progress value={result.shares.interior * 100} className="h-2" />
-                        </div>
-                        <div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium">Landscape ({formatPercent(result.shares.landscape)})</span>
-                            <span className="text-sm text-gray-500">{formatCurrency(result.minimum_budgets.landscape)}</span>
-                          </div>
-                          <Progress value={result.shares.landscape * 100} className="h-2" />
-                        </div>
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <h4 className="text-sm font-semibold mb-3">Minimum Budget Breakdown</h4>
+                    <div>
                         <Table>
                           <TableHeader>
                             <TableRow>
+                              <TableHead className="w-8"></TableHead>
                               <TableHead>Discipline</TableHead>
                               <TableHead className="text-right">Budget</TableHead>
                               <TableHead className="text-right">Share</TableHead>
@@ -455,14 +387,34 @@ export default function MinimumBudgetCalculator() {
                           </TableHeader>
                           <TableBody>
                             {/* Architecture */}
-                            <TableRow 
-                              className="cursor-pointer hover:bg-gray-50" 
-                              onClick={() => toggleTableRow('architecture')}
-                            >
-                              <TableCell className="font-medium">Architecture</TableCell>
+                            <TableRow className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedDisciplines.has('Architecture') ? 'bg-blue-50 border-l-4 border-l-scientific-blue' : ''
+                            }`}>
+                              <TableCell className="w-8">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="p-1 h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDisciplineSelection('Architecture');
+                                  }}
+                                >
+                                  {selectedDisciplines.has('Architecture') ? '✓' : '+'}
+                                </Button>
+                              </TableCell>
+                              <TableCell 
+                                className="font-medium cursor-pointer" 
+                                onClick={() => toggleTableRow('architecture')}
+                              >
+                                Architecture
+                                {selectedDisciplines.has('Architecture') && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">Selected</Badge>
+                                )}
+                              </TableCell>
                               <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('architecture')}>
                                 {expandedTableRows.has('architecture') ? 
                                   <ChevronUp className="h-4 w-4" /> : 
                                   <ChevronDown className="h-4 w-4" />
@@ -471,7 +423,7 @@ export default function MinimumBudgetCalculator() {
                             </TableRow>
                             {expandedTableRows.has('architecture') && (
                               <TableRow className="bg-gray-50">
-                                <TableCell colSpan={4} className="py-3">
+                                <TableCell colSpan={5} className="py-3">
                                   <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
                                       <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
@@ -495,14 +447,34 @@ export default function MinimumBudgetCalculator() {
                                 const rowId = `eng_${disciplineKey}`;
                                 return (
                                   <React.Fragment key={discipline}>
-                                    <TableRow 
-                                      className="cursor-pointer hover:bg-gray-50" 
-                                      onClick={() => toggleTableRow(rowId)}
-                                    >
-                                      <TableCell>{discipline}</TableCell>
+                                    <TableRow className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                                      selectedDisciplines.has(discipline) ? 'bg-blue-50 border-l-4 border-l-scientific-blue' : ''
+                                    }`}>
+                                      <TableCell className="w-8">
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="p-1 h-6 w-6"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleDisciplineSelection(discipline);
+                                          }}
+                                        >
+                                          {selectedDisciplines.has(discipline) ? '\u2713' : '+'}
+                                        </Button>
+                                      </TableCell>
+                                      <TableCell 
+                                        className="cursor-pointer" 
+                                        onClick={() => toggleTableRow(rowId)}
+                                      >
+                                        {discipline}
+                                        {selectedDisciplines.has(discipline) && (
+                                          <Badge variant="secondary" className="ml-2 text-xs">Selected</Badge>
+                                        )}
+                                      </TableCell>
                                       <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
                                       <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
-                                      <TableCell className="text-center">
+                                      <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow(rowId)}>
                                         {expandedTableRows.has(rowId) ? 
                                           <ChevronUp className="h-4 w-4" /> : 
                                           <ChevronDown className="h-4 w-4" />
@@ -511,7 +483,7 @@ export default function MinimumBudgetCalculator() {
                                     </TableRow>
                                     {expandedTableRows.has(rowId) && breakdown && (
                                       <TableRow className="bg-gray-50">
-                                        <TableCell colSpan={4} className="py-3">
+                                        <TableCell colSpan={5} className="py-3">
                                           <div className="space-y-2">
                                             <div className="flex justify-between items-center text-sm">
                                               <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
@@ -530,14 +502,34 @@ export default function MinimumBudgetCalculator() {
                               })}
 
                             {/* Interior */}
-                            <TableRow 
-                              className="cursor-pointer hover:bg-gray-50" 
-                              onClick={() => toggleTableRow('interior')}
-                            >
-                              <TableCell className="font-medium">Interior</TableCell>
+                            <TableRow className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedDisciplines.has('Interior') ? 'bg-blue-50 border-l-4 border-l-scientific-blue' : ''
+                            }`}>
+                              <TableCell className="w-8">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="p-1 h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDisciplineSelection('Interior');
+                                  }}
+                                >
+                                  {selectedDisciplines.has('Interior') ? '\u2713' : '+'}
+                                </Button>
+                              </TableCell>
+                              <TableCell 
+                                className="font-medium cursor-pointer" 
+                                onClick={() => toggleTableRow('interior')}
+                              >
+                                Interior
+                                {selectedDisciplines.has('Interior') && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">Selected</Badge>
+                                )}
+                              </TableCell>
                               <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('interior')}>
                                 {expandedTableRows.has('interior') ? 
                                   <ChevronUp className="h-4 w-4" /> : 
                                   <ChevronDown className="h-4 w-4" />
@@ -546,7 +538,7 @@ export default function MinimumBudgetCalculator() {
                             </TableRow>
                             {expandedTableRows.has('interior') && (
                               <TableRow className="bg-gray-50">
-                                <TableCell colSpan={4} className="py-3">
+                                <TableCell colSpan={5} className="py-3">
                                   <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
                                       <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
@@ -562,14 +554,34 @@ export default function MinimumBudgetCalculator() {
                             )}
 
                             {/* Landscape */}
-                            <TableRow 
-                              className="cursor-pointer hover:bg-gray-50" 
-                              onClick={() => toggleTableRow('landscape')}
-                            >
-                              <TableCell className="font-medium">Landscape</TableCell>
+                            <TableRow className={`cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedDisciplines.has('Landscape') ? 'bg-blue-50 border-l-4 border-l-scientific-blue' : ''
+                            }`}>
+                              <TableCell className="w-8">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="p-1 h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDisciplineSelection('Landscape');
+                                  }}
+                                >
+                                  {selectedDisciplines.has('Landscape') ? '\u2713' : '+'}
+                                </Button>
+                              </TableCell>
+                              <TableCell 
+                                className="font-medium cursor-pointer" 
+                                onClick={() => toggleTableRow('landscape')}
+                              >
+                                Landscape
+                                {selectedDisciplines.has('Landscape') && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">Selected</Badge>
+                                )}
+                              </TableCell>
                               <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('landscape')}>
                                 {expandedTableRows.has('landscape') ? 
                                   <ChevronUp className="h-4 w-4" /> : 
                                   <ChevronDown className="h-4 w-4" />
@@ -578,7 +590,7 @@ export default function MinimumBudgetCalculator() {
                             </TableRow>
                             {expandedTableRows.has('landscape') && (
                               <TableRow className="bg-gray-50">
-                                <TableCell colSpan={4} className="py-3">
+                                <TableCell colSpan={5} className="py-3">
                                   <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
                                       <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
@@ -601,128 +613,7 @@ export default function MinimumBudgetCalculator() {
                             </TableRow>
                           </TableBody>
                         </Table>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Design Discipline Selection */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Design Discipline Selection
-                    </CardTitle>
-                    <CardDescription>
-                      Click + to select disciplines, expand cards to see breakdown details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {/* Architecture */}
-                      <DisciplineCard
-                        title="Architecture"
-                        budget={result.architecture_budget}
-                        share={result.design_shares.Architecture || 0}
-                        breakdown={result.discipline_breakdown.architecture}
-                        isSelected={selectedDisciplines.has('Architecture')}
-                        onToggleSelection={() => {
-                          const newSelected = new Set(selectedDisciplines);
-                          if (newSelected.has('Architecture')) {
-                            newSelected.delete('Architecture');
-                          } else {
-                            newSelected.add('Architecture');
-                          }
-                          setSelectedDisciplines(newSelected);
-                        }}
-                        cardId="architecture"
-                      />
-                      
-                      {/* Engineering Disciplines */}
-                      {Object.entries(result.engineering_budgets)
-                        .filter(([key]) => key !== 'sum')
-                        .map(([discipline, budget]) => {
-                          const disciplineKey = discipline.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                          const breakdown = result.discipline_breakdown[disciplineKey] || { total: budget, new_construction: 0, existing_remodel: 0 };
-                          return (
-                            <DisciplineCard
-                              key={discipline}
-                              title={discipline}
-                              budget={budget}
-                              share={result.design_shares[discipline] || 0}
-                              breakdown={breakdown}
-                              isSelected={selectedDisciplines.has(discipline)}
-                              onToggleSelection={() => {
-                                const newSelected = new Set(selectedDisciplines);
-                                if (newSelected.has(discipline)) {
-                                  newSelected.delete(discipline);
-                                } else {
-                                  newSelected.add(discipline);
-                                }
-                                setSelectedDisciplines(newSelected);
-                              }}
-                              cardId={disciplineKey}
-                            />
-                          );
-                        })}
-                      
-                      {/* Interior */}
-                      <DisciplineCard
-                        title="Interior"
-                        budget={result.minimum_budgets.interior}
-                        share={result.design_shares.Interior || 0}
-                        breakdown={result.discipline_breakdown.interior}
-                        isSelected={selectedDisciplines.has('Interior')}
-                        onToggleSelection={() => {
-                          const newSelected = new Set(selectedDisciplines);
-                          if (newSelected.has('Interior')) {
-                            newSelected.delete('Interior');
-                          } else {
-                            newSelected.add('Interior');
-                          }
-                          setSelectedDisciplines(newSelected);
-                        }}
-                        cardId="interior"
-                      />
-                      
-                      {/* Landscape */}
-                      <DisciplineCard
-                        title="Landscape"
-                        budget={result.minimum_budgets.landscape}
-                        share={result.design_shares.Landscape || 0}
-                        breakdown={result.discipline_breakdown.landscape}
-                        isSelected={selectedDisciplines.has('Landscape')}
-                        onToggleSelection={() => {
-                          const newSelected = new Set(selectedDisciplines);
-                          if (newSelected.has('Landscape')) {
-                            newSelected.delete('Landscape');
-                          } else {
-                            newSelected.add('Landscape');
-                          }
-                          setSelectedDisciplines(newSelected);
-                        }}
-                        cardId="landscape"
-                      />
-                    </div>
-                    
-                    {selectedDisciplines.size > 0 && (
-                      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                        <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                          Selected Disciplines ({selectedDisciplines.size})
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {Array.from(selectedDisciplines).map(discipline => (
-                            <Badge key={discipline} className="bg-blue-100 text-blue-800 border-blue-300">
-                              {discipline}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="mt-3 text-sm text-blue-700">
-                          <strong>New Construction:</strong> {formatPercent(result.construction_ratios.new_construction)} • 
-                          <strong>Existing Remodel:</strong> {formatPercent(result.construction_ratios.existing_remodel)}
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
