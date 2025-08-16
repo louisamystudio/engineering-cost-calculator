@@ -49,6 +49,7 @@ export default function MinimumBudgetCalculator() {
   });
 
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // Calculate total area immediately from form inputs
@@ -285,12 +286,12 @@ export default function MinimumBudgetCalculator() {
                     icon={DollarSign}
                   />
                   <StatCard
-                    title="Total Budget Range"
+                    title="Budget Range"
                     value={`${formatCurrency(result.total_cost.low)} - ${formatCurrency(result.total_cost.high)}`}
                     icon={TrendingUp}
                   />
                   <StatCard
-                    title="Proposed Budget"
+                    title="Minimum Budget"
                     value={formatCurrency(result.total_cost.proposed)}
                     icon={Calculator}
                     trend="neutral"
@@ -332,7 +333,7 @@ export default function MinimumBudgetCalculator() {
                       </div>
                       
                       <div className="md:col-span-2">
-                        <h4 className="text-sm font-semibold mb-3">Detailed Budget Breakdown</h4>
+                        <h4 className="text-sm font-semibold mb-3">Minimum Budget Breakdown</h4>
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -378,20 +379,40 @@ export default function MinimumBudgetCalculator() {
                   </CardContent>
                 </Card>
 
-                {/* Engineering Breakdown */}
+                {/* Design Discipline Selection */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
-                      Engineering Disciplines
+                      Design Discipline Selection
                     </CardTitle>
+                    <CardDescription>
+                      Click to select the disciplines Louis Amy will provide services for
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Engineering Disciplines */}
                       {Object.entries(result.engineering_budgets)
                         .filter(([key]) => key !== 'sum')
                         .map(([discipline, budget]) => (
-                          <div key={discipline} className="p-4 border rounded-lg">
+                          <div 
+                            key={discipline} 
+                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                              selectedDisciplines.has(discipline) 
+                                ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            onClick={() => {
+                              const newSelected = new Set(selectedDisciplines);
+                              if (newSelected.has(discipline)) {
+                                newSelected.delete(discipline);
+                              } else {
+                                newSelected.add(discipline);
+                              }
+                              setSelectedDisciplines(newSelected);
+                            }}
+                          >
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="text-sm font-medium">{discipline}</h4>
                               <span className="text-xs text-gray-500">
@@ -405,9 +426,103 @@ export default function MinimumBudgetCalculator() {
                               value={(budget / result.total_cost.proposed) * 100} 
                               className="h-1 mt-2" 
                             />
+                            {selectedDisciplines.has(discipline) && (
+                              <div className="mt-2 text-xs text-blue-600 font-medium">
+                                ✓ Selected
+                              </div>
+                            )}
                           </div>
                         ))}
+                      
+                      {/* Interior Discipline */}
+                      <div 
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          selectedDisciplines.has('Interior') 
+                            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => {
+                          const newSelected = new Set(selectedDisciplines);
+                          if (newSelected.has('Interior')) {
+                            newSelected.delete('Interior');
+                          } else {
+                            newSelected.add('Interior');
+                          }
+                          setSelectedDisciplines(newSelected);
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-medium">Interior</h4>
+                          <span className="text-xs text-gray-500">
+                            {formatPercent(result.design_shares.Interior || 0)}
+                          </span>
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {formatCurrency(result.minimum_budgets.interior)}
+                        </div>
+                        <Progress 
+                          value={(result.minimum_budgets.interior / result.total_cost.proposed) * 100} 
+                          className="h-1 mt-2" 
+                        />
+                        {selectedDisciplines.has('Interior') && (
+                          <div className="mt-2 text-xs text-blue-600 font-medium">
+                            ✓ Selected
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Landscape Discipline */}
+                      <div 
+                        className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          selectedDisciplines.has('Landscape') 
+                            ? 'border-scientific-blue bg-blue-50 ring-2 ring-blue-200' 
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => {
+                          const newSelected = new Set(selectedDisciplines);
+                          if (newSelected.has('Landscape')) {
+                            newSelected.delete('Landscape');
+                          } else {
+                            newSelected.add('Landscape');
+                          }
+                          setSelectedDisciplines(newSelected);
+                        }}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="text-sm font-medium">Landscape</h4>
+                          <span className="text-xs text-gray-500">
+                            {formatPercent(result.design_shares.Landscape || 0)}
+                          </span>
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {formatCurrency(result.minimum_budgets.landscape)}
+                        </div>
+                        <Progress 
+                          value={(result.minimum_budgets.landscape / result.total_cost.proposed) * 100} 
+                          className="h-1 mt-2" 
+                        />
+                        {selectedDisciplines.has('Landscape') && (
+                          <div className="mt-2 text-xs text-blue-600 font-medium">
+                            ✓ Selected
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    {selectedDisciplines.size > 0 && (
+                      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                          Selected Disciplines ({selectedDisciplines.size})
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.from(selectedDisciplines).map(discipline => (
+                            <Badge key={discipline} className="bg-blue-100 text-blue-800 border-blue-300">
+                              {discipline}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
