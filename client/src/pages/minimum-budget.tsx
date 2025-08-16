@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ export default function MinimumBudgetCalculator() {
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
   const [selectedDisciplines, setSelectedDisciplines] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [expandedTableRows, setExpandedTableRows] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // Calculate total area immediately from form inputs
@@ -130,6 +131,16 @@ export default function MinimumBudgetCalculator() {
       newExpanded.add(cardId);
     }
     setExpandedCards(newExpanded);
+  };
+
+  const toggleTableRow = (rowId: string) => {
+    const newExpanded = new Set(expandedTableRows);
+    if (newExpanded.has(rowId)) {
+      newExpanded.delete(rowId);
+    } else {
+      newExpanded.add(rowId);
+    }
+    setExpandedTableRows(newExpanded);
   };
 
   const StatCard = ({ title, value, change, icon: Icon, trend }: {
@@ -444,34 +455,36 @@ export default function MinimumBudgetCalculator() {
                           </TableHeader>
                           <TableBody>
                             {/* Architecture */}
-                            <Collapsible>
-                              <CollapsibleTrigger asChild>
-                                <TableRow className="cursor-pointer hover:bg-gray-50">
-                                  <TableCell className="font-medium">Architecture</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
-                                  <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
-                                  <TableCell className="text-center">
-                                    <ChevronDown className="h-4 w-4" />
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent asChild>
-                                <TableRow className="bg-gray-50">
-                                  <TableCell colSpan={4} className="p-0">
-                                    <div className="px-4 py-2 space-y-1">
-                                      <div className="flex justify-between text-xs">
-                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.architecture.new_construction)}</span>
-                                      </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.architecture.existing_remodel)}</span>
-                                      </div>
+                            <TableRow 
+                              className="cursor-pointer hover:bg-gray-50" 
+                              onClick={() => toggleTableRow('architecture')}
+                            >
+                              <TableCell className="font-medium">Architecture</TableCell>
+                              <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
+                              <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
+                              <TableCell className="text-center">
+                                {expandedTableRows.has('architecture') ? 
+                                  <ChevronUp className="h-4 w-4" /> : 
+                                  <ChevronDown className="h-4 w-4" />
+                                }
+                              </TableCell>
+                            </TableRow>
+                            {expandedTableRows.has('architecture') && (
+                              <TableRow className="bg-gray-50">
+                                <TableCell colSpan={4} className="py-3">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.architecture.new_construction)}</span>
                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleContent>
-                            </Collapsible>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.architecture.existing_remodel)}</span>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
 
                             {/* Engineering Disciplines */}
                             {Object.entries(result.engineering_budgets)
@@ -479,99 +492,106 @@ export default function MinimumBudgetCalculator() {
                               .map(([discipline, budget]) => {
                                 const disciplineKey = discipline.toLowerCase().replace(/[^a-z0-9]/g, '_');
                                 const breakdown = result.discipline_breakdown[disciplineKey];
+                                const rowId = `eng_${disciplineKey}`;
                                 return (
-                                  <Collapsible key={discipline}>
-                                    <CollapsibleTrigger asChild>
-                                      <TableRow className="cursor-pointer hover:bg-gray-50">
-                                        <TableCell>{discipline}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
-                                        <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
-                                        <TableCell className="text-center">
+                                  <React.Fragment key={discipline}>
+                                    <TableRow 
+                                      className="cursor-pointer hover:bg-gray-50" 
+                                      onClick={() => toggleTableRow(rowId)}
+                                    >
+                                      <TableCell>{discipline}</TableCell>
+                                      <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
+                                      <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
+                                      <TableCell className="text-center">
+                                        {expandedTableRows.has(rowId) ? 
+                                          <ChevronUp className="h-4 w-4" /> : 
                                           <ChevronDown className="h-4 w-4" />
+                                        }
+                                      </TableCell>
+                                    </TableRow>
+                                    {expandedTableRows.has(rowId) && breakdown && (
+                                      <TableRow className="bg-gray-50">
+                                        <TableCell colSpan={4} className="py-3">
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-sm">
+                                              <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                              <span className="font-medium">{formatCurrency(breakdown.new_construction)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                              <span className="text-gray-600">Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)}) - 50% rate</span>
+                                              <span className="font-medium">{formatCurrency(breakdown.existing_remodel)}</span>
+                                            </div>
+                                          </div>
                                         </TableCell>
                                       </TableRow>
-                                    </CollapsibleTrigger>
-                                    {breakdown && (
-                                      <CollapsibleContent asChild>
-                                        <TableRow className="bg-gray-50">
-                                          <TableCell colSpan={4} className="p-0">
-                                            <div className="px-4 py-2 space-y-1">
-                                              <div className="flex justify-between text-xs">
-                                                <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
-                                                <span>{formatCurrency(breakdown.new_construction)}</span>
-                                              </div>
-                                              <div className="flex justify-between text-xs">
-                                                <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)}) - 50% rate</span>
-                                                <span>{formatCurrency(breakdown.existing_remodel)}</span>
-                                              </div>
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                      </CollapsibleContent>
                                     )}
-                                  </Collapsible>
+                                  </React.Fragment>
                                 );
                               })}
 
                             {/* Interior */}
-                            <Collapsible>
-                              <CollapsibleTrigger asChild>
-                                <TableRow className="cursor-pointer hover:bg-gray-50">
-                                  <TableCell className="font-medium">Interior</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
-                                  <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
-                                  <TableCell className="text-center">
-                                    <ChevronDown className="h-4 w-4" />
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent asChild>
-                                <TableRow className="bg-gray-50">
-                                  <TableCell colSpan={4} className="p-0">
-                                    <div className="px-4 py-2 space-y-1">
-                                      <div className="flex justify-between text-xs">
-                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.interior.new_construction)}</span>
-                                      </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.interior.existing_remodel)}</span>
-                                      </div>
+                            <TableRow 
+                              className="cursor-pointer hover:bg-gray-50" 
+                              onClick={() => toggleTableRow('interior')}
+                            >
+                              <TableCell className="font-medium">Interior</TableCell>
+                              <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
+                              <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
+                              <TableCell className="text-center">
+                                {expandedTableRows.has('interior') ? 
+                                  <ChevronUp className="h-4 w-4" /> : 
+                                  <ChevronDown className="h-4 w-4" />
+                                }
+                              </TableCell>
+                            </TableRow>
+                            {expandedTableRows.has('interior') && (
+                              <TableRow className="bg-gray-50">
+                                <TableCell colSpan={4} className="py-3">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.interior.new_construction)}</span>
                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleContent>
-                            </Collapsible>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.interior.existing_remodel)}</span>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
 
                             {/* Landscape */}
-                            <Collapsible>
-                              <CollapsibleTrigger asChild>
-                                <TableRow className="cursor-pointer hover:bg-gray-50">
-                                  <TableCell className="font-medium">Landscape</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
-                                  <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
-                                  <TableCell className="text-center">
-                                    <ChevronDown className="h-4 w-4" />
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent asChild>
-                                <TableRow className="bg-gray-50">
-                                  <TableCell colSpan={4} className="p-0">
-                                    <div className="px-4 py-2 space-y-1">
-                                      <div className="flex justify-between text-xs">
-                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.landscape.new_construction)}</span>
-                                      </div>
-                                      <div className="flex justify-between text-xs">
-                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
-                                        <span>{formatCurrency(result.discipline_breakdown.landscape.existing_remodel)}</span>
-                                      </div>
+                            <TableRow 
+                              className="cursor-pointer hover:bg-gray-50" 
+                              onClick={() => toggleTableRow('landscape')}
+                            >
+                              <TableCell className="font-medium">Landscape</TableCell>
+                              <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
+                              <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
+                              <TableCell className="text-center">
+                                {expandedTableRows.has('landscape') ? 
+                                  <ChevronUp className="h-4 w-4" /> : 
+                                  <ChevronDown className="h-4 w-4" />
+                                }
+                              </TableCell>
+                            </TableRow>
+                            {expandedTableRows.has('landscape') && (
+                              <TableRow className="bg-gray-50">
+                                <TableCell colSpan={4} className="py-3">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.landscape.new_construction)}</span>
                                     </div>
-                                  </TableCell>
-                                </TableRow>
-                              </CollapsibleContent>
-                            </Collapsible>
+                                    <div className="flex justify-between items-center text-sm">
+                                      <span className="text-gray-600">Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                      <span className="font-medium">{formatCurrency(result.discipline_breakdown.landscape.existing_remodel)}</span>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
 
                             <TableRow className="border-t-2 font-semibold">
                               <TableCell>Working Budget</TableCell>
