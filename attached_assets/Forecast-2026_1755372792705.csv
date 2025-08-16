@@ -1,0 +1,45 @@
+﻿I. FORECAST,Assumption,"Desirgner
+Rate $26 
+per hr","Desirgner
+Rate $26 
+per hr","Architect
+Rate $26 per hr","Architect
+Rate $26 per hr","Principal
+Rate $26 per hr","LouisAmy
+Real"
+Head Count,,,,,,,5
+Hours,,,,,,,2080
+Utilization Average,,85%,85%,80%,80%,40%,74%
+Pricing Rate Average,,,,,,,174
+Discount,,,,,,,-20%
+,,,,,,," 1,071,283 "
+Salary,," 55,000 "," 55,000 "," 55,000 "," 55,000 "," 55,000 "," 275,000 "
+Bonus,0.1," 5,500 "," 5,500 "," 5,500 "," 5,500 "," 5,500 "," 27,500 "
+X-Mass Bonus,Per Law, 600 , 600 , 600 , 600 , 600 ," 3,000 "
+"Benefits
+HealthCare",600," 7,200 "," 7,200 "," 7,200 "," 7,200 "," 7,200 "," 36,000 "
+"Payrol 
+Tax",0.0765," 4,674 "," 4,674 "," 4,674 "," 4,674 "," 4,674 "," 23,371 "
+Unemployment (Labor Dpt),0.035, 245 , 245 , 245 , 245 , 245 ," 1,225 "
+Disbility (Labor Dpt) SINOT,0.006, 54 , 54 , 54 , 54 , 54 , 270 
+DFSE Disbility at work,1.9," 1,045.00 "," 1,045.00 "," 1,045.00 "," 1,045.00 "," 1,045.00 "," 5,225 "
+Total Labor Cost,," 74,318 "," 74,318 "," 74,318 "," 74,318 "," 74,318 "," 371,591 "
+IT  Hardware - Dep Expense,See table to the right,"8,343","8,343","8,343","8,343","8,343"," 41,715 "
+"IT 
+Software",See table to the right,"7,823","7,823","7,823","7,823","7,823"," 39,117 "
+Trainings,"$2,500 per employee"," 2,500 "," 2,500 "," 2,500 "," 2,500 "," 2,500 "," 12,500 "
+Prof Dues,500 per Employee, 500 , 500 , 500 , 500 , 500 ," 2,500 "
+"Rent  $4,500 Monthly","$4,500 mth"," 10,800 "," 10,800 "," 10,800 "," 10,800 "," 10,800 "," 54,000 "
+Depreciation Expense,Included above in IT, -   , -   , -   , -   , -   , -   
+Insurance,"$5K Gen, $2K Malpractice"," 1,400 "," 1,400 "," 1,400 "," 1,400 "," 1,400 "," 7,000 "
+"Taxes
+CRIM",0.08," 3,337 "," 3,337 "," 3,337 "," 3,337 "," 3,337 "," 16,686 "
+"Taxes
+Patent",0.0033, 707 , 707 , 707 , 707 , 707 ," 3,535 "
+Other Expenses - Overhead,#DIV/0!," 16,856 "," 16,856 "," 16,856 "," 16,856 "," 16,856 "," 84,279 "
+Non Billable Time Cost,2080,18987.7,18987.7,25316.9,25316.9,75950.6, -   
+CAPEX 5% of Rev,0.05,10712.8,10712.8,10712.8,10712.8,10712.8, -   
+Total Operating Costs,,"81,967","81,967","88,296","88,296","138,930","261,331"
+Total Expenses,," 156,285 "," 156,285 "," 162,614 "," 162,614 "," 213,248 "," 632,922 "
+Net Income,,,,,,," 438,361 "
+Margin,,,,,,,40.92%
