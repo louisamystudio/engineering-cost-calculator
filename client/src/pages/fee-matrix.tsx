@@ -72,7 +72,20 @@ export default function FeeMatrix() {
     },
   });
 
-  // Auto-calculate when form changes
+  // Load budget result from localStorage on component mount
+  useEffect(() => {
+    const savedBudgetResult = localStorage.getItem('budgetResult');
+    if (savedBudgetResult) {
+      try {
+        const parsedResult = JSON.parse(savedBudgetResult);
+        setBudgetResult(parsedResult);
+      } catch (error) {
+        console.error('Failed to parse saved budget result:', error);
+      }
+    }
+  }, []);
+
+  // Auto-calculate when form changes and save results
   useEffect(() => {
     if (budgetResult) {
       const input: FeeMatrixInput = {
@@ -84,6 +97,13 @@ export default function FeeMatrix() {
       calculateFeeMatrix.mutate(input);
     }
   }, [formData, budgetResult]);
+
+  // Save fee matrix result to localStorage when calculated
+  useEffect(() => {
+    if (result) {
+      localStorage.setItem('feeMatrixResult', JSON.stringify(result));
+    }
+  }, [result]);
 
   const handleInputChange = (field: keyof FeeMatrixFormData, value: number) => {
     setFormData(prev => ({
@@ -131,10 +151,55 @@ export default function FeeMatrix() {
                 <p className="text-xs sm:text-sm text-gray-500">Professional fee calculation & analysis</p>
               </div>
             </div>
-            <div className="flex items-center justify-center sm:justify-end space-x-4">
+            <div className="flex items-center justify-center sm:justify-end space-x-2 sm:space-x-4">
               <Badge variant="outline" className="px-2 sm:px-3 py-1 text-xs sm:text-sm">
                 Live Calculation
               </Badge>
+              {result && (
+                <Button
+                  onClick={() => {
+                    // Export fee matrix results as CSV
+                    const headers = ['Service/Discipline', 'Budget', 'Fee %', 'Market Fee', 'Internal Fee', 'Consultant Fee', 'Rate/SF', 'Hours'];
+                    const rows = [
+                      ...result.scanning_fees.map(fee => [
+                        fee.service,
+                        '-',
+                        '-',
+                        fee.fee.toFixed(2),
+                        fee.discounted_fee.toFixed(2),
+                        '-',
+                        `$${fee.rate.toFixed(2)}/unit`,
+                        fee.hours ? fee.hours.toFixed(1) : '-'
+                      ]),
+                      ...result.discipline_fees.map(fee => [
+                        fee.discipline,
+                        fee.budget.toFixed(2),
+                        (fee.percentage * 100).toFixed(2) + '%',
+                        fee.fee.toFixed(2),
+                        fee.discounted_fee ? fee.discounted_fee.toFixed(2) : '-',
+                        fee.consultant_fee ? fee.consultant_fee.toFixed(2) : '-',
+                        '$' + fee.rate_psf.toFixed(2),
+                        fee.hours ? fee.hours.toFixed(1) : '-'
+                      ])
+                    ];
+                    
+                    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'fee-matrix-breakdown.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-scientific-blue hover:bg-blue-600"
+                >
+                  <span className="hidden sm:inline">Export CSV</span>
+                  <span className="sm:hidden">Export</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -147,13 +212,52 @@ export default function FeeMatrix() {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Please complete the Minimum Budget Calculator first to proceed with fee calculations.
-              <Button 
-                variant="link" 
-                className="p-0 ml-2 h-auto"
-                onClick={() => window.location.href = '/minimum-budget'}
-              >
-                Go to Budget Calculator →
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-left"
+                  onClick={() => window.location.href = '/minimum-budget'}
+                >
+                  Go to Budget Calculator →
+                </Button>
+                <span className="text-gray-400 hidden sm:inline">or</span>
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-left"
+                  onClick={() => {
+                    const sampleBudgetResult: BudgetCalculationResult = {
+                      inputs: { building_type: 'Sample Project', tier: 1, new_area_ft2: 3000, existing_area_ft2: 2000, site_area_m2: 500 },
+                      all_in: { min_psf: 200, max_psf: 300 },
+                      area: { total_sf: 5000 },
+                      total_cost: { low: 1000000, high: 1500000, proposed: 1250000 },
+                      shares: { shell: 0.65, interior: 0.25, landscape: 0.1 },
+                      minimum_budgets: { shell: 812500, interior: 312500, landscape: 125000 },
+                      design_shares: { 'Architecture': 0.45, 'Interior': 0.25, 'Landscape': 0.1 },
+                      engineering_budgets: { 
+                        'Structural': 50000, 
+                        'Civil & Site': 30000, 
+                        'Mechanical': 40000, 
+                        'Electrical': 35000, 
+                        'Plumbing': 25000, 
+                        'Low-Voltage': 20000,
+                        sum: 200000 
+                      },
+                      architecture_budget: 612500,
+                      working_budget: 1250000,
+                      construction_ratios: { new_construction: 0.6, existing_remodel: 0.4 },
+                      discipline_breakdown: {
+                        architecture: { total: 612500, new_construction: 367500, existing_remodel: 245000 },
+                        interior: { total: 312500, new_construction: 187500, existing_remodel: 125000 },
+                        landscape: { total: 125000, new_construction: 75000, existing_remodel: 50000 },
+                      },
+                      notes: []
+                    };
+                    setBudgetResult(sampleBudgetResult);
+                  }}
+                >
+                  Load Sample Data
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -222,43 +326,34 @@ export default function FeeMatrix() {
                   </div>
                 )}
 
-                <Button 
-                  onClick={() => {
-                    // For demo purposes, use sample budget data
-                    const sampleBudgetResult: BudgetCalculationResult = {
-                      inputs: { building_type: 'Sample', tier: 1, new_area_ft2: 3000, existing_area_ft2: 2000, site_area_m2: 500 },
-                      all_in: { min_psf: 200, max_psf: 300 },
-                      area: { total_sf: 5000 },
-                      total_cost: { low: 1000000, high: 1500000, proposed: 1250000 },
-                      shares: { shell: 0.65, interior: 0.25, landscape: 0.1 },
-                      minimum_budgets: { shell: 812500, interior: 312500, landscape: 125000 },
-                      design_shares: { 'Architecture': 0.45, 'Interior': 0.25, 'Landscape': 0.1 },
-                      engineering_budgets: { 
-                        'Structural': 50000, 
-                        'Civil & Site': 30000, 
-                        'Mechanical': 40000, 
-                        'Electrical': 35000, 
-                        'Plumbing': 25000, 
-                        'Low-Voltage': 20000,
-                        sum: 200000 
-                      },
-                      architecture_budget: 612500,
-                      working_budget: 1250000,
-                      construction_ratios: { new_construction: 0.6, existing_remodel: 0.4 },
-                      discipline_breakdown: {
-                        architecture: { total: 612500, new_construction: 367500, existing_remodel: 245000 },
-                        interior: { total: 312500, new_construction: 187500, existing_remodel: 125000 },
-                        landscape: { total: 125000, new_construction: 75000, existing_remodel: 50000 },
-                      },
-                      notes: []
-                    };
-                    setBudgetResult(sampleBudgetResult);
-                  }}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Load Sample Data
-                </Button>
+                {budgetResult && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="text-sm font-medium text-green-800">Budget Data Loaded</div>
+                    <div className="text-xs text-green-600 mt-1">
+                      {budgetResult.inputs.building_type} | {budgetResult.area.total_sf.toLocaleString()} SF | {formatCurrency(budgetResult.total_cost.proposed)}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 w-full text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                      onClick={() => window.location.href = '/minimum-budget'}
+                    >
+                      ← Update Budget
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full text-xs"
+                      onClick={() => {
+                        localStorage.removeItem('budgetResult');
+                        setBudgetResult(null);
+                        setResult(null);
+                      }}
+                    >
+                      Clear & Start Over
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

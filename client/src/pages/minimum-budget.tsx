@@ -52,7 +52,14 @@ export default function MinimumBudgetCalculator() {
   const [result, setResult] = useState<BudgetCalculationResult | null>(null);
   const [selectedDisciplines, setSelectedDisciplines] = useState<Set<string>>(new Set());
   const [expandedTableRows, setExpandedTableRows] = useState<Set<string>>(new Set());
+  const [hasFeeMatrix, setHasFeeMatrix] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check if fee matrix calculation exists
+  useEffect(() => {
+    const feeMatrixResult = localStorage.getItem('feeMatrixResult');
+    setHasFeeMatrix(!!feeMatrixResult);
+  }, []);
 
   // Calculate total area immediately from form inputs
   const totalArea = formData.new_area_ft2 + formData.existing_area_ft2;
@@ -211,10 +218,30 @@ export default function MinimumBudgetCalculator() {
                 <p className="text-xs sm:text-sm text-gray-500">Project budget calculation & analysis</p>
               </div>
             </div>
-            <div className="flex items-center justify-center sm:justify-end space-x-4">
+            <div className="flex items-center justify-center sm:justify-end space-x-2 sm:space-x-4">
               <Badge variant="outline" className="px-2 sm:px-3 py-1 text-xs sm:text-sm">
                 Live Calculation
               </Badge>
+              {result && (
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center">
+                  {hasFeeMatrix && (
+                    <Badge variant="secondary" className="px-2 py-1 text-xs bg-green-100 text-green-700 border-green-300">
+                      ✓ Fees Calculated
+                    </Badge>
+                  )}
+                  <Button
+                    onClick={() => {
+                      // Store the budget result in localStorage and navigate to fee matrix
+                      localStorage.setItem('budgetResult', JSON.stringify(result));
+                      window.location.href = '/fee-matrix';
+                    }}
+                    className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-scientific-blue hover:bg-blue-600"
+                  >
+                    <span className="hidden sm:inline">{hasFeeMatrix ? 'Update Fees' : 'Calculate Fees'} →</span>
+                    <span className="sm:hidden">{hasFeeMatrix ? 'Update' : 'Fees'} →</span>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
