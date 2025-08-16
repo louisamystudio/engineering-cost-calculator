@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Calculator from "@/pages/calculator";
 import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
+import ProjectDashboard from "@/pages/project-dashboard";
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -27,11 +28,11 @@ function NavBar() {
           <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-center">
             <Link href="/">
               <Button 
-                variant={location === "/" ? "default" : "ghost"}
+                variant={(location === "/" || location === "/dashboard") ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden lg:inline">Hourly Factor Calculator</span>
-                <span className="lg:hidden">Hourly Factor</span>
+                <span className="hidden lg:inline">Project Dashboard</span>
+                <span className="lg:hidden">Dashboard</span>
               </Button>
             </Link>
             <Link href="/minimum-budget">
@@ -39,8 +40,8 @@ function NavBar() {
                 variant={location === "/minimum-budget" ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden lg:inline">Minimum Budget Calculator</span>
-                <span className="lg:hidden">Min Budget</span>
+                <span className="hidden lg:inline">Budget Calculator</span>
+                <span className="lg:hidden">Budget</span>
               </Button>
             </Link>
             <Link href="/fee-matrix">
@@ -48,8 +49,17 @@ function NavBar() {
                 variant={location === "/fee-matrix" ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden lg:inline">Fee Matrix Calculator</span>
-                <span className="lg:hidden">Fee Matrix</span>
+                <span className="hidden lg:inline">Fee Calculator</span>
+                <span className="lg:hidden">Fees</span>
+              </Button>
+            </Link>
+            <Link href="/hourly-factor">
+              <Button 
+                variant={location === "/hourly-factor" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                <span className="hidden lg:inline">Hourly Factor</span>
+                <span className="lg:hidden">HF Calc</span>
               </Button>
             </Link>
           </nav>
@@ -64,7 +74,9 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
-        <Route path="/" component={Calculator} />
+        <Route path="/" component={ProjectDashboard} />
+        <Route path="/dashboard" component={ProjectDashboard} />
+        <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />
         <Route component={NotFound} />
