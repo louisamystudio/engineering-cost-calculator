@@ -1,0 +1,35 @@
+type Role = 'Admin'|'Designer1'|'Designer2'|'Architect'|'Engineer'|'Principal';
+
+type FeeMatrixInputs = {
+  // From Part I / previous step:
+  projectBudget: number;                      // e.g., proposed construction figure (USD)
+  totalAreaFt2: number;                       // new + existing
+  // If you already compute top-down discounted total (internal share), pass it to show both views:
+  topDownDiscountedTotal?: number;            // e.g., 150_911.0469
+
+  // II. Cost & Pricing per hour inputs
+  // Annual costs (USD/year) per role:
+  laborAnnual: Record<Role, number>;          // staff cost loaded from config
+  overheadAnnual: Record<Role, number>;       // operating cost per role share
+  markup: number;                             // e.g., 1.00 for 100%
+
+  // III. Hours & leverage inputs
+  // Use either hoursFactor (hr/ft²) or a fixed totalHours; if both present, prefer totalHours.
+  hoursFactor?: number;                       // default 0.220 hr/ft² (from sheet)
+  totalHours?: number;                        // default 1100 (from sheet example)
+
+  // IV. Phase allocation and role weights
+  // Phases and % allocation (must sum to 100):
+  phasePercents?: number[];                   // default [0,6,7,35,7,35,10,0,0]
+  phaseMonths?: (number|null)[];              // default [0,1,1,3,1,3,1,null,null]
+  roles: Role[];                              // fixed order: Admin, Designer1, Designer2, Architect, Engineer, Principal
+  // Role weights per phase (each phase weights across roles sum to 1.0):
+  roleWeights?: Record<string, Record<Role, number>>;
+
+  // VI. Scenarios
+  // Hourly rate tables per role (USD/hr). If not provided, derive louisAmy from Section II pricingPerHour
+  louisAmyRate?: Record<Role, number>;        // default: computed pricing per hour
+  marketRate?: Record<Role, number>;          // default: equal to louisAmy until configured
+  scenarioDiscountLouisAmy?: number;          // default: 0.35 (35%)
+  scenarioDiscountMarket?: number;            // default: 0.35 (35%)
+};
