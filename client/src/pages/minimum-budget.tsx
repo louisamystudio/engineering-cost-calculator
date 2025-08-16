@@ -439,37 +439,145 @@ export default function MinimumBudgetCalculator() {
                               <TableHead>Discipline</TableHead>
                               <TableHead className="text-right">Budget</TableHead>
                               <TableHead className="text-right">Share</TableHead>
+                              <TableHead className="w-8"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            <TableRow>
-                              <TableCell className="font-medium">Architecture</TableCell>
-                              <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
-                              <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
-                            </TableRow>
+                            {/* Architecture */}
+                            <Collapsible>
+                              <CollapsibleTrigger asChild>
+                                <TableRow className="cursor-pointer hover:bg-gray-50">
+                                  <TableCell className="font-medium">Architecture</TableCell>
+                                  <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
+                                  <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
+                                  <TableCell className="text-center">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </TableCell>
+                                </TableRow>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent asChild>
+                                <TableRow className="bg-gray-50">
+                                  <TableCell colSpan={4} className="p-0">
+                                    <div className="px-4 py-2 space-y-1">
+                                      <div className="flex justify-between text-xs">
+                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.architecture.new_construction)}</span>
+                                      </div>
+                                      <div className="flex justify-between text-xs">
+                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.architecture.existing_remodel)}</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            {/* Engineering Disciplines */}
                             {Object.entries(result.engineering_budgets)
                               .filter(([key]) => key !== 'sum' && key !== 'Architecture')
-                              .map(([discipline, budget]) => (
-                                <TableRow key={discipline}>
-                                  <TableCell>{discipline}</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
-                                  <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
+                              .map(([discipline, budget]) => {
+                                const disciplineKey = discipline.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                                const breakdown = result.discipline_breakdown[disciplineKey];
+                                return (
+                                  <Collapsible key={discipline}>
+                                    <CollapsibleTrigger asChild>
+                                      <TableRow className="cursor-pointer hover:bg-gray-50">
+                                        <TableCell>{discipline}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
+                                        <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
+                                        <TableCell className="text-center">
+                                          <ChevronDown className="h-4 w-4" />
+                                        </TableCell>
+                                      </TableRow>
+                                    </CollapsibleTrigger>
+                                    {breakdown && (
+                                      <CollapsibleContent asChild>
+                                        <TableRow className="bg-gray-50">
+                                          <TableCell colSpan={4} className="p-0">
+                                            <div className="px-4 py-2 space-y-1">
+                                              <div className="flex justify-between text-xs">
+                                                <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                                <span>{formatCurrency(breakdown.new_construction)}</span>
+                                              </div>
+                                              <div className="flex justify-between text-xs">
+                                                <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)}) - 50% rate</span>
+                                                <span>{formatCurrency(breakdown.existing_remodel)}</span>
+                                              </div>
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      </CollapsibleContent>
+                                    )}
+                                  </Collapsible>
+                                );
+                              })}
+
+                            {/* Interior */}
+                            <Collapsible>
+                              <CollapsibleTrigger asChild>
+                                <TableRow className="cursor-pointer hover:bg-gray-50">
+                                  <TableCell className="font-medium">Interior</TableCell>
+                                  <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
+                                  <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
+                                  <TableCell className="text-center">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </TableCell>
                                 </TableRow>
-                              ))}
-                            <TableRow>
-                              <TableCell className="font-medium">Interior</TableCell>
-                              <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
-                              <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Landscape</TableCell>
-                              <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
-                              <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
-                            </TableRow>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent asChild>
+                                <TableRow className="bg-gray-50">
+                                  <TableCell colSpan={4} className="p-0">
+                                    <div className="px-4 py-2 space-y-1">
+                                      <div className="flex justify-between text-xs">
+                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.interior.new_construction)}</span>
+                                      </div>
+                                      <div className="flex justify-between text-xs">
+                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.interior.existing_remodel)}</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            {/* Landscape */}
+                            <Collapsible>
+                              <CollapsibleTrigger asChild>
+                                <TableRow className="cursor-pointer hover:bg-gray-50">
+                                  <TableCell className="font-medium">Landscape</TableCell>
+                                  <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
+                                  <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
+                                  <TableCell className="text-center">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </TableCell>
+                                </TableRow>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent asChild>
+                                <TableRow className="bg-gray-50">
+                                  <TableCell colSpan={4} className="p-0">
+                                    <div className="px-4 py-2 space-y-1">
+                                      <div className="flex justify-between text-xs">
+                                        <span>New Construction ({formatPercent(result.construction_ratios.new_construction)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.landscape.new_construction)}</span>
+                                      </div>
+                                      <div className="flex justify-between text-xs">
+                                        <span>Existing Remodel ({formatPercent(result.construction_ratios.existing_remodel)})</span>
+                                        <span>{formatCurrency(result.discipline_breakdown.landscape.existing_remodel)}</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              </CollapsibleContent>
+                            </Collapsible>
+
                             <TableRow className="border-t-2 font-semibold">
                               <TableCell>Working Budget</TableCell>
                               <TableCell className="text-right">{formatCurrency(result.working_budget)}</TableCell>
                               <TableCell className="text-right">100.0%</TableCell>
+                              <TableCell></TableCell>
                             </TableRow>
                           </TableBody>
                         </Table>

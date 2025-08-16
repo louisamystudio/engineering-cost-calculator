@@ -115,28 +115,34 @@ export function calculateMinimumBudget(
   // Calculate detailed breakdown for each discipline
   const discipline_breakdown: any = {};
   
-  // Architecture breakdown
+  // Architecture breakdown (100% for both new and existing)
+  const arch_new = architecture_budget * new_construction_ratio;
+  const arch_existing = architecture_budget * existing_remodel_ratio;
   discipline_breakdown.architecture = {
     total: architecture_budget,
-    new_construction: architecture_budget * new_construction_ratio,
-    existing_remodel: architecture_budget * existing_remodel_ratio,
+    new_construction: arch_new,
+    existing_remodel: arch_existing,
   };
   
-  // Interior breakdown
+  // Interior breakdown (100% for both new and existing)
+  const interior_new = interior_min * new_construction_ratio;
+  const interior_existing = interior_min * existing_remodel_ratio;
   discipline_breakdown.interior = {
     total: interior_min,
-    new_construction: interior_min * new_construction_ratio,
-    existing_remodel: interior_min * existing_remodel_ratio,
+    new_construction: interior_new,
+    existing_remodel: interior_existing,
   };
   
-  // Landscape breakdown
+  // Landscape breakdown (100% for both new and existing)
+  const land_new = land_min * new_construction_ratio;
+  const land_existing = land_min * existing_remodel_ratio;
   discipline_breakdown.landscape = {
     total: land_min,
-    new_construction: land_min * new_construction_ratio,
-    existing_remodel: land_min * existing_remodel_ratio,
+    new_construction: land_new,
+    existing_remodel: land_existing,
   };
   
-  // Engineering disciplines breakdown
+  // Engineering disciplines breakdown (existing areas at 50% cost)
   ENGINEERING_DISCIPLINES.forEach(discipline => {
     const engCost = engineeringCosts.find(ec => ec.category === discipline);
     if (engCost) {
