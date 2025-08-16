@@ -13,34 +13,36 @@ function NavBar() {
   
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center space-x-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between h-auto sm:h-16 py-3 sm:py-0">
+          <div className="flex items-center justify-center sm:justify-start mb-3 sm:mb-0">
             <div className="flex items-center">
               <div className="w-8 h-8 bg-scientific-blue rounded-md flex items-center justify-center mr-3">
                 <span className="text-white font-bold text-sm">PC</span>
               </div>
-              <span className="text-xl font-semibold text-gray-900">Project Calculator</span>
+              <span className="text-lg sm:text-xl font-semibold text-gray-900">Project Calculator</span>
             </div>
-            <nav className="flex space-x-4">
-              <Link href="/">
-                <Button 
-                  variant={location === "/" ? "default" : "ghost"}
-                  className="text-sm"
-                >
-                  Hourly Factor Calculator
-                </Button>
-              </Link>
-              <Link href="/minimum-budget">
-                <Button 
-                  variant={location === "/minimum-budget" ? "default" : "ghost"}
-                  className="text-sm"
-                >
-                  Minimum Budget Calculator
-                </Button>
-              </Link>
-            </nav>
           </div>
+          <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-center">
+            <Link href="/">
+              <Button 
+                variant={location === "/" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                <span className="hidden sm:inline">Hourly Factor Calculator</span>
+                <span className="sm:hidden">Hourly Factor</span>
+              </Button>
+            </Link>
+            <Link href="/minimum-budget">
+              <Button 
+                variant={location === "/minimum-budget" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                <span className="hidden sm:inline">Minimum Budget Calculator</span>
+                <span className="sm:hidden">Min Budget</span>
+              </Button>
+            </Link>
+          </nav>
         </div>
       </div>
     </div>

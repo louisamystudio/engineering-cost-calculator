@@ -200,19 +200,19 @@ export default function MinimumBudgetCalculator() {
     <div className="bg-gray-50 font-inter text-dark-slate min-h-screen">
       {/* Header */}
       <header className="bg-white border-b border-light-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-3 sm:py-0">
+            <div className="flex items-center space-x-3 mb-3 sm:mb-0">
               <div className="w-10 h-10 bg-scientific-blue rounded-lg flex items-center justify-center">
                 <Calculator className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-dark-slate">Minimum Budget Calculator</h1>
-                <p className="text-sm text-gray-500">Project budget calculation & analysis</p>
+                <h1 className="text-lg sm:text-xl font-semibold text-dark-slate">Minimum Budget Calculator</h1>
+                <p className="text-xs sm:text-sm text-gray-500">Project budget calculation & analysis</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="px-3 py-1">
+            <div className="flex items-center justify-center sm:justify-end space-x-4">
+              <Badge variant="outline" className="px-2 sm:px-3 py-1 text-xs sm:text-sm">
                 Live Calculation
               </Badge>
             </div>
@@ -221,8 +221,8 @@ export default function MinimumBudgetCalculator() {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-8">
           {/* Input Panel */}
           <div className="lg:col-span-1">
             <Card>
@@ -323,7 +323,7 @@ export default function MinimumBudgetCalculator() {
             {result && (
               <>
                 {/* Key Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                   <StatCard
                     title="Total Area"
                     value={`${totalArea.toLocaleString()} ft²`}
