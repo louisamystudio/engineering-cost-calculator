@@ -7,7 +7,10 @@ import {
   buildingTypesView,
   type BuildingCostRange,
   type EngineeringCost,
-  type BuildingTypeView
+  type BuildingTypeView,
+  hoursLeverage,
+  type HoursLeverage,
+  type InsertHoursLeverage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -25,6 +28,13 @@ export interface IStorage {
   getTiersByBuildingType(buildingType: string): Promise<number[]>;
   getBuildingCostRange(buildingType: string, tier: number): Promise<BuildingCostRange | undefined>;
   getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]>;
+  
+  // Hours Leverage methods
+  getAllHoursLeverage(): Promise<HoursLeverage[]>;
+  createHoursLeverage(data: InsertHoursLeverage): Promise<HoursLeverage>;
+  updateHoursLeverage(id: string, data: Partial<InsertHoursLeverage>): Promise<HoursLeverage | undefined>;
+  deleteHoursLeverage(id: string): Promise<boolean>;
+  getHoursLeverageByPhase(projectPhase: string): Promise<HoursLeverage | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -86,6 +96,39 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return results;
+  }
+
+  // Hours Leverage methods
+  async getAllHoursLeverage(): Promise<HoursLeverage[]> {
+    const results = await db.select().from(hoursLeverage);
+    return results;
+  }
+
+  async createHoursLeverage(data: InsertHoursLeverage): Promise<HoursLeverage> {
+    const [result] = await db.insert(hoursLeverage).values(data).returning();
+    return result;
+  }
+
+  async updateHoursLeverage(id: string, data: Partial<InsertHoursLeverage>): Promise<HoursLeverage | undefined> {
+    const [result] = await db
+      .update(hoursLeverage)
+      .set(data)
+      .where(eq(hoursLeverage.id, id))
+      .returning();
+    return result || undefined;
+  }
+
+  async deleteHoursLeverage(id: string): Promise<boolean> {
+    const result = await db.delete(hoursLeverage).where(eq(hoursLeverage.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getHoursLeverageByPhase(projectPhase: string): Promise<HoursLeverage | undefined> {
+    const [result] = await db
+      .select()
+      .from(hoursLeverage)
+      .where(eq(hoursLeverage.projectPhase, projectPhase));
+    return result || undefined;
   }
 }
 

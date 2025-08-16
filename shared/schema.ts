@@ -137,6 +137,26 @@ export type BudgetCalculationResult = {
   notes: string[];
 };
 
+export const hoursLeverage = pgTable("hours_leverage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectPhase: text("project_phase").notNull(),
+  hoursAllocation: decimal("hours_allocation", { precision: 5, scale: 2 }),
+  adminPercent: decimal("admin_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  designer1Percent: decimal("designer1_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  designer2Percent: decimal("designer2_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  architectPercent: decimal("architect_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  engineerPercent: decimal("engineer_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  principalPercent: decimal("principal_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+  totalPercent: decimal("total_percent", { precision: 5, scale: 2 }).default("100"),
+});
+
+export const insertHoursLeverageSchema = createInsertSchema(hoursLeverage).omit({
+  id: true,
+});
+
+export type InsertHoursLeverage = z.infer<typeof insertHoursLeverageSchema>;
+export type HoursLeverage = typeof hoursLeverage.$inferSelect;
+
 export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
 export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
 export type BuildingTypeView = typeof buildingTypesView.$inferSelect;
