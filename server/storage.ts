@@ -19,7 +19,28 @@ import {
   type InsertHourlyRates,
   feeConfig,
   type FeeConfig,
-  type InsertFeeConfig
+  type InsertFeeConfig,
+  categoryMultipliers,
+  type CategoryMultiplier,
+  type InsertCategoryMultiplier,
+  projects,
+  type Project,
+  type InsertProject,
+  projectCalculations,
+  type ProjectCalculation,
+  type InsertProjectCalculation,
+  projectFees,
+  type ProjectFee,
+  type InsertProjectFee,
+  projectHours,
+  type ProjectHours,
+  type InsertProjectHours,
+  buildingTypes,
+  type BuildingTypes,
+  engineeringCosts,
+  type EngineeringCosts,
+  buildingCost2025Parcial,
+  type BuildingCost
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -59,6 +80,41 @@ export interface IStorage {
   getAllFeeConfig(): Promise<FeeConfig[]>;
   getFeeConfigValue(key: string): Promise<number | undefined>;
   updateFeeConfig(key: string, value: number): Promise<FeeConfig | undefined>;
+  
+  // Category Multipliers methods
+  getAllCategoryMultipliers(): Promise<CategoryMultiplier[]>;
+  getCategoryMultiplier(category: number): Promise<CategoryMultiplier | undefined>;
+  createCategoryMultiplier(data: InsertCategoryMultiplier): Promise<CategoryMultiplier>;
+  
+  // Projects methods
+  getAllProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(data: InsertProject): Promise<Project>;
+  updateProject(id: string, data: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
+  getDemoProject(): Promise<Project | undefined>;
+  
+  // Project Calculations methods
+  getProjectCalculations(projectId: string): Promise<ProjectCalculation | undefined>;
+  createProjectCalculations(data: InsertProjectCalculation): Promise<ProjectCalculation>;
+  updateProjectCalculations(projectId: string, data: InsertProjectCalculation): Promise<ProjectCalculation | undefined>;
+  
+  // Project Fees methods
+  getProjectFees(projectId: string): Promise<ProjectFee[]>;
+  createProjectFee(data: InsertProjectFee): Promise<ProjectFee>;
+  deleteProjectFees(projectId: string): Promise<boolean>;
+  
+  // Project Hours methods
+  getProjectHours(projectId: string): Promise<ProjectHours[]>;
+  createProjectHours(data: InsertProjectHours): Promise<ProjectHours>;
+  deleteProjectHours(projectId: string): Promise<boolean>;
+  
+  // Building data methods
+  getAllBuildingUses(): Promise<string[]>;
+  getBuildingTypesByUse(buildingUse: string): Promise<string[]>;
+  getBuildingTiersByType(buildingType: string): Promise<string[]>;
+  getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined>;
+  getEngineeringCostsByDiscipline(buildingType: string, tier: number, discipline: string): Promise<EngineeringCosts | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -215,6 +271,179 @@ export class DatabaseStorage implements IStorage {
       .set({ settingValue: value.toString() })
       .where(eq(feeConfig.settingKey, key))
       .returning();
+    return result || undefined;
+  }
+  
+  // Category Multipliers methods
+  async getAllCategoryMultipliers(): Promise<CategoryMultiplier[]> {
+    const results = await db.select().from(categoryMultipliers);
+    return results;
+  }
+  
+  async getCategoryMultiplier(category: number): Promise<CategoryMultiplier | undefined> {
+    const [result] = await db
+      .select()
+      .from(categoryMultipliers)
+      .where(eq(categoryMultipliers.category, category));
+    return result || undefined;
+  }
+  
+  async createCategoryMultiplier(data: InsertCategoryMultiplier): Promise<CategoryMultiplier> {
+    const [result] = await db.insert(categoryMultipliers).values(data).returning();
+    return result;
+  }
+  
+  // Projects methods
+  async getAllProjects(): Promise<Project[]> {
+    const results = await db.select().from(projects).orderBy(projects.createdAt);
+    return results;
+  }
+  
+  async getProject(id: string): Promise<Project | undefined> {
+    const [result] = await db.select().from(projects).where(eq(projects.id, id));
+    return result || undefined;
+  }
+  
+  async createProject(data: InsertProject): Promise<Project> {
+    const [result] = await db.insert(projects).values(data).returning();
+    return result;
+  }
+  
+  async updateProject(id: string, data: Partial<InsertProject>): Promise<Project | undefined> {
+    const [result] = await db
+      .update(projects)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return result || undefined;
+  }
+  
+  async deleteProject(id: string): Promise<boolean> {
+    // Delete related data first
+    await db.delete(projectHours).where(eq(projectHours.projectId, id));
+    await db.delete(projectFees).where(eq(projectFees.projectId, id));
+    await db.delete(projectCalculations).where(eq(projectCalculations.projectId, id));
+    // Delete the project
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+  
+  async getDemoProject(): Promise<Project | undefined> {
+    const [result] = await db.select().from(projects).where(eq(projects.isDemo, true));
+    return result || undefined;
+  }
+  
+  // Project Calculations methods
+  async getProjectCalculations(projectId: string): Promise<ProjectCalculation | undefined> {
+    const [result] = await db
+      .select()
+      .from(projectCalculations)
+      .where(eq(projectCalculations.projectId, projectId));
+    return result || undefined;
+  }
+  
+  async createProjectCalculations(data: InsertProjectCalculation): Promise<ProjectCalculation> {
+    const [result] = await db.insert(projectCalculations).values(data).returning();
+    return result;
+  }
+  
+  async updateProjectCalculations(projectId: string, data: InsertProjectCalculation): Promise<ProjectCalculation | undefined> {
+    // Delete existing calculations
+    await db.delete(projectCalculations).where(eq(projectCalculations.projectId, projectId));
+    // Insert new calculations
+    const [result] = await db.insert(projectCalculations).values(data).returning();
+    return result || undefined;
+  }
+  
+  // Project Fees methods
+  async getProjectFees(projectId: string): Promise<ProjectFee[]> {
+    const results = await db
+      .select()
+      .from(projectFees)
+      .where(eq(projectFees.projectId, projectId));
+    return results;
+  }
+  
+  async createProjectFee(data: InsertProjectFee): Promise<ProjectFee> {
+    const [result] = await db.insert(projectFees).values(data).returning();
+    return result;
+  }
+  
+  async deleteProjectFees(projectId: string): Promise<boolean> {
+    const result = await db.delete(projectFees).where(eq(projectFees.projectId, projectId));
+    return (result.rowCount ?? 0) > 0;
+  }
+  
+  // Project Hours methods
+  async getProjectHours(projectId: string): Promise<ProjectHours[]> {
+    const results = await db
+      .select()
+      .from(projectHours)
+      .where(eq(projectHours.projectId, projectId));
+    return results;
+  }
+  
+  async createProjectHours(data: InsertProjectHours): Promise<ProjectHours> {
+    const [result] = await db.insert(projectHours).values(data).returning();
+    return result;
+  }
+  
+  async deleteProjectHours(projectId: string): Promise<boolean> {
+    const result = await db.delete(projectHours).where(eq(projectHours.projectId, projectId));
+    return (result.rowCount ?? 0) > 0;
+  }
+  
+  // Building data methods
+  async getAllBuildingUses(): Promise<string[]> {
+    const results = await db
+      .selectDistinct({ buildingUse: buildingTypes.buildingUse })
+      .from(buildingTypes);
+    return results.map(r => r.buildingUse);
+  }
+  
+  async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
+    const results = await db
+      .selectDistinct({ buildingType: buildingTypes.buildingType })
+      .from(buildingTypes)
+      .where(eq(buildingTypes.buildingUse, buildingUse));
+    return results.map(r => r.buildingType);
+  }
+  
+  async getBuildingTiersByType(buildingType: string): Promise<string[]> {
+    // Map building types to their available tiers
+    const tierMap: Record<string, string[]> = {
+      'High-End Custom Residential': ['High-End Custom Residential'],
+      'Mid-Range Standard Residential': ['Mid-Range Standard Residential'],
+      'Hospitality (Hotel/Resort)': ['Hospitality (Hotel/Resort)', 'Hospitality 4-Star'],
+      'Commercial / Mixed-Use': ['Commercial / Mixed-Use', 'Commercial Class A'],
+    };
+    return tierMap[buildingType] || [buildingType];
+  }
+  
+  async getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined> {
+    const [result] = await db
+      .select()
+      .from(buildingCost2025Parcial)
+      .where(
+        and(
+          eq(buildingCost2025Parcial.buildingType, buildingType),
+          eq(buildingCost2025Parcial.tier, tier)
+        )
+      );
+    return result || undefined;
+  }
+  
+  async getEngineeringCostsByDiscipline(buildingType: string, tier: number, discipline: string): Promise<EngineeringCosts | undefined> {
+    const [result] = await db
+      .select()
+      .from(engineeringCosts)
+      .where(
+        and(
+          eq(engineeringCosts.buildingType, buildingType),
+          eq(engineeringCosts.numericTier, tier),
+          eq(engineeringCosts.categorySimple, discipline)
+        )
+      );
     return result || undefined;
   }
 }

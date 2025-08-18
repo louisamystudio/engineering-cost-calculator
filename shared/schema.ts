@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, pgView, text, varchar, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, pgView, text, varchar, integer, decimal, timestamp, boolean, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -274,6 +274,154 @@ export type FeeMatrixResult = {
     landscape_cost_base: number;
   };
 };
+
+// Category Multipliers Table for the comprehensive calculator
+export const categoryMultipliers = pgTable("category_multipliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: integer("category").notNull().unique(), // 1-5
+  multiplier: decimal("multiplier", { precision: 3, scale: 2 }).notNull(), // 0.9 - 1.3
+  description: text("description"),
+});
+
+// Projects Table for storing project data
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectName: text("project_name").notNull(),
+  buildingUse: text("building_use").notNull(),
+  buildingType: text("building_type").notNull(),
+  buildingTier: text("building_tier").notNull(),
+  designLevel: integer("design_level").notNull(), // 1-3
+  category: integer("category").notNull(), // 1-5
+  newBuildingArea: decimal("new_building_area", { precision: 10, scale: 2 }).notNull(),
+  existingBuildingArea: decimal("existing_building_area", { precision: 10, scale: 2 }).notNull(),
+  siteArea: decimal("site_area", { precision: 10, scale: 2 }).notNull(),
+  historicMultiplier: decimal("historic_multiplier", { precision: 3, scale: 2 }).notNull().default("1.0"),
+  remodelMultiplier: decimal("remodel_multiplier", { precision: 3, scale: 2 }).notNull().default("0.5"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  isDemo: boolean("is_demo").default(false),
+  // Cost overrides (if user adjusts sliders)
+  newConstructionTargetCost: decimal("new_construction_target_cost", { precision: 10, scale: 2 }),
+  remodelTargetCost: decimal("remodel_target_cost", { precision: 10, scale: 2 }),
+  // Share overrides (if user adjusts sliders)
+  shellShareOverride: decimal("shell_share_override", { precision: 5, scale: 4 }),
+  interiorShareOverride: decimal("interior_share_override", { precision: 5, scale: 4 }),
+  landscapeShareOverride: decimal("landscape_share_override", { precision: 5, scale: 4 }),
+});
+
+// Project Calculations Table for storing calculation results
+export const projectCalculations = pgTable("project_calculations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  // Cost calculations
+  newCostMin: decimal("new_cost_min", { precision: 10, scale: 2 }).notNull(),
+  newCostMax: decimal("new_cost_max", { precision: 10, scale: 2 }).notNull(),
+  newCostTarget: decimal("new_cost_target", { precision: 10, scale: 2 }).notNull(),
+  remodelCostMin: decimal("remodel_cost_min", { precision: 10, scale: 2 }).notNull(),
+  remodelCostMax: decimal("remodel_cost_max", { precision: 10, scale: 2 }).notNull(),
+  remodelCostTarget: decimal("remodel_cost_target", { precision: 10, scale: 2 }).notNull(),
+  // Budget totals
+  newBudget: decimal("new_budget", { precision: 12, scale: 2 }).notNull(),
+  remodelBudget: decimal("remodel_budget", { precision: 12, scale: 2 }).notNull(),
+  totalBudget: decimal("total_budget", { precision: 12, scale: 2 }).notNull(),
+  // Shell/Interior/Landscape budgets
+  shellBudgetTotal: decimal("shell_budget_total", { precision: 12, scale: 2 }).notNull(),
+  interiorBudgetTotal: decimal("interior_budget_total", { precision: 12, scale: 2 }).notNull(),
+  landscapeBudgetTotal: decimal("landscape_budget_total", { precision: 12, scale: 2 }).notNull(),
+  // Discipline budgets
+  architectureBudget: decimal("architecture_budget", { precision: 12, scale: 2 }).notNull(),
+  structuralBudget: decimal("structural_budget", { precision: 12, scale: 2 }).notNull(),
+  civilBudget: decimal("civil_budget", { precision: 12, scale: 2 }).notNull(),
+  mechanicalBudget: decimal("mechanical_budget", { precision: 12, scale: 2 }).notNull(),
+  electricalBudget: decimal("electrical_budget", { precision: 12, scale: 2 }).notNull(),
+  plumbingBudget: decimal("plumbing_budget", { precision: 12, scale: 2 }).notNull(),
+  telecomBudget: decimal("telecom_budget", { precision: 12, scale: 2 }).notNull(),
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+});
+
+// Project Fees Table for storing fee calculations
+export const projectFees = pgTable("project_fees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  scope: text("scope").notNull(),
+  percentOfCost: decimal("percent_of_cost", { precision: 5, scale: 4 }),
+  ratePerSqFt: decimal("rate_per_sq_ft", { precision: 10, scale: 4 }),
+  marketFee: decimal("market_fee", { precision: 12, scale: 2 }).notNull(),
+  louisAmyFee: decimal("louis_amy_fee", { precision: 12, scale: 2 }).notNull(),
+  hours: decimal("hours", { precision: 10, scale: 2 }),
+  coordinationFee: decimal("coordination_fee", { precision: 12, scale: 2 }),
+  consultantFee: decimal("consultant_fee", { precision: 12, scale: 2 }),
+  isInhouse: boolean("is_inhouse").default(true),
+});
+
+// Project Hours Distribution Table
+export const projectHours = pgTable("project_hours", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  phase: text("phase").notNull(),
+  phasePercent: decimal("phase_percent", { precision: 5, scale: 4 }).notNull(),
+  totalHours: decimal("total_hours", { precision: 10, scale: 2 }).notNull(),
+  designer1Hours: decimal("designer1_hours", { precision: 10, scale: 2 }),
+  designer2Hours: decimal("designer2_hours", { precision: 10, scale: 2 }),
+  architectHours: decimal("architect_hours", { precision: 10, scale: 2 }),
+  engineerHours: decimal("engineer_hours", { precision: 10, scale: 2 }),
+  principalHours: decimal("principal_hours", { precision: 10, scale: 2 }),
+});
+
+// Insert schemas for new tables
+export const insertCategoryMultipliersSchema = createInsertSchema(categoryMultipliers).omit({
+  id: true,
+});
+export const insertProjectsSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertProjectCalculationsSchema = createInsertSchema(projectCalculations).omit({
+  id: true,
+  calculatedAt: true,
+});
+export const insertProjectFeesSchema = createInsertSchema(projectFees).omit({
+  id: true,
+});
+export const insertProjectHoursSchema = createInsertSchema(projectHours).omit({
+  id: true,
+});
+
+// Types for new tables
+export type CategoryMultiplier = typeof categoryMultipliers.$inferSelect;
+export type InsertCategoryMultiplier = z.infer<typeof insertCategoryMultipliersSchema>;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectsSchema>;
+export type ProjectCalculation = typeof projectCalculations.$inferSelect;
+export type InsertProjectCalculation = z.infer<typeof insertProjectCalculationsSchema>;
+export type ProjectFee = typeof projectFees.$inferSelect;
+export type InsertProjectFee = z.infer<typeof insertProjectFeesSchema>;
+export type ProjectHours = typeof projectHours.$inferSelect;
+export type InsertProjectHours = z.infer<typeof insertProjectHoursSchema>;
+
+// Comprehensive Project Input Schema
+export const comprehensiveProjectInputSchema = z.object({
+  projectName: z.string().min(1),
+  buildingUse: z.string().min(1),
+  buildingType: z.string().min(1),
+  buildingTier: z.string().min(1),
+  designLevel: z.number().int().min(1).max(3),
+  category: z.number().int().min(1).max(5),
+  newBuildingArea: z.number().min(0),
+  existingBuildingArea: z.number().min(0),
+  siteArea: z.number().min(0),
+  historicMultiplier: z.number().min(1).default(1.0),
+  remodelMultiplier: z.number().min(0).max(1).default(0.5),
+  // Optional overrides
+  newConstructionTargetCost: z.number().optional(),
+  remodelTargetCost: z.number().optional(),
+  shellShareOverride: z.number().min(0).max(1).optional(),
+  interiorShareOverride: z.number().min(0).max(1).optional(),
+  landscapeShareOverride: z.number().min(0).max(1).optional(),
+});
+
+export type ComprehensiveProjectInput = z.infer<typeof comprehensiveProjectInputSchema>;
 
 // Fee Matrix V2 Types (Bottom-Up)
 export const feeMatrixV2InputSchema = z.object({

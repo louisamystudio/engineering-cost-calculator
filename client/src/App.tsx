@@ -8,7 +8,9 @@ import Calculator from "@/pages/calculator";
 import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
 import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
-import ProjectDashboard from "@/pages/project-dashboard";
+import ProjectsPage from "@/pages/projects";
+import NewProjectPage from "@/pages/new-project";
+import ProjectDashboardPage from "@/pages/project-dashboard";
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -29,11 +31,11 @@ function NavBar() {
           <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:items-center">
             <Link href="/">
               <Button 
-                variant={(location === "/" || location === "/dashboard") ? "default" : "ghost"}
+                variant={(location === "/" || location.startsWith("/projects")) ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden lg:inline">Project Dashboard</span>
-                <span className="lg:hidden">Dashboard</span>
+                <span className="hidden lg:inline">Comprehensive Calculator</span>
+                <span className="lg:hidden">Projects</span>
               </Button>
             </Link>
             <Link href="/minimum-budget">
@@ -84,8 +86,10 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
-        <Route path="/" component={ProjectDashboard} />
-        <Route path="/dashboard" component={ProjectDashboard} />
+        <Route path="/" component={ProjectsPage} />
+        <Route path="/projects" component={ProjectsPage} />
+        <Route path="/projects/new" component={NewProjectPage} />
+        <Route path="/projects/:id" component={ProjectDashboardPage} />
         <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />

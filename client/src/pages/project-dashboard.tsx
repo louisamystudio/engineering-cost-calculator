@@ -1,454 +1,589 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Calculator, 
-  Building, 
-  DollarSign, 
-  Clock, 
-  TrendingUp, 
-  BarChart3, 
-  AlertTriangle, 
-  FileText,
-  Download,
-  Edit,
-  CheckCircle2,
-  ArrowRight
-} from 'lucide-react';
-import type { BudgetCalculationResult, FeeMatrixResult } from '@shared/schema';
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Building, Calculator, DollarSign, Clock, ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
+import type { Project, ProjectCalculation, ProjectFee, ProjectHours } from "@shared/schema";
 
-function formatCurrency(amount: number): string {
+interface ProjectData {
+  project: Project;
+  calculations: ProjectCalculation;
+  fees: ProjectFee[];
+  hours: ProjectHours[];
+}
+
+function formatCurrency(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(num);
 }
 
-function formatPercent(value: number): string {
+function formatNumber(value: string | number, decimals = 0): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
   return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(value / 100);
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(num);
 }
 
-function formatHours(hours: number): string {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(hours);
+function formatPercent(value: string | number): string {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return `${(num * 100).toFixed(1)}%`;
 }
 
-export default function ProjectDashboard() {
-  const [budgetResult, setBudgetResult] = useState<BudgetCalculationResult | null>(null);
-  const [feeResult, setFeeResult] = useState<FeeMatrixResult | null>(null);
-  const [projectName, setProjectName] = useState<string>('');
+export default function ProjectDashboardPage() {
+  const params = useParams();
+  const [, navigate] = useLocation();
+  const projectId = params.id as string;
+  const [expandedFees, setExpandedFees] = useState(true);
+  const [expandedHours, setExpandedHours] = useState(false);
+  const [expandedBudgets, setExpandedBudgets] = useState(true);
 
-  useEffect(() => {
-    // Load saved data
-    const savedBudgetResult = localStorage.getItem('budgetResult');
-    const savedFeeResult = localStorage.getItem('feeMatrixResult');
-    const savedProjectName = localStorage.getItem('projectName') || 'Untitled Project';
+  const { data, isLoading, error } = useQuery<ProjectData>({
+    queryKey: ['/api/projects', projectId],
+  });
 
-    if (savedBudgetResult) {
-      try {
-        setBudgetResult(JSON.parse(savedBudgetResult));
-      } catch (error) {
-        console.error('Failed to parse budget result:', error);
-      }
-    }
+  const recalculateMutation = useMutation({
+    mutationFn: async () => {
+      if (!data?.project) return;
+      
+      const input = {
+        projectName: data.project.projectName,
+        buildingUse: data.project.buildingUse,
+        buildingType: data.project.buildingType,
+        buildingTier: data.project.buildingTier,
+        designLevel: data.project.designLevel,
+        category: data.project.category,
+        newBuildingArea: parseFloat(data.project.newBuildingArea),
+        existingBuildingArea: parseFloat(data.project.existingBuildingArea),
+        siteArea: parseFloat(data.project.siteArea),
+        historicMultiplier: parseFloat(data.project.historicMultiplier),
+        remodelMultiplier: parseFloat(data.project.remodelMultiplier),
+        newConstructionTargetCost: data.project.newConstructionTargetCost ? parseFloat(data.project.newConstructionTargetCost) : undefined,
+        remodelTargetCost: data.project.remodelTargetCost ? parseFloat(data.project.remodelTargetCost) : undefined,
+        shellShareOverride: data.project.shellShareOverride ? parseFloat(data.project.shellShareOverride) : undefined,
+        interiorShareOverride: data.project.interiorShareOverride ? parseFloat(data.project.interiorShareOverride) : undefined,
+        landscapeShareOverride: data.project.landscapeShareOverride ? parseFloat(data.project.landscapeShareOverride) : undefined,
+      };
+      
+      const response = await apiRequest('POST', '/api/projects/calculate', input);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+    },
+  });
 
-    if (savedFeeResult) {
-      try {
-        setFeeResult(JSON.parse(savedFeeResult));
-      } catch (error) {
-        console.error('Failed to parse fee result:', error);
-      }
-    }
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
-    setProjectName(savedProjectName);
-  }, []);
+  if (error || !data) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="text-center py-12">
+          <CardContent>
+            <h3 className="text-lg font-semibold mb-2">Project not found</h3>
+            <p className="text-muted-foreground mb-4">
+              The project you're looking for doesn't exist.
+            </p>
+            <Button onClick={() => navigate("/projects")}>
+              Back to Projects
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const updateProjectName = (name: string) => {
-    setProjectName(name);
-    localStorage.setItem('projectName', name);
-  };
+  const { project, calculations, fees, hours } = data;
 
-  const exportCompleteReport = () => {
-    if (!budgetResult || !feeResult) return;
+  // Calculate totals
+  const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
+  const totalLouisAmyFee = fees.reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
+  const totalCoordinationFee = fees.reduce((sum, f) => sum + parseFloat(f.coordinationFee || '0'), 0);
+  const totalConsultantFee = fees.reduce((sum, f) => sum + parseFloat(f.consultantFee || '0'), 0);
+  const totalHours = fees.reduce((sum, f) => sum + parseFloat(f.hours || '0'), 0);
 
-    const reportData = {
-      project: {
-        name: projectName,
-        building_type: budgetResult.inputs.building_type,
-        tier: budgetResult.inputs.tier,
-        total_area: budgetResult.area.total_sf,
-        new_area: budgetResult.inputs.new_area_ft2,
-        existing_area: budgetResult.inputs.existing_area_ft2,
-        site_area: budgetResult.inputs.site_area_m2
-      },
-      budget_summary: {
-        total_construction_cost: budgetResult.total_cost.proposed,
-        shell_budget: budgetResult.minimum_budgets.shell,
-        interior_budget: budgetResult.minimum_budgets.interior,
-        landscape_budget: budgetResult.minimum_budgets.landscape,
-        architecture_budget: budgetResult.architecture_budget,
-        engineering_total: budgetResult.engineering_budgets.sum
-      },
-      fee_summary: {
-        market_fee: feeResult.totals.market_fee,
-        consultant_fees: feeResult.totals.consultant_total,
-        internal_fees: feeResult.totals.discounted_total,
-        overall_percentage: feeResult.totals.overall_percentage,
-        rate_per_sf: feeResult.totals.rate_per_ft2,
-        total_hours: feeResult.totals.total_hours
-      }
-    };
-
-    const jsonContent = JSON.stringify(reportData, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${projectName.replace(/[^a-z0-9]/gi, '_')}_complete_report.json`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const clearAllData = () => {
-    if (confirm('Are you sure you want to clear all project data? This action cannot be undone.')) {
-      localStorage.removeItem('budgetResult');
-      localStorage.removeItem('feeMatrixResult');
-      localStorage.removeItem('projectName');
-      setBudgetResult(null);
-      setFeeResult(null);
-      setProjectName('Untitled Project');
-    }
-  };
-
-  const completionPercentage = () => {
-    let completed = 0;
-    if (budgetResult) completed += 50;
-    if (feeResult) completed += 50;
-    return completed;
-  };
-
-  const StatCard = ({ title, value, subtitle, icon: Icon, variant = 'default', onClick }: {
-    title: string;
-    value: string;
-    subtitle?: string;
-    icon: any;
-    variant?: 'default' | 'success' | 'warning';
-    onClick?: () => void;
-  }) => (
-    <Card 
-      className={`relative overflow-hidden cursor-pointer transition-all hover:shadow-md ${
-        variant === 'success' ? 'border-green-200 bg-green-50' : 
-        variant === 'warning' ? 'border-yellow-200 bg-yellow-50' : ''
-      }`}
-      onClick={onClick}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-gray-400" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-xl sm:text-2xl font-bold text-gray-900">{value}</div>
-        {subtitle && (
-          <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
-        )}
-        {onClick && (
-          <div className="text-xs text-blue-600 mt-1 flex items-center">
-            View Details <ArrowRight className="h-3 w-3 ml-1" />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+  const inhouseFees = fees.filter(f => f.isInhouse);
+  const outsourcedFees = fees.filter(f => !f.isInhouse);
 
   return (
-    <div className="bg-gray-50 font-inter text-dark-slate min-h-screen">
-      {/* Header */}
-      <header className="bg-white border-b border-light-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-3 sm:py-0">
-            <div className="flex items-center space-x-3 mb-3 sm:mb-0">
-              <div className="w-10 h-10 bg-scientific-blue rounded-lg flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={projectName}
-                  onChange={(e) => updateProjectName(e.target.value)}
-                  className="text-lg sm:text-xl font-semibold text-dark-slate bg-transparent border-none outline-none focus:bg-white focus:border focus:border-blue-300 focus:rounded px-2"
-                  placeholder="Enter project name..."
-                />
-                <p className="text-xs sm:text-sm text-gray-500">Project Analysis Dashboard</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-center sm:justify-end space-x-2 sm:space-x-4">
-              <Badge variant="outline" className="px-2 sm:px-3 py-1 text-xs sm:text-sm">
-                {completionPercentage()}% Complete
-              </Badge>
-              {budgetResult && feeResult && (
-                <Button
-                  onClick={exportCompleteReport}
-                  className="px-2 sm:px-4 py-2 text-xs sm:text-sm bg-scientific-blue hover:bg-blue-600"
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Export Report</span>
-                  <span className="sm:hidden">Export</span>
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="mb-6 flex justify-between items-center">
+        <Button variant="ghost" onClick={() => navigate("/projects")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Projects
+        </Button>
+        <Button onClick={() => recalculateMutation.mutate()} disabled={recalculateMutation.isPending}>
+          {recalculateMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          )}
+          Recalculate
+        </Button>
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Progress Overview */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
-              Project Progress
-            </CardTitle>
-            <CardDescription>
-              Complete both budget and fee calculations for full project analysis
-            </CardDescription>
+      {/* Project Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">
+          {project.projectName}
+          {project.isDemo && (
+            <Badge className="ml-3" variant="secondary">Demo</Badge>
+          )}
+        </h1>
+        <div className="flex gap-6 text-sm text-muted-foreground">
+          <span>{project.buildingUse}</span>
+          <span>•</span>
+          <span>{project.buildingType}</span>
+          <span>•</span>
+          <span>{project.buildingTier}</span>
+          <span>•</span>
+          <span>Last updated: {new Date(calculations.calculatedAt).toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Key Metrics Cards */}
+      <div className="grid gap-4 md:grid-cols-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Budget</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Overall Progress</span>
-                <span className="text-sm text-gray-600">{completionPercentage()}%</span>
-              </div>
-              <Progress value={completionPercentage()} className="h-2" />
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <div className={`flex items-center gap-3 p-3 rounded-lg border ${
-                  budgetResult ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    budgetResult ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    {budgetResult ? <CheckCircle2 className="h-4 w-4" /> : <Building className="h-4 w-4" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Budget Analysis</div>
-                    <div className="text-xs text-gray-600">
-                      {budgetResult ? 'Completed' : 'Pending'}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={budgetResult ? "outline" : "default"}
-                    onClick={() => window.location.href = '/minimum-budget'}
-                  >
-                    {budgetResult ? <Edit className="h-3 w-3" /> : 'Start'}
-                  </Button>
-                </div>
-
-                <div className={`flex items-center gap-3 p-3 rounded-lg border ${
-                  feeResult ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
-                }`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    feeResult ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    {feeResult ? <CheckCircle2 className="h-4 w-4" /> : <Calculator className="h-4 w-4" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Fee Calculation</div>
-                    <div className="text-xs text-gray-600">
-                      {feeResult ? 'Completed' : budgetResult ? 'Ready' : 'Requires Budget'}
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={feeResult ? "outline" : "default"}
-                    disabled={!budgetResult}
-                    onClick={() => window.location.href = '/fee-matrix'}
-                  >
-                    {feeResult ? <Edit className="h-3 w-3" /> : 'Start'}
-                  </Button>
-                </div>
-              </div>
+            <div className="text-2xl font-bold">{formatCurrency(calculations.totalBudget)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              New: {formatCurrency(calculations.newBudget)} | Remodel: {formatCurrency(calculations.remodelBudget)}
             </div>
           </CardContent>
         </Card>
 
-        {(!budgetResult || !feeResult) && (
-          <Alert className="mb-6">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {!budgetResult && !feeResult && "Start by completing the Budget Analysis to begin your project evaluation."}
-              {budgetResult && !feeResult && "Great! Your budget is complete. Now calculate professional fees to finish the analysis."}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {budgetResult && feeResult && (
-          <>
-            {/* Key Metrics Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              <StatCard
-                title="Total Project Cost"
-                value={formatCurrency(budgetResult.total_cost.proposed)}
-                subtitle={`${budgetResult.area.total_sf.toLocaleString()} SF`}
-                icon={Building}
-                onClick={() => window.location.href = '/minimum-budget'}
-              />
-              <StatCard
-                title="Professional Fees"
-                value={formatCurrency(feeResult.totals.market_fee)}
-                subtitle={`${formatPercent(feeResult.totals.overall_percentage)}`}
-                icon={DollarSign}
-                variant="success"
-                onClick={() => window.location.href = '/fee-matrix'}
-              />
-              <StatCard
-                title="Design Hours"
-                value={formatHours(feeResult.totals.total_hours)}
-                subtitle={`$${feeResult.inputs.average_billable_rate}/hr avg`}
-                icon={Clock}
-                onClick={() => window.location.href = '/fee-matrix'}
-              />
-              <StatCard
-                title="Rate per SF"
-                value={`$${feeResult.totals.rate_per_ft2.toFixed(0)}`}
-                subtitle="Professional fees"
-                icon={TrendingUp}
-                onClick={() => window.location.href = '/fee-matrix'}
-              />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Market Fee</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalMarketFee)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {formatPercent(totalMarketFee / parseFloat(calculations.totalBudget))} of budget
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Detailed Breakdown */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Budget Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Construction Budget
-                  </CardTitle>
-                  <CardDescription>
-                    Breakdown by project component
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Shell & Architecture</span>
-                      <span className="font-medium">{formatCurrency(budgetResult.architecture_budget)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Interior Design</span>
-                      <span className="font-medium">{formatCurrency(budgetResult.minimum_budgets.interior)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Landscape</span>
-                      <span className="font-medium">{formatCurrency(budgetResult.minimum_budgets.landscape)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Engineering</span>
-                      <span className="font-medium">{formatCurrency(budgetResult.engineering_budgets.sum)}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center font-bold">
-                      <span>Total Construction</span>
-                      <span>{formatCurrency(budgetResult.total_cost.proposed)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Fee Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
-                    Professional Fees
-                  </CardTitle>
-                  <CardDescription>
-                    Internal vs consultant breakdown
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Internal Services</span>
-                      <span className="font-medium">{formatCurrency(feeResult.totals.discounted_total)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">External Consultants</span>
-                      <span className="font-medium">{formatCurrency(feeResult.totals.consultant_total)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total Hours</span>
-                      <span className="font-medium">{formatHours(feeResult.totals.total_hours)} hrs</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Complexity Factor</span>
-                      <span className="font-medium">{(feeResult.inputs.complexity_multiplier * 100).toFixed(0)}%</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between items-center font-bold">
-                      <span>Total Fees</span>
-                      <span>{formatCurrency(feeResult.totals.market_fee)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Louis Amy Fee</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalLouisAmyFee)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              In-house services only
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                onClick={() => window.location.href = '/hourly-factor'}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                Hourly Factor Calculator
-              </Button>
-              <Button
-                onClick={() => window.location.href = '/minimum-budget'}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Modify Budget
-              </Button>
-              <Button
-                onClick={() => window.location.href = '/fee-matrix'}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Adjust Fees
-              </Button>
-              <Button
-                onClick={clearAllData}
-                variant="destructive"
-                className="flex items-center gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                New Project
-              </Button>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Hours</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(totalHours, 0)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Louis Amy team hours
             </div>
-          </>
-        )}
+          </CardContent>
+        </Card>
       </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="budgets">Budgets</TabsTrigger>
+          <TabsTrigger value="fees">Fees</TabsTrigger>
+          <TabsTrigger value="hours">Hours</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          {/* Project Parameters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Parameters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Design Level:</span>
+                    <span className="font-medium">Level {project.designLevel}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium">Category {project.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Historic Property:</span>
+                    <span className="font-medium">{parseFloat(project.historicMultiplier) > 1 ? 'Yes' : 'No'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Remodel Factor:</span>
+                    <span className="font-medium">{formatPercent(project.remodelMultiplier)}</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New Building Area:</span>
+                    <span className="font-medium">{formatNumber(project.newBuildingArea)} ft²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Existing Building:</span>
+                    <span className="font-medium">{formatNumber(project.existingBuildingArea)} ft²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Site Area:</span>
+                    <span className="font-medium">{formatNumber(project.siteArea)} ft²</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Area:</span>
+                    <span className="font-medium">
+                      {formatNumber(parseFloat(project.newBuildingArea) + parseFloat(project.existingBuildingArea))} ft²
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cost Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Construction Cost Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">New Construction</h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Minimum</div>
+                      <div className="font-medium">{formatCurrency(calculations.newCostMin)}/ft²</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Target</div>
+                      <div className="font-medium">{formatCurrency(calculations.newCostTarget)}/ft²</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Maximum</div>
+                      <div className="font-medium">{formatCurrency(calculations.newCostMax)}/ft²</div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Remodel</h4>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Minimum</div>
+                      <div className="font-medium">{formatCurrency(calculations.remodelCostMin)}/ft²</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Target</div>
+                      <div className="font-medium">{formatCurrency(calculations.remodelCostTarget)}/ft²</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Maximum</div>
+                      <div className="font-medium">{formatCurrency(calculations.remodelCostMax)}/ft²</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="budgets" className="space-y-4">
+          <Collapsible open={expandedBudgets} onOpenChange={setExpandedBudgets}>
+            <Card>
+              <CardHeader>
+                <CollapsibleTrigger className="flex items-center justify-between w-full">
+                  <CardTitle>Budget Breakdown</CardTitle>
+                  {expandedBudgets ? <ChevronUp /> : <ChevronDown />}
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Category Budgets */}
+                    <div>
+                      <h4 className="font-medium mb-3">Category Budgets</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span>Shell/Architecture</span>
+                          <div className="flex items-center gap-4">
+                            <Progress value={parseFloat(calculations.shellBudgetTotal) / parseFloat(calculations.totalBudget) * 100} className="w-32" />
+                            <span className="font-medium w-32 text-right">{formatCurrency(calculations.shellBudgetTotal)}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Interior Design</span>
+                          <div className="flex items-center gap-4">
+                            <Progress value={parseFloat(calculations.interiorBudgetTotal) / parseFloat(calculations.totalBudget) * 100} className="w-32" />
+                            <span className="font-medium w-32 text-right">{formatCurrency(calculations.interiorBudgetTotal)}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span>Landscape</span>
+                          <div className="flex items-center gap-4">
+                            <Progress value={parseFloat(calculations.landscapeBudgetTotal) / parseFloat(calculations.totalBudget) * 100} className="w-32" />
+                            <span className="font-medium w-32 text-right">{formatCurrency(calculations.landscapeBudgetTotal)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Discipline Budgets */}
+                    <div>
+                      <h4 className="font-medium mb-3">Discipline Budgets</h4>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Architecture:</span>
+                          <span className="font-medium">{formatCurrency(calculations.architectureBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Structural:</span>
+                          <span className="font-medium">{formatCurrency(calculations.structuralBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Civil/Site:</span>
+                          <span className="font-medium">{formatCurrency(calculations.civilBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mechanical:</span>
+                          <span className="font-medium">{formatCurrency(calculations.mechanicalBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Electrical:</span>
+                          <span className="font-medium">{formatCurrency(calculations.electricalBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Plumbing:</span>
+                          <span className="font-medium">{formatCurrency(calculations.plumbingBudget)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Telecom:</span>
+                          <span className="font-medium">{formatCurrency(calculations.telecomBudget)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </TabsContent>
+
+        <TabsContent value="fees" className="space-y-4">
+          <Collapsible open={expandedFees} onOpenChange={setExpandedFees}>
+            <Card>
+              <CardHeader>
+                <CollapsibleTrigger className="flex items-center justify-between w-full">
+                  <div>
+                    <CardTitle>Fee Matrix</CardTitle>
+                    <CardDescription>Detailed breakdown of all service fees</CardDescription>
+                  </div>
+                  {expandedFees ? <ChevronUp /> : <ChevronDown />}
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* In-house Services */}
+                    {inhouseFees.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-3">In-House Services</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Scope</TableHead>
+                              <TableHead className="text-right">% of Cost</TableHead>
+                              <TableHead className="text-right">$/ft²</TableHead>
+                              <TableHead className="text-right">Market Fee</TableHead>
+                              <TableHead className="text-right">LA Fee</TableHead>
+                              <TableHead className="text-right">Hours</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {inhouseFees.map((fee, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium">{fee.scope}</TableCell>
+                                <TableCell className="text-right">
+                                  {fee.percentOfCost ? formatPercent(fee.percentOfCost) : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {fee.ratePerSqFt ? `$${parseFloat(fee.ratePerSqFt).toFixed(2)}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(fee.marketFee)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(fee.louisAmyFee)}</TableCell>
+                                <TableCell className="text-right">{formatNumber(fee.hours || 0)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                    {/* Outsourced Services */}
+                    {outsourcedFees.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-3">Outsourced Services</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Scope</TableHead>
+                              <TableHead className="text-right">% of Cost</TableHead>
+                              <TableHead className="text-right">$/ft²</TableHead>
+                              <TableHead className="text-right">Market Fee</TableHead>
+                              <TableHead className="text-right">Coordination</TableHead>
+                              <TableHead className="text-right">Consultant</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {outsourcedFees.map((fee, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium">{fee.scope}</TableCell>
+                                <TableCell className="text-right">
+                                  {fee.percentOfCost ? formatPercent(fee.percentOfCost) : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {fee.ratePerSqFt ? `$${parseFloat(fee.ratePerSqFt).toFixed(2)}` : '-'}
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(fee.marketFee)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(fee.coordinationFee || 0)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(fee.consultantFee || 0)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                    {/* Fee Summary */}
+                    <div className="border-t pt-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Total Market Fee:</span>
+                            <span className="font-bold">{formatCurrency(totalMarketFee)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Total Louis Amy Fee:</span>
+                            <span className="font-bold">{formatCurrency(totalLouisAmyFee)}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="font-medium">Coordination Fees:</span>
+                            <span className="font-bold">{formatCurrency(totalCoordinationFee)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-medium">Consultant Fees:</span>
+                            <span className="font-bold">{formatCurrency(totalConsultantFee)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </TabsContent>
+
+        <TabsContent value="hours" className="space-y-4">
+          <Collapsible open={expandedHours} onOpenChange={setExpandedHours}>
+            <Card>
+              <CardHeader>
+                <CollapsibleTrigger className="flex items-center justify-between w-full">
+                  <div>
+                    <CardTitle>Hours Distribution</CardTitle>
+                    <CardDescription>Phase and role breakdown of project hours</CardDescription>
+                  </div>
+                  {expandedHours ? <ChevronUp /> : <ChevronDown />}
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Phase</TableHead>
+                        <TableHead className="text-right">% of Total</TableHead>
+                        <TableHead className="text-right">Total Hours</TableHead>
+                        <TableHead className="text-right">Designer 1</TableHead>
+                        <TableHead className="text-right">Designer 2</TableHead>
+                        <TableHead className="text-right">Architect</TableHead>
+                        <TableHead className="text-right">Engineer</TableHead>
+                        <TableHead className="text-right">Principal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {hours.map((hour, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{hour.phase}</TableCell>
+                          <TableCell className="text-right">{formatPercent(hour.phasePercent)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.totalHours, 1)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.designer1Hours || 0, 1)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.designer2Hours || 0, 1)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.architectHours || 0, 1)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.engineerHours || 0, 1)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(hour.principalHours || 0, 1)}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="font-bold border-t-2">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="text-right">100%</TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0), 1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.designer1Hours || '0'), 0), 1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.designer2Hours || '0'), 0), 1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.architectHours || '0'), 0), 1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.engineerHours || '0'), 0), 1)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.principalHours || '0'), 0), 1)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 # Overview
 
-This is a React-based calculator application for computing hourly factors based on square footage input. The application features both single-value calculations and range-based data generation with interactive visualizations. It's built as a full-stack TypeScript application with a React frontend and Express backend, designed to calculate hourly factors using the formula: HF = 0.21767 + 11.21274 × (sq-feet)^-0.53816.
+This is a comprehensive engineering cost calculator web application that provides sophisticated budget analysis and fee calculations for construction projects. The application features a multi-step project creation wizard, interactive dashboards with real-time calculation updates, and full database integration for project storage and reporting. It's built as a full-stack TypeScript application with a React frontend and Express backend, using PostgreSQL for data persistence.
 
 # User Preferences
 
@@ -12,29 +12,34 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: React with TypeScript using Vite as the build tool
 - **UI Library**: Shadcn/ui components built on Radix UI primitives for consistent, accessible design
 - **Styling**: Tailwind CSS with custom CSS variables for theming
-- **Routing**: Wouter for lightweight client-side routing
+- **Routing**: Wouter for lightweight client-side routing with multi-page support
 - **State Management**: React Query (@tanstack/react-query) for server state management and local React state for UI interactions
-- **Form Handling**: React Hook Form with Zod validation schemas
+- **Form Handling**: React Hook Form with Zod validation schemas for multi-step wizards
 
 ## Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Database ORM**: Drizzle ORM configured for PostgreSQL
-- **Data Storage**: In-memory storage implementation (MemStorage) as the current storage layer with interface design for easy database integration
+- **Data Storage**: Full PostgreSQL database integration for project persistence and reporting
 - **API Design**: RESTful API structure with /api prefix for all endpoints
-- **Session Management**: Configured for connect-pg-simple sessions (currently unused but ready for authentication features)
+- **Calculation Service**: Comprehensive ProjectCalculatorService handling budget calculations, fee matrices, and hours distribution
 
 ## Component Structure
-- **Calculator Components**: Modular components for equation display, control panels, interactive graphs, and data tables
-- **UI Components**: Comprehensive set of reusable UI components from Shadcn/ui including forms, buttons, dialogs, and data display components
-- **Page Structure**: Simple page-based routing with calculator as the main page and 404 handling
+- **Project Management**: Project listing, creation wizard, and dashboard components
+- **Calculator Components**: Multiple specialized calculators (Minimum Budget, Fee Matrix, Hourly Factor)
+- **UI Components**: Comprehensive set of reusable UI components from Shadcn/ui including collapsible sections, tabs, and data tables
+- **Page Structure**: Multi-page routing supporting projects, calculators, and dashboards
 
 ## Data Flow
-- **Calculation Logic**: Centralized in `/lib/calculations.ts` with functions for single calculations, range generation, and chart data creation
-- **Real-time Updates**: React state drives immediate UI updates for calculations and graph interactions
-- **Data Export**: CSV export functionality for generated data tables
+- **Calculation Logic**: Server-side calculation engine in `projectCalculator.ts` implementing complex engineering cost formulas
+- **Real-time Updates**: Live recalculation and auto-save functionality for projects
+- **Data Persistence**: Full CRUD operations for projects with related calculations, fees, and hours
 
 ## Database Schema
-- **Users Table**: Basic user schema with id, username, and password fields using Drizzle ORM
+- **Projects Table**: Main project data including building specifications and cost parameters
+- **Project Calculations**: Calculated budgets and cost breakdowns per project
+- **Project Fees**: Detailed fee matrix for in-house and outsourced services
+- **Project Hours**: Phase-based hours distribution across team roles
+- **Supporting Tables**: Building types, engineering costs, category multipliers, and configuration data
 - **Type Safety**: Full TypeScript integration with Drizzle for compile-time type checking
 
 # External Dependencies

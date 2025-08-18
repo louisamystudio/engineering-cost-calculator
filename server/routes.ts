@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { budgetInputSchema, feeMatrixInputSchema, feeMatrixV2InputSchema } from "@shared/schema";
+import { budgetInputSchema, feeMatrixInputSchema, feeMatrixV2InputSchema, comprehensiveProjectInputSchema } from "@shared/schema";
 import { calculateMinimumBudget } from "@shared/budget-calculations";
 import { calculateFeeMatrix } from "@shared/fee-matrix-calculations";
 import { computeFeeMatrixV2 } from "./services/feeMatrixV2";
+import { projectCalculator } from "./services/projectCalculator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Budget Calculator API Routes
@@ -149,6 +150,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching fee defaults:", error);
       res.status(500).json({ error: "Failed to fetch fee defaults" });
+    }
+  });
+
+  // Comprehensive Project Calculator Routes
+  
+  // Get all projects
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const projects = await storage.getAllProjects();
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+  
+  // Get single project with calculations
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      
+      const [calculations, fees, hours] = await Promise.all([
+        storage.getProjectCalculations(req.params.id),
+        storage.getProjectFees(req.params.id),
+        storage.getProjectHours(req.params.id)
+      ]);
+      
+      res.json({ project, calculations, fees, hours });
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+  
+  // Create or update project with calculations
+  app.post("/api/projects/calculate", async (req, res) => {
+    try {
+      const validationResult = comprehensiveProjectInputSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid input", 
+          details: validationResult.error.issues 
+        });
+      }
+      
+      const result = await projectCalculator.calculateProject(validationResult.data);
+      res.json(result);
+    } catch (error) {
+      console.error("Error calculating project:", error);
+      res.status(500).json({ error: "Failed to calculate project" });
+    }
+  });
+  
+  // Delete project
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteProject(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+  
+  // Get building uses
+  app.get("/api/building-uses", async (req, res) => {
+    try {
+      const uses = await storage.getAllBuildingUses();
+      res.json(uses);
+    } catch (error) {
+      console.error("Error fetching building uses:", error);
+      res.status(500).json({ error: "Failed to fetch building uses" });
+    }
+  });
+  
+  // Get building types by use
+  app.get("/api/building-uses/:use/types", async (req, res) => {
+    try {
+      const types = await storage.getBuildingTypesByUse(decodeURIComponent(req.params.use));
+      res.json(types);
+    } catch (error) {
+      console.error("Error fetching building types:", error);
+      res.status(500).json({ error: "Failed to fetch building types" });
+    }
+  });
+  
+  // Get building tiers by type
+  app.get("/api/building-types/:type/available-tiers", async (req, res) => {
+    try {
+      const tiers = await storage.getBuildingTiersByType(decodeURIComponent(req.params.type));
+      res.json(tiers);
+    } catch (error) {
+      console.error("Error fetching building tiers:", error);
+      res.status(500).json({ error: "Failed to fetch building tiers" });
+    }
+  });
+  
+  // Get category multipliers
+  app.get("/api/category-multipliers", async (req, res) => {
+    try {
+      const multipliers = await storage.getAllCategoryMultipliers();
+      res.json(multipliers);
+    } catch (error) {
+      console.error("Error fetching category multipliers:", error);
+      res.status(500).json({ error: "Failed to fetch category multipliers" });
     }
   });
 
