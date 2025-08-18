@@ -1,0 +1,25 @@
+The demo project on the Project Calculator site was created with the user‑provided parameters (Residential, private residence, 2 000 ft² new area and 2 000 ft² remodel).  The app computed a total project budget of **\$1 050 000** and split the costs into **Shell/Architecture \$724 500**, **Interior Design \$210 000** and **Landscape \$115 500**.  These figures correspond to a cost of \$350 per ft² for new construction and \$175 per ft² for remodel – values that match the *design‑level 2* range in the original spreadsheet (Mid‑Range Standard Residential cost range 340–360 \$/ft²).  However, in the form we selected **“Level 3 – Premium”**, so the app should have used the Level‑3 range (380–400 \$/ft²), which would have yielded a larger total budget (\~\$1.17 M).  This indicates that the app is ignoring the chosen design level and defaulting to the mid‑range cost tier.
+
+### Budget Allocation
+
+When the Python translation of the spreadsheet is run with design‑level 2 parameters, most discipline budgets match the app: structural (\$163 013 vs \$163 012.5), civil/site (\$36 225 vs \$36 225), mechanical (\$43 470 vs \$43 469.9), electrical (\$32 603 vs \$32 602.5), plumbing (\$25 358 vs \$25 357.5) and telecom (\$10 868 vs \$10 867.5).  These values are consistent with multiplying the shell budget by each engineering discipline’s share and reducing the structural share on remodel work.
+
+The significant discrepancy is the **architecture budget**.  In the spreadsheet logic, architecture’s share equals the shell budget minus all engineering shares.  With a shell budget of \$724 500 and engineering totals of \$286 400, the architecture budget should be **\$412 965**.  The app instead shows **\$487 045**, over‑allocating architecture by \~18 %.  This misallocation suggests that the app either omits the remodel‑reduction on the structural share or uses a different formula for architecture than for the other disciplines.
+
+### Fee Calculation
+
+The fee matrix shows design fees as percentages of cost and per‑ft² rates.  Architecture is charged at **7 % of cost (\$20.64/ft²)**, resulting in a market fee of **\$82 553**.  When the spreadsheet’s fee formulas are applied with the same project parameters, the architecture fee fraction is roughly **11 %** (because the base percentage is scaled by a category multiplier and adjusted for remodel vs new work), yielding a fee of about **\$118 000**.  Thus the app underestimates the architecture fee by more than **\$35 000**.  Interior design and landscape design fees in the app (\$40 341 and \$25 342) align with the spreadsheet output, and outsourced services (mechanical, electrical and telecom) also match the calculated percentages.
+
+### Hours Distribution
+
+The app reports **1 142 hours** for the Louis Amy team and breaks them down by phase and role (e.g., Discovery 91.3 hr, Creative‑Schematic 388.2 hr, etc.).  The spreadsheet’s hours function, when executed with the same inputs, produces about **1 263 hours**, so the app seems to use slightly smaller coefficients.  Nevertheless, the phase percentages and role allocations (Designer 1, Designer 2, Architect, Engineer, Principal) follow the correct proportions.
+
+### Conclusion
+
+The Project Calculator largely reproduces the spreadsheet logic for most discipline budgets and outsourced fees, but it contains critical issues:
+
+1. **Design level ignored** – selecting “Level 3 – Premium” does not change the cost range; the app uses the Level‑2 mid‑range cost (\$350 / ft²), leading to an understated total budget.
+2. **Architecture budget misallocated** – the app inflates the architecture budget (\$487 045) instead of subtracting the engineering shares from the shell budget (correctly \$412 965), causing an overstatement of architecture and an understatement of engineering.
+3. **Underestimated architecture fee** – due to the budget misallocation and/or an incorrect fee formula, the architecture fee is \~ \$82 553, whereas the spreadsheet formula yields about \$118 000.
+
+Given these discrepancies, the app’s logic should be reviewed.  Adjusting the design‑level selection, correcting the architecture budget formula and applying the proper fee percentages would bring its output in line with the spreadsheet calculations.
