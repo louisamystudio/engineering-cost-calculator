@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hourly Factor Calculator & Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'scientific-blue': '#2563EB',
+                        'calculation-green': '#10B981',
+                        'dark-slate': '#1E293B',
+                        'accent-purple': '#8B5CF6',
+                        'light-border': '#E2E8F0'
+                    },
+                    fontFamily: {
+                        'mono': ['JetBrains Mono', 'monospace'],
+                        'inter': ['Inter', 'sans-serif'],
+                        'source': ['Source Sans Pro', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-inter text-dark-slate min-h-screen">
+    <!-- @COMPONENT: Header -->
+    <header class="bg-white border-b border-light-border shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-scientific-blue rounded-lg flex items-center justify-center">
+                        <span class="text-white font-mono font-semibold text-lg">HF</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-dark-slate">Hourly Factor Calculator</h1>
+                        <p class="text-sm text-gray-500">Interactive visualization & data analysis</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- @FUNCTIONALITY: Export and settings controls -->
+                    <button class="px-4 py-2 text-scientific-blue hover:bg-blue-50 rounded-lg font-medium transition-colors duration-200" data-event="click:exportData">
+                        Export Data
+                    </button>
+                    <button class="p-2 text-gray-500 hover:text-dark-slate rounded-lg transition-colors duration-200">
+                        <span class="sr-only">Settings</span>
+                        ⚙️
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Equation Display -->
+        <!-- @COMPONENT: EquationDisplay -->
+        <div class="bg-white rounded-xl shadow-lg border border-light-border p-6 mb-8">
+            <h2 class="text-lg font-semibold text-dark-slate mb-4">Hourly Factor Equation</h2>
+            <div class="bg-gray-50 rounded-lg p-4 border border-light-border">
+                <div class="font-mono text-lg text-center">
+                    <span class="text-dark-slate">HF = </span>
+                    <span class="text-scientific-blue font-semibold">0.21767</span>
+                    <span class="text-dark-slate"> + </span>
+                    <span class="text-calculation-green font-semibold">11.21274</span>
+                    <span class="text-dark-slate"> × (sq-feet)</span>
+                    <sup class="text-accent-purple font-semibold">-0.53816</sup>
+                </div>
+                <div class="text-sm text-gray-600 text-center mt-2">
+                    Where sq-feet is the square footage input value
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: EquationDisplay -->
+
+        <!-- Split Panel Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Panel: Controls -->
+            <!-- @COMPONENT: ControlPanel -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Single Value Calculator -->
+                <div class="bg-white rounded-xl shadow-lg border border-light-border p-6">
+                    <h3 class="text-lg font-semibold text-dark-slate mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-scientific-blue rounded-full mr-2"></span>
+                        Single Value Calculator
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-dark-slate mb-2">Square Feet</label>
+                            <input 
+                                type="number" 
+                                id="singleValue" 
+                                class="w-full px-4 py-3 border border-light-border rounded-lg focus:ring-2 focus:ring-scientific-blue focus:border-transparent font-mono text-lg"
+                                placeholder="1000"
+                                min="1"
+                                step="0.01"
+                                data-bind="singleSquareFeet"
+                                data-event="input:calculateSingle"
+                            />
+                        </div>
+                        <div class="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-light-border">
+                            <div class="text-sm font-medium text-gray-600 mb-1">Hourly Factor Result</div>
+                            <div class="font-mono text-2xl font-bold text-dark-slate" data-bind="singleResult" id="singleResult">
+                                0.57493
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Range Calculator -->
+                <div class="bg-white rounded-xl shadow-lg border border-light-border p-6">
+                    <h3 class="text-lg font-semibold text-dark-slate mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-calculation-green rounded-full mr-2"></span>
+                        Range Calculator
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-dark-slate mb-2">Start (sq-ft)</label>
+                                <input 
+                                    type="number" 
+                                    id="rangeStart"
+                                    class="w-full px-3 py-2 border border-light-border rounded-lg focus:ring-2 focus:ring-calculation-green focus:border-transparent font-mono"
+                                    placeholder="100"
+                                    min="1"
+                                    step="1"
+                                    data-bind="rangeStart"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-dark-slate mb-2">End (sq-ft)</label>
+                                <input 
+                                    type="number" 
+                                    id="rangeEnd"
+                                    class="w-full px-3 py-2 border border-light-border rounded-lg focus:ring-2 focus:ring-calculation-green focus:border-transparent font-mono"
+                                    placeholder="5000"
+                                    min="1"
+                                    step="1"
+                                    data-bind="rangeEnd"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-dark-slate mb-2">Interval</label>
+                            <input 
+                                type="number" 
+                                id="rangeInterval"
+                                class="w-full px-3 py-2 border border-light-border rounded-lg focus:ring-2 focus:ring-calculation-green focus:border-transparent font-mono"
+                                placeholder="100"
+                                min="1"
+                                step="1"
+                                data-bind="rangeInterval"
+                            />
+                        </div>
+                        <button 
+                            class="w-full bg-calculation-green text-white py-3 px-4 rounded-lg hover:bg-green-600 font-medium transition-colors duration-200"
+                            data-event="click:generateRange"
+                            data-implementation="Should validate inputs and generate data table"
+                        >
+                            Generate Data Table
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Graph Controls -->
+                <div class="bg-white rounded-xl shadow-lg border border-light-border p-6">
+                    <h3 class="text-lg font-semibold text-dark-slate mb-4 flex items-center">
+                        <span class="w-2 h-2 bg-accent-purple rounded-full mr-2"></span>
+                        Graph Controls
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-dark-slate mb-2">X Min</label>
+                                <input 
+                                    type="number" 
+                                    id="xMin"
+                                    class="w-full px-3 py-2 border border-light-border rounded-lg focus:ring-2 focus:ring-accent-purple focus:border-transparent font-mono text-sm"
+                                    placeholder="0"
+                                    data-bind="graphXMin"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-dark-slate mb-2">X Max</label>
+                                <input 
+                                    type="number" 
+                                    id="xMax"
+                                    class="w-full px-3 py-2 border border-light-border rounded-lg focus:ring-2 focus:ring-accent-purple focus:border-transparent font-mono text-sm"
+                                    placeholder="10000"
+                                    data-bind="graphXMax"
+                                />
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium text-dark-slate">Show Grid</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" checked data-bind="showGrid">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-purple"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ControlPanel -->
+
+            <!-- Right Panel: Graph and Data Table -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Interactive Graph -->
+                <!-- @COMPONENT: InteractiveGraph -->
+                <div class="bg-white rounded-xl shadow-lg border border-light-border p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-dark-slate">Interactive Graph</h3>
+                        <div class="flex items-center space-x-4">
+                            <!-- @STATE: currentPoint = {x: 0, y: 0} -->
+                            <div class="text-sm text-gray-600 font-mono" data-bind="currentPoint">
+                                Point: (1000, 0.57493)
+                            </div>
+                            <button class="text-scientific-blue hover:text-blue-700 text-sm font-medium" data-event="click:resetZoom">
+                                Reset Zoom
+                            </button>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <canvas id="hourlyFactorChart" class="w-full h-96 border border-light-border rounded-lg"></canvas>
+                        <!-- @FUNCTIONALITY: Chart.js implementation with real-time updates -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: InteractiveGraph -->
+
+                <!-- Data Table -->
+                <!-- @COMPONENT: DataTable -->
+                <div class="bg-white rounded-xl shadow-lg border border-light-border p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-dark-slate">Generated Data Table</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600" data-bind="tableRowCount">0 entries</span>
+                            <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200 transition-colors duration-200" data-event="click:exportCSV">
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="emptyTableState" class="text-center py-12 text-gray-500">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            📊
+                        </div>
+                        <h4 class="font-medium mb-2">No data generated yet</h4>
+                        <p class="text-sm">Use the range calculator to generate a data table</p>
+                    </div>
+
+                    <!-- Data Table -->
+                    <div id="dataTable" class="hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-light-border">
+                                        <th class="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Square Feet</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Hourly Factor</th>
+                                        <th class="text-left py-3 px-4 font-semibold text-dark-slate text-sm">Difference</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody" class="divide-y divide-light-border">
+                                    <!-- @MAP: tableData.map(row => ( -->
+                                    <tr class="hover:bg-gray-50 transition-colors duration-200" data-mock="true">
+                                        <td class="py-3 px-4 font-mono text-sm">1000</td>
+                                        <td class="py-3 px-4 font-mono text-sm text-calculation-green font-medium">0.57493</td>
+                                        <td class="py-3 px-4 font-mono text-sm text-gray-600">-</td>
+                                    </tr>
+                                    <!-- @END_MAP )) -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DataTable -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-light-border mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">
+                    Hourly Factor Calculator v1.0 - Built with precision and accuracy
+                </div>
+                <div class="text-xs text-gray-500 font-mono">
+                    Equation: 0.21767 + 11.21274 × (sq-feet)^(-0.53816)
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Chart.js
+        (function() {
+            // @FUNCTIONALITY: Hourly factor calculation implementation
+            const calculateHourlyFactor = (squareFeet) => {
+                return 0.21767 + 11.21274 * Math.pow(squareFeet, -0.53816);
+            };
+
+            // @FUNCTIONALITY: Chart initialization and configuration
+            const ctx = document.getElementById('hourlyFactorChart').getContext('2d');
+            
+            // Generate initial data points for the curve
+            const generateChartData = (min = 100, max = 10000, points = 100) => {
+                const data = [];
+                const step = (max - min) / points;
+                for (let x = min; x <= max; x += step) {
+                    data.push({
+                        x: x,
+                        y: calculateHourlyFactor(x)
+                    });
+                }
+                return data;
+            };
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Hourly Factor',
+                        data: generateChartData(),
+                        borderColor: '#2563EB',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#2563EB',
+                        pointHoverBorderColor: '#ffffff',
+                        pointHoverBorderWidth: 2
+                    }, {
+                        label: 'Current Point',
+                        data: [{x: 1000, y: calculateHourlyFactor(1000)}],
+                        borderColor: '#10B981',
+                        backgroundColor: '#10B981',
+                        borderWidth: 0,
+                        pointRadius: 8,
+                        pointHoverRadius: 10,
+                        showLine: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: {
+                                display: true,
+                                text: 'Square Feet',
+                                font: {
+                                    family: 'Inter',
+                                    weight: '500'
+                                },
+                                color: '#1E293B'
+                            },
+                            grid: {
+                                color: '#E2E8F0'
+                            },
+                            ticks: {
+                                color: '#64748B'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Hourly Factor',
+                                font: {
+                                    family: 'Inter',
+                                    weight: '500'
+                                },
+                                color: '#1E293B'
+                            },
+                            grid: {
+                                color: '#E2E8F0'
+                            },
+                            ticks: {
+                                color: '#64748B'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'nearest',
+                            intersect: false,
+                            backgroundColor: 'white',
+                            titleColor: '#1E293B',
+                            bodyColor: '#64748B',
+                            borderColor: '#E2E8F0',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            titleFont: {
+                                family: 'JetBrains Mono',
+                                weight: '500'
+                            },
+                            bodyFont: {
+                                family: 'JetBrains Mono'
+                            },
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return `Square Feet: ${tooltipItems[0].parsed.x.toFixed(0)}`;
+                                },
+                                label: function(tooltipItem) {
+                                    return `Hourly Factor: ${tooltipItem.parsed.y.toFixed(5)}`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'nearest'
+                    }
+                }
+            });
+
+            // @FUNCTIONALITY: Real-time input handling with debouncing
+            let debounceTimer;
+            const singleValueInput = document.getElementById('singleValue');
+            const singleResultDisplay = document.getElementById('singleResult');
+
+            const updateSingleCalculation = () => {
+                const squareFeet = parseFloat(singleValueInput.value);
+                if (squareFeet && squareFeet > 0) {
+                    const result = calculateHourlyFactor(squareFeet);
+                    singleResultDisplay.textContent = result.toFixed(5);
+                    
+                    // Update the current point on the chart
+                    chart.data.datasets[1].data = [{x: squareFeet, y: result}];
+                    chart.update('none');
+                    
+                    // Update current point display
+                    document.querySelector('[data-bind="currentPoint"]').textContent = 
+                        `Point: (${squareFeet.toFixed(0)}, ${result.toFixed(5)})`;
+                } else {
+                    singleResultDisplay.textContent = '0.00000';
+                }
+            };
+
+            singleValueInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(updateSingleCalculation, 300);
+            });
+
+            // Initialize with default value
+            singleValueInput.value = '1000';
+            updateSingleCalculation();
+
+            // @FUNCTIONALITY: Range calculator implementation
+            const generateRangeData = () => {
+                const start = parseFloat(document.getElementById('rangeStart').value) || 100;
+                const end = parseFloat(document.getElementById('rangeEnd').value) || 5000;
+                const interval = parseFloat(document.getElementById('rangeInterval').value) || 100;
+
+                if (start >= end || interval <= 0) {
+                    alert('Please check your range values. Start must be less than end, and interval must be positive.');
+                    return;
+                }
+
+                const tableBody = document.getElementById('tableBody');
+                const emptyState = document.getElementById('emptyTableState');
+                const dataTable = document.getElementById('dataTable');
+                
+                tableBody.innerHTML = '';
+                
+                let previousValue = null;
+                let rowCount = 0;
+                
+                for (let sqFt = start; sqFt <= end; sqFt += interval) {
+                    const hf = calculateHourlyFactor(sqFt);
+                    const difference = previousValue !== null ? (hf - previousValue).toFixed(5) : '-';
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors duration-200';
+                    row.innerHTML = `
+                        <td class="py-3 px-4 font-mono text-sm">${sqFt.toFixed(0)}</td>
+                        <td class="py-3 px-4 font-mono text-sm text-calculation-green font-medium">${hf.toFixed(5)}</td>
+                        <td class="py-3 px-4 font-mono text-sm text-gray-600">${difference}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                    previousValue = hf;
+                    rowCount++;
+                }
+                
+                emptyState.classList.add('hidden');
+                dataTable.classList.remove('hidden');
+                document.querySelector('[data-bind="tableRowCount"]').textContent = `${rowCount} entries`;
+            };
+
+            // Add event listener for generate button
+            document.querySelector('[data-event="click:generateRange"]').addEventListener('click', generateRangeData);
+
+            // Set default values for range inputs
+            document.getElementById('rangeStart').value = '100';
+            document.getElementById('rangeEnd').value = '5000';
+            document.getElementById('rangeInterval').value = '100';
+        })();
+
+        // TODO: Implement export functionality for CSV and chart image export
+        // TODO: Implement graph zoom and pan controls
+        // TODO: Add input validation for extreme values
+        // TODO: Implement responsive chart resizing
+        // TODO: Add keyboard shortcuts for common operations
+    </script>
+</body>
+</html>

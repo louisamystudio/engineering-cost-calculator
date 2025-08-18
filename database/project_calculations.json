@@ -1,0 +1,25 @@
+[
+  {
+    "id": "a4d26fa2-24e1-4a3f-9e92-dd9e856526bb",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "newCostMin": "340",
+    "newCostMax": "360",
+    "newCostTarget": "350",
+    "remodelCostMin": "170",
+    "remodelCostMax": "180",
+    "remodelCostTarget": "175",
+    "newBudget": "700000",
+    "remodelBudget": "350000",
+    "totalBudget": "1050000",
+    "shellBudgetTotal": "724499.9999999999",
+    "interiorBudgetTotal": "210000",
+    "landscapeBudgetTotal": "115500",
+    "architectureBudget": "487045.125",
+    "structuralBudget": "163012.5",
+    "civilBudget": "36224.99999999999",
+    "mechanicalBudget": "43469.99999999999",
+    "electricalBudget": "32602.5",
+    "plumbingBudget": "25357.5",
+    "telecomBudget": "10867.499999999998"
+  }
+]

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "projectName": "test",
+    "buildingUse": "Residential",
+    "buildingType": "Residence - Private",
+    "buildingTier": "Residence - Private",
+    "designLevel": 3,
+    "category": 5,
+    "newBuildingArea": 2000,
+    "existingBuildingArea": 2000,
+    "siteArea": 1000,
+    "historicMultiplier": 1,
+    "remodelMultiplier": 0.5,
+    "createdAt": "2025-08-18T19:34:06.667Z",
+    "updatedAt": "2025-08-18T19:34:06.667Z",
+    "isDemo": false,
+    "newConstructionTargetCost": null,
+    "remodelTargetCost": null,
+    "shellShareOverride": null,
+    "interiorShareOverride": null,
+    "landscapeShareOverride": null
+  }
+]

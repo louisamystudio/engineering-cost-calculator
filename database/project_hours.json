@@ -1,0 +1,74 @@
+[
+  {
+    "id": "d174280b-db54-4ee0-9979-670bf1d7629f",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Discovery",
+    "phasePercent": "0.08",
+    "totalHours": "92.38446966907966",
+    "designer1Hours": "34.182253777559474",
+    "designer2Hours": "34.182253777559474",
+    "architectHours": "9.238446966907967",
+    "engineerHours": "1.8476893933815932",
+    "principalHours": "12.933825753671155"
+  },
+  {
+    "id": "88f153de-90bc-4dc5-8181-1a94ab90b766",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Creative - Conceptual",
+    "phasePercent": "0.08",
+    "totalHours": "92.38446966907966",
+    "designer1Hours": "0",
+    "designer2Hours": "0",
+    "architectHours": "87.76524618562567",
+    "engineerHours": "0",
+    "principalHours": "4.619223483453983"
+  },
+  {
+    "id": "b4603f6e-b3df-4327-b02e-2e464237bc74",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Creative - Schematic",
+    "phasePercent": "0.34",
+    "totalHours": "392.6339960935886",
+    "designer1Hours": "125.64287874994837",
+    "designer2Hours": "125.64287874994837",
+    "architectHours": "125.64287874994837",
+    "engineerHours": "7.852679921871773",
+    "principalHours": "7.852679921871773"
+  },
+  {
+    "id": "d1611283-4d75-43f6-9f7d-0bd5777031de",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Creative - Preliminary",
+    "phasePercent": "0.08",
+    "totalHours": "92.38446966907966",
+    "designer1Hours": "29.56303029410549",
+    "designer2Hours": "29.56303029410549",
+    "architectHours": "29.56303029410549",
+    "engineerHours": "1.8476893933815932",
+    "principalHours": "1.8476893933815932"
+  },
+  {
+    "id": "77e8c0dc-fb37-4282-82a3-f70e7845ea5d",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Technical - Schematic",
+    "phasePercent": "0.34",
+    "totalHours": "392.6339960935886",
+    "designer1Hours": "102.08483898433305",
+    "designer2Hours": "102.08483898433305",
+    "architectHours": "39.26339960935886",
+    "engineerHours": "125.64287874994837",
+    "principalHours": "23.558039765615316"
+  },
+  {
+    "id": "3ebfaea5-f09b-4b46-a8af-2c994b8c9554",
+    "projectId": "b9c34ecf-c66e-4cc2-b4de-2e4394bdb1e2",
+    "phase": "Technical - Preliminary",
+    "phasePercent": "0.08",
+    "totalHours": "92.38446966907966",
+    "designer1Hours": "24.019962113960712",
+    "designer2Hours": "24.019962113960712",
+    "architectHours": "9.238446966907967",
+    "engineerHours": "29.56303029410549",
+    "principalHours": "5.54306818014478"
+  }
+]
