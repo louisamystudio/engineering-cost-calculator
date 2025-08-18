@@ -1,0 +1,311 @@
+# Static data from the Project Quote Calculations spreadsheet (cost ranges and engineering shares)
+cost_range_data = {
+    ('High-End Custom Residential', 1): {'AllInMin': 400, 'AllInMax': 500, 'ShellShare': 0.72, 'InteriorShare': 0.18, 'LandscapeShare': 0.1},
+    ('High-End Custom Residential', 2): {'AllInMin': 600, 'AllInMax': 700, 'ShellShare': 0.69, 'InteriorShare': 0.20, 'LandscapeShare': 0.11},
+    ('High-End Custom Residential', 3): {'AllInMin': 800, 'AllInMax': 900, 'ShellShare': 0.66, 'InteriorShare': 0.22, 'LandscapeShare': 0.12},
+    ('Mid-Range Standard Residential', 1): {'AllInMin': 300, 'AllInMax': 320, 'ShellShare': 0.72, 'InteriorShare': 0.18, 'LandscapeShare': 0.1},
+    ('Mid-Range Standard Residential', 2): {'AllInMin': 340, 'AllInMax': 360, 'ShellShare': 0.69, 'InteriorShare': 0.20, 'LandscapeShare': 0.11},
+    ('Mid-Range Standard Residential', 3): {'AllInMin': 380, 'AllInMax': 400, 'ShellShare': 0.66, 'InteriorShare': 0.22, 'LandscapeShare': 0.12},
+    ('Hospitality (Hotel/Resort)', 1): {'AllInMin': 400, 'AllInMax': 500, 'ShellShare': 0.60, 'InteriorShare': 0.30, 'LandscapeShare': 0.10},
+    ('Hospitality (Hotel/Resort)', 2): {'AllInMin': 500, 'AllInMax': 600, 'ShellShare': 0.60, 'InteriorShare': 0.30, 'LandscapeShare': 0.10},
+    ('Hospitality (Hotel/Resort)', 3): {'AllInMin': 600, 'AllInMax': 700, 'ShellShare': 0.60, 'InteriorShare': 0.30, 'LandscapeShare': 0.10},
+    ('Commercial / Mixed-Use', 1): {'AllInMin': 150, 'AllInMax': 250, 'ShellShare': 0.70, 'InteriorShare': 0.20, 'LandscapeShare': 0.10},
+    ('Commercial / Mixed-Use', 2): {'AllInMin': 250, 'AllInMax': 330, 'ShellShare': 0.70, 'InteriorShare': 0.20, 'LandscapeShare': 0.10},
+    ('Commercial / Mixed-Use', 3): {'AllInMin': 330, 'AllInMax': 400, 'ShellShare': 0.70, 'InteriorShare': 0.20, 'LandscapeShare': 0.10}
+}
+
+eng_data_dict = {
+    ('High-End Custom Residential', 1, 'Civil & Site'): 0.06,  ('High-End Custom Residential', 1, 'Structural'): 0.31,
+    ('High-End Custom Residential', 1, 'Mechanical'): 0.08,  ('High-End Custom Residential', 1, 'Electrical'): 0.05,
+    ('High-End Custom Residential', 1, 'Plumbing'): 0.04,   ('High-End Custom Residential', 1, 'Low-Voltage'): 0.025,
+    ('High-End Custom Residential', 2, 'Civil & Site'): 0.07,  ('High-End Custom Residential', 2, 'Structural'): 0.30,
+    ('High-End Custom Residential', 2, 'Mechanical'): 0.09,  ('High-End Custom Residential', 2, 'Electrical'): 0.06,
+    ('High-End Custom Residential', 2, 'Plumbing'): 0.05,   ('High-End Custom Residential', 2, 'Low-Voltage'): 0.035,
+    ('High-End Custom Residential', 3, 'Civil & Site'): 0.075, ('High-End Custom Residential', 3, 'Structural'): 0.29,
+    ('High-End Custom Residential', 3, 'Mechanical'): 0.10,  ('High-End Custom Residential', 3, 'Electrical'): 0.07,
+    ('High-End Custom Residential', 3, 'Plumbing'): 0.05,   ('High-End Custom Residential', 3, 'Low-Voltage'): 0.04,
+    ('Mid-Range Standard Residential', 1, 'Civil & Site'): 0.05,  ('Mid-Range Standard Residential', 1, 'Structural'): 0.28,
+    ('Mid-Range Standard Residential', 1, 'Mechanical'): 0.06,  ('Mid-Range Standard Residential', 1, 'Electrical'): 0.045,
+    ('Mid-Range Standard Residential', 1, 'Plumbing'): 0.035, ('Mid-Range Standard Residential', 1, 'Low-Voltage'): 0.015,
+    ('Mid-Range Standard Residential', 2, 'Civil & Site'): 0.05,  ('Mid-Range Standard Residential', 2, 'Structural'): 0.27,
+    ('Mid-Range Standard Residential', 2, 'Mechanical'): 0.06,  ('Mid-Range Standard Residential', 2, 'Electrical'): 0.045,
+    ('Mid-Range Standard Residential', 2, 'Plumbing'): 0.035, ('Mid-Range Standard Residential', 2, 'Low-Voltage'): 0.015,
+    ('Mid-Range Standard Residential', 3, 'Civil & Site'): 0.05,  ('Mid-Range Standard Residential', 3, 'Structural'): 0.26,
+    ('Mid-Range Standard Residential', 3, 'Mechanical'): 0.06,  ('Mid-Range Standard Residential', 3, 'Electrical'): 0.045,
+    ('Mid-Range Standard Residential', 3, 'Plumbing'): 0.035, ('Mid-Range Standard Residential', 3, 'Low-Voltage'): 0.015,
+    ('Hospitality 4-Star', 1, 'Civil & Site'): 0.065,  ('Hospitality 4-Star', 1, 'Structural'): 0.23,
+    ('Hospitality 4-Star', 1, 'Mechanical'): 0.125, ('Hospitality 4-Star', 1, 'Electrical'): 0.075,
+    ('Hospitality 4-Star', 1, 'Plumbing'): 0.04,   ('Hospitality 4-Star', 1, 'Low-Voltage'): 0.035,
+    ('Commercial Class A', 2, 'Civil & Site'): 0.05,  ('Commercial Class A', 2, 'Structural'): 0.24,
+    ('Commercial Class A', 2, 'Mechanical'): 0.115, ('Commercial Class A', 2, 'Electrical'): 0.10,
+    ('Commercial Class A', 2, 'Plumbing'): 0.03,   ('Commercial Class A', 2, 'Low-Voltage'): 0.035
+}
+
+# Prompt the user for all necessary inputs
+use = input('Building Use (e.g. Residential, Commercial, Hospitality): ').strip() or 'Residential'
+building_type = input('Building Type (e.g. Residence - Private, Commercial Shell, etc.): ').strip() or 'Residence - Private'
+tier = input('Building Tier (e.g. Mid-Range Standard Residential, High-End Custom Residential): ').strip() or 'Mid-Range Standard Residential'
+design_level_str = input('Design Level (1=Basic, 2=Standard, 3=Full Design): ').strip() or '3'
+design_level = int(design_level_str)
+category_str = input('Category (1-5, 1=lowest cost, 5=highest cost): ').strip() or '5'
+category = int(category_str)
+new_area_str = input('New Building Area (sq ft): ').strip() or '0'
+new_area = float(new_area_str)
+existing_area_str = input('Existing Building Area to Remodel (sq ft): ').strip() or '0'
+existing_area = float(existing_area_str)
+site_area_str = input('Site Area (sq m, for site work calculations): ').strip() or '0'
+site_area = float(site_area_str)
+historic_mult_str = input('Historic Property Multiplier (e.g. 1 for none, >1 if historic site): ').strip() or '1'
+historic_multiplier = float(historic_mult_str)
+remodel_mult_str = input('Remodel Cost Multiplier (fraction of new-build cost, e.g. 0.5): ').strip() or '0.5'
+remodel_multiplier = float(remodel_mult_str)
+
+# Determine category cost multiplier (Category 1=0.9, 2=1.0, ..., 5=1.3)
+category_multiplier = 0.8 + 0.1 * category
+
+# Retrieve cost range data for the selected tier and design level
+if (tier, design_level) not in cost_range_data:
+    raise ValueError(f"No cost data for tier '{tier}' at design level {design_level}")
+cost_info = cost_range_data[(tier, design_level)]
+
+# Calculate cost per square foot (Min, Target, Max) for new construction and remodel
+new_cost_min = cost_info['AllInMin'] * historic_multiplier
+new_cost_max = cost_info['AllInMax'] * historic_multiplier
+remodel_cost_min = new_cost_min * remodel_multiplier
+remodel_cost_max = new_cost_max * remodel_multiplier
+new_cost_target = (new_cost_min + new_cost_max) / 2  # default target (midpoint)
+remodel_cost_target = (remodel_cost_min + remodel_cost_max) / 2
+
+# Compute project budgets
+new_budget = new_area * new_cost_target
+remodel_budget = existing_area * remodel_cost_target
+total_budget = new_budget + remodel_budget
+
+# Get default budget share fractions
+shell_share = cost_info['ShellShare']
+interior_share = cost_info['InteriorShare']
+landscape_share = cost_info['LandscapeShare']
+
+# Calculate budget breakdown by category
+shell_budget_new = new_budget * shell_share
+shell_budget_existing = remodel_budget * shell_share
+shell_budget_total = shell_budget_new + shell_budget_existing
+interior_budget_new = new_budget * interior_share
+interior_budget_existing = remodel_budget * interior_share
+interior_budget_total = interior_budget_new + interior_budget_existing
+landscape_budget_new = new_budget * landscape_share
+landscape_budget_existing = remodel_budget * landscape_share
+landscape_budget_total = landscape_budget_new + landscape_budget_existing
+
+# Determine key for engineering data (map tier to engineering tier naming)
+eng_tier = tier
+if tier == 'Hospitality (Hotel/Resort)':
+    eng_tier = 'Hospitality 4-Star'
+elif tier == 'Commercial / Mixed-Use':
+    eng_tier = 'Commercial Class A'
+
+# Lookup raw engineering share fractions for the given category and design level
+struct_raw = eng_data_dict.get((eng_tier, design_level, 'Structural'), 0)
+civil_raw = eng_data_dict.get((eng_tier, design_level, 'Civil & Site'), 0)
+mech_raw = eng_data_dict.get((eng_tier, design_level, 'Mechanical'), 0)
+elec_raw = eng_data_dict.get((eng_tier, design_level, 'Electrical'), 0)
+plumb_raw = eng_data_dict.get((eng_tier, design_level, 'Plumbing'), 0)
+telecom_raw = eng_data_dict.get((eng_tier, design_level, 'Low-Voltage'), 0)
+
+# Calculate design share fractions (portion of total project) for new construction
+shell_engineering_raw_sum = struct_raw + civil_raw + mech_raw + elec_raw + plumb_raw + telecom_raw
+arch_share_new = (1 - shell_engineering_raw_sum) * shell_share
+interior_share_new = interior_share  # interior share of total (new)
+landscape_share_new = landscape_share  # landscape share of total (new)
+struct_share_new = struct_raw * shell_share
+civil_share_new = civil_raw * shell_share
+mech_share_new = mech_raw * shell_share
+elec_share_new = elec_raw * shell_share
+plumb_share_new = plumb_raw * shell_share
+telecom_share_new = telecom_raw * shell_share
+
+# Calculate design share fractions for remodel (existing)
+struct_share_existing = struct_share_new * remodel_multiplier  # structural involvement is reduced in remodels
+civil_share_existing = civil_share_new
+mech_share_existing = mech_share_new
+elec_share_existing = elec_share_new
+plumb_share_existing = plumb_share_new
+telecom_share_existing = telecom_share_new
+interior_share_existing = interior_share_new  # interior and landscape shares remain same fraction of total
+landscape_share_existing = landscape_share_new
+arch_share_existing = 1 - (interior_share_existing + landscape_share_existing + struct_share_existing + civil_share_existing + mech_share_existing + elec_share_existing + plumb_share_existing + telecom_share_existing)
+
+# Calculate budget allocations for each design discipline
+arch_budget_new = new_budget * arch_share_new
+arch_budget_existing = remodel_budget * arch_share_existing
+arch_budget_total = arch_budget_new + arch_budget_existing
+interior_design_budget_total = interior_budget_total  # entire interior portion allocated to interior design
+landscape_design_budget_total = landscape_budget_total  # entire landscape portion allocated to landscape design
+struct_budget_new = new_budget * struct_share_new
+struct_budget_existing = remodel_budget * struct_share_existing
+struct_budget_total = struct_budget_new + struct_budget_existing
+civil_budget_new = new_budget * civil_share_new
+civil_budget_existing = remodel_budget * civil_share_existing
+civil_budget_total = civil_budget_new + civil_budget_existing
+mech_budget_new = new_budget * mech_share_new
+mech_budget_existing = remodel_budget * mech_share_existing
+mech_budget_total = mech_budget_new + mech_budget_existing
+elec_budget_new = new_budget * elec_share_new
+elec_budget_existing = remodel_budget * elec_share_existing
+elec_budget_total = elec_budget_new + elec_budget_existing
+plumb_budget_new = new_budget * plumb_share_new
+plumb_budget_existing = remodel_budget * plumb_share_existing
+plumb_budget_total = plumb_budget_new + plumb_budget_existing
+telecom_budget_new = new_budget * telecom_share_new
+telecom_budget_existing = remodel_budget * telecom_share_existing
+telecom_budget_total = telecom_budget_new + telecom_budget_existing
+
+# (Optional) Verify that design budgets sum up to total project budget (for consistency)
+working_budget_check = (arch_budget_total + interior_design_budget_total + landscape_design_budget_total + struct_budget_total + civil_budget_total + mech_budget_total + elec_budget_total + plumb_budget_total + telecom_budget_total)
+if abs(working_budget_check - total_budget) > 1e-6:
+    print('Warning: Budget breakdown sum mismatch with total budget')  # ideally should not happen
+
+# Calculate top-down fee percentages for each scope using formulas
+# Prepare hourly rate (pricing) for Louis Amy average (from Bottom-Up analysis results)
+average_labor_cost_per_hour = 35.73
+average_overhead_cost_per_hour = 46.10
+average_total_cost_per_hour = average_labor_cost_per_hour + average_overhead_cost_per_hour
+markup_factor = 1 + 1.0  # markup = 1 (100%), so factor = 2.0
+average_pricing_per_hour = round(average_total_cost_per_hour * markup_factor)
+
+# Calculate fee for scanning (Building & Site) using given formulas
+scan_building_rate = (0.6 + 0.006 * (((1000 + existing_area) / 1000000) ** -0.7495)) * category_multiplier
+scan_building_fee = scan_building_rate * existing_area
+scan_site_rate = (1 + 0.00091 * ((site_area / 1000000) ** -0.005)) * category_multiplier / (3.28 ** 2) + 0.08
+scan_site_fee = scan_site_rate * site_area * (3.28 ** 2)
+
+# Calculate fee percentages for design scopes (Architecture, Interior, Landscape) with remodel adjustment
+base_arch_pct = 0.07498 + 0.007824 * ((shell_budget_total / 1000000) ** -0.7495)
+arch_fee_fraction = (((base_arch_pct * category_multiplier * new_budget * 0.95) + (base_arch_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1)) * (1 + (1 - remodel_multiplier))
+base_int_pct = 0.07498 + 0.007824 * ((interior_budget_total / 1000000) ** -0.7495)
+interior_fee_fraction = (((base_int_pct * category_multiplier * new_budget * 0.95) + (base_int_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1)) * (1 + (1 - remodel_multiplier))
+base_land_pct = 0.07498 + 0.007824 * ((landscape_budget_total / 1000000) ** -0.7495)
+landscape_fee_fraction = (((base_land_pct * category_multiplier * new_budget * 0.95) + (base_land_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1)) * (1 + (1 - remodel_multiplier))
+
+# Calculate fee percentages for engineering scopes (Structural, Civil, Mechanical, Electrical, Plumbing, Telecom)
+base_struct_pct = 0.07498 + 0.007824 * ((struct_budget_total / 1000000) ** -0.7495)
+struct_fee_fraction = (((base_struct_pct * category_multiplier * new_budget * 0.95) + (base_struct_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+base_civil_pct = 0.07498 + 0.007824 * ((civil_budget_total / 1000000) ** -0.7495)
+civil_fee_fraction = (((base_civil_pct * category_multiplier * new_budget * 0.95) + (base_civil_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+base_mech_pct = 0.07498 + 0.007824 * ((mech_budget_total / 1000000) ** -0.7495)
+mech_fee_fraction = (((base_mech_pct * category_multiplier * new_budget * 0.95) + (base_mech_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+base_elec_pct = 0.07498 + 0.007824 * ((elec_budget_total / 1000000) ** -0.7495)
+elec_fee_fraction = (((base_elec_pct * category_multiplier * new_budget * 0.95) + (base_elec_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+base_plumb_pct = 0.07498 + 0.007824 * ((plumb_budget_total / 1000000) ** -0.7495)
+plumb_fee_fraction = (((base_plumb_pct * category_multiplier * new_budget * 0.95) + (base_plumb_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+base_tele_pct = 0.07498 + 0.007824 * ((telecom_budget_total / 1000000) ** -0.7495)
+tele_fee_fraction = (((base_tele_pct * category_multiplier * new_budget * 0.95) + (base_tele_pct * category_multiplier * remodel_budget * 1.05)) / (total_budget if total_budget else 1))
+
+# Determine for each scope if Louis Amy covers the service or uses outside consultants
+inhouse_scopes = {'Architecture (Design + Consultant Admin.)', 'Interior design', 'Landscape architecture',
+                 'Structural engineer', 'Civil / site engineer', 'Plumbing engineer', 'Scan to Bim - Building', 'Scan to Bim - Site'}
+
+# Calculate Market Fee and Louis Amy Fee for each scope
+fees = []  # will collect tuples of values for printing
+fees.append(('Scan to Bim - Building', 0, scan_building_rate, scan_building_fee, scan_building_fee, scan_building_fee / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Scan to Bim - Site', 0, scan_site_rate, scan_site_fee, scan_site_fee, scan_site_fee / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Architecture (Design + Consultant Admin.)', arch_fee_fraction, arch_fee_fraction * arch_budget_total, arch_fee_fraction * arch_budget_total, arch_fee_fraction * arch_budget_total, (arch_fee_fraction * arch_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Interior design', interior_fee_fraction, interior_fee_fraction * interior_budget_total, interior_fee_fraction * interior_budget_total, interior_fee_fraction * interior_budget_total, (interior_fee_fraction * interior_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Landscape architecture', landscape_fee_fraction, landscape_fee_fraction * landscape_budget_total, landscape_fee_fraction * landscape_budget_total, landscape_fee_fraction * landscape_budget_total, (landscape_fee_fraction * landscape_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Structural engineer', struct_fee_fraction, struct_fee_fraction * struct_budget_total, struct_fee_fraction * struct_budget_total, struct_fee_fraction * struct_budget_total, (struct_fee_fraction * struct_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Civil / site engineer', civil_fee_fraction, civil_fee_fraction * civil_budget_total, civil_fee_fraction * civil_budget_total, civil_fee_fraction * civil_budget_total, (civil_fee_fraction * civil_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Mechanical (HVAC, energy, pools)', mech_fee_fraction, mech_fee_fraction * mech_budget_total, 0.0, mech_fee_fraction * mech_budget_total, 0.0, (mech_fee_fraction * mech_budget_total) * 0.15, mech_fee_fraction * mech_budget_total))
+fees.append(('Electrical (power / lighting)', elec_fee_fraction, elec_fee_fraction * elec_budget_total, 0.0, elec_fee_fraction * elec_budget_total, 0.0, (elec_fee_fraction * elec_budget_total) * 0.15, elec_fee_fraction * elec_budget_total))
+fees.append(('Plumbing engineer', plumb_fee_fraction, plumb_fee_fraction * plumb_budget_total, plumb_fee_fraction * plumb_budget_total, plumb_fee_fraction * plumb_budget_total, (plumb_fee_fraction * plumb_budget_total) / average_pricing_per_hour if average_pricing_per_hour else 0, 0.0, 0.0))
+fees.append(('Telecomunication', tele_fee_fraction, tele_fee_fraction * telecom_budget_total, 0.0, tele_fee_fraction * telecom_budget_total, 0.0, (tele_fee_fraction * telecom_budget_total) * 0.15, tele_fee_fraction * telecom_budget_total))
+
+# Calculate total fees for checking or output if needed
+total_market_fee = sum(f[3] for f in fees)
+total_la_fee = sum(f[4] for f in fees)
+total_coord_fee = sum(f[6] for f in fees)
+total_consultants_fee = sum(f[7] for f in fees)
+
+# Calculate total hours (in-house vs outsourced) using fee distribution as proxy
+total_all_hours = (0.21767 + 11.21274 * ((new_area + existing_area) ** -0.53816) - 0.08) * category_multiplier
+total_new_hours = total_all_hours * 0.9 * new_area
+total_existing_hours = total_all_hours * 0.8 * 1.15 * existing_area
+total_hours = total_new_hours + total_existing_hours
+# Distribute total hours by scope based on market fee fractions
+hours_by_scope = []
+for scope, pct, rate, market_fee, la_fee, la_hours, coord_fee, consult_fee in fees:
+    # Calculate share of total hours by market fee proportion
+    share_pct = market_fee / total_market_fee if total_market_fee else 0
+    scope_total_hours = share_pct * total_hours
+    if consult_fee > 0:
+        # outsourced scope
+        hours_by_scope.append((scope, share_pct, 0.0, scope_total_hours))
+    else:
+        hours_by_scope.append((scope, share_pct, scope_total_hours, 0.0))
+total_la_hours = sum(h[2] for h in hours_by_scope)
+total_outside_hours = sum(h[3] for h in hours_by_scope)
+
+# Distribute in-house (Louis Amy) hours by project phase
+phase_distribution = [
+    ('Discovery', 0.08),
+    ('Creative - Conceptual', 0.08),
+    ('Creative - Schematic', 0.34),
+    ('Creative - Preliminary', 0.08),
+    ('Technical - Schematic', 0.34),
+    ('Technical - Preliminary', 0.08)
+]
+phase_hours = [(phase, share * total_la_hours) for phase, share in phase_distribution]
+
+# Now output all results in a readable format
+print('\nINPUT SUMMARY:')
+print(f"- Building Use: {use}")
+print(f"- Building Type: {building_type}")
+print(f"- Building Tier: {tier}")
+level_name = {1: 'Basic Design', 2: 'Standard Design', 3: 'Full Design'}.get(design_level, str(design_level))
+print(f"- Design Level: {design_level} ({level_name})")
+print(f"- Category: {category} (Multiplier = {category_multiplier:.2f})")
+print(f"- New Building Area: {new_area} sq ft")
+print(f"- Existing Building Area (Remodel): {existing_area} sq ft")
+print(f"- Site Area: {site_area} sq m")
+print(f"- Historic Property Multiplier: {historic_multiplier}")
+print(f"- Remodel Cost Multiplier: {remodel_multiplier}")
+
+print('\nCOST PER SQUARE FOOT & BUDGET:')
+print(f"- New Construction Cost per ft²: Min = ${new_cost_min:,.0f}, Target = ${new_cost_target:,.0f}, Max = ${new_cost_max:,.0f}")
+print(f"- Remodel (Existing) Cost per ft²: Min = ${remodel_cost_min:,.0f}, Target = ${remodel_cost_target:,.0f}, Max = ${remodel_cost_max:,.0f}")
+print(f"- New Construction Budget: ${new_budget:,.0f}")
+print(f"- Remodel Construction Budget: ${remodel_budget:,.0f}")
+print(f"- Total Project Budget: ${total_budget:,.0f}")
+
+print('\nBUDGET BREAKDOWN BY CATEGORY:')
+print(f"- Shell (Building Structure): ${shell_budget_total:,.0f} (New: ${shell_budget_new:,.0f}, Existing: ${shell_budget_existing:,.0f})")
+print(f"- Interior (Finishes & Fittings): ${interior_budget_total:,.0f} (New: ${interior_budget_new:,.0f}, Existing: ${interior_budget_existing:,.0f})")
+print(f"- Landscape: ${landscape_budget_total:,.0f} (New: ${landscape_budget_new:,.0f}, Existing: ${landscape_budget_existing:,.0f})")
+
+print('\nALLOCATED BUDGET BY DISCIPLINE:')
+print(f"- Architecture (Design + Admin): ${arch_budget_total:,.0f} (New: ${arch_budget_new:,.0f}, Existing: ${arch_budget_existing:,.0f})")
+print(f"- Interior Design: ${interior_budget_total:,.0f} (New: ${interior_budget_new:,.0f}, Existing: ${interior_budget_existing:,.0f})")
+print(f"- Landscape Design: ${landscape_budget_total:,.0f} (New: ${landscape_budget_new:,.0f}, Existing: ${landscape_budget_existing:,.0f})")
+print(f"- Structural Engineering: ${struct_budget_total:,.0f} (New: ${struct_budget_new:,.0f}, Existing: ${struct_budget_existing:,.0f})")
+print(f"- Civil/Site Engineering: ${civil_budget_total:,.0f} (New: ${civil_budget_new:,.0f}, Existing: ${civil_budget_existing:,.0f})")
+print(f"- Mechanical (HVAC) Engineering: ${mech_budget_total:,.0f} (New: ${mech_budget_new:,.0f}, Existing: ${mech_budget_existing:,.0f})")
+print(f"- Electrical Engineering: ${elec_budget_total:,.0f} (New: ${elec_budget_new:,.0f}, Existing: ${elec_budget_existing:,.0f})")
+print(f"- Plumbing Engineering: ${plumb_budget_total:,.0f} (New: ${plumb_budget_new:,.0f}, Existing: ${plumb_budget_existing:,.0f})")
+print(f"- Telecom/Low-Voltage: ${telecom_budget_total:,.0f} (New: ${telecom_budget_new:,.0f}, Existing: ${telecom_budget_existing:,.0f})")
+print(f"- **Total (for verification)**: ${working_budget_check:,.0f}")
+
+print('\nFEE ESTIMATE (Top-Down):')
+# Print header for fee table
+header = f"{'Scope':35} {'% of Cost':>10} {'Rate/ft²':>12} {'Market Fee':>15} {'LA Fee':>12} {'Hours':>8} {'Coord Fee':>12} {'Consultants':>12}"
+print(header)
+print('-' * len(header))
+for scope, pct, rate, market_fee, la_fee, la_hours, coord_fee, consult_fee in fees:
+    pct_str = f"{pct*100:>5.1f}%" if pct else ""
+    rate_str = f"${rate:,.2f}"
+    print(f"{scope:35} {pct_str:>10} {rate_str:>12} ${market_fee:>14,.0f} ${la_fee:>11,.0f} {la_hours:>8.0f} ${coord_fee:>11,.0f} ${consult_fee:>11,.0f}")
+print(f"{'Total':35} {'':>10} {'':>12} ${total_market_fee:>14,.0f} ${total_la_fee:>11,.0f} {total_la_hours:>8.0f} ${total_coord_fee:>11,.0f} ${total_consultants_fee:>11,.0f}")
+
+print('\nPROJECT HOURS DISTRIBUTION BY PHASE (In-House):')
+for phase, hours in phase_hours:
+    print(f"- {phase}: {hours:,.0f} hours")
+print(f"- Total In-House Hours: {total_la_hours:,.0f} hours")
+print(f"- Total Outsourced Hours: {total_outside_hours:,.0f} hours")
