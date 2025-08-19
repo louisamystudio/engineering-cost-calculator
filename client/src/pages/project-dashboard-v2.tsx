@@ -248,7 +248,17 @@ export default function ProjectDashboardV2() {
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
-        // Add all other overrides here
+        architecturePercentageOverride: architecturePercentage,
+        interiorDesignPercentageOverride: interiorDesignPercentage,
+        landscapePercentageOverride: landscapePercentage,
+        structuralPercentageOverride: structuralPercentage,
+        civilPercentageOverride: civilPercentage,
+        mechanicalPercentageOverride: mechanicalPercentage,
+        electricalPercentageOverride: electricalPercentage,
+        plumbingPercentageOverride: plumbingPercentage,
+        telecomPercentageOverride: telecomPercentage,
+        categoryMultiplier,
+        coordinationFeePercent
       };
       
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -281,7 +291,10 @@ export default function ProjectDashboardV2() {
   }, [
     newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric,
     newConstructionTarget, remodelTarget, shellShareOverride, interiorShareOverride, landscapeShareOverride,
-    autoRecalc
+    architecturePercentage, interiorDesignPercentage, landscapePercentage,
+    structuralPercentage, civilPercentage, mechanicalPercentage,
+    electricalPercentage, plumbingPercentage, telecomPercentage,
+    categoryMultiplier, coordinationFeePercent, autoRecalc
   ]);
 
   if (isLoading) {
@@ -695,11 +708,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={shellShareOverride || 66}
-                              onChange={(e) => setShellShareOverride(parseFloat(e.target.value) / 100)}
+                              value={shellShareOverride ? shellShareOverride * 100 : 66}
+                              onChange={(e) => setShellShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
+                              step={1}
                             />
                             <span className="text-xs">%</span>
                           </div>
@@ -737,11 +751,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={interiorShareOverride || 22}
-                              onChange={(e) => setInteriorShareOverride(parseFloat(e.target.value) / 100)}
+                              value={interiorShareOverride ? interiorShareOverride * 100 : 22}
+                              onChange={(e) => setInteriorShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
+                              step={1}
                             />
                             <span className="text-xs">%</span>
                           </div>
@@ -779,11 +794,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={landscapeShareOverride || 12}
-                              onChange={(e) => setLandscapeShareOverride(parseFloat(e.target.value) / 100)}
+                              value={landscapeShareOverride ? landscapeShareOverride * 100 : 12}
+                              onChange={(e) => setLandscapeShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
+                              step={1}
                             />
                             <span className="text-xs">%</span>
                           </div>
@@ -1101,156 +1117,279 @@ export default function ProjectDashboardV2() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm">Market Fee (10-15%)</Label>
+                      <Label className="text-sm">Total Market Fee</Label>
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger>
                             <Info className="h-3 w-3 text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="text-xs">Industry standard fee as percentage of construction cost</p>
+                            <p className="text-xs">Sum of all discipline market fees</p>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
                     </div>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(parseFloat(calculations.totalBudget || "0") * 0.125)}
+                      {formatCurrency(totalMarketFee)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      12.5% of construction
+                      {formatPercent(totalMarketFee / parseFloat(calculations.totalBudget || "1"))} of construction
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm">Louis Amy Fee</Label>
+                      <Label className="text-sm">Total Louis Amy Fee</Label>
                       <TooltipProvider>
                         <UITooltip>
                           <TooltipTrigger>
                             <Info className="h-3 w-3 text-muted-foreground" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p className="text-xs">Custom fee structure based on project complexity</p>
+                            <p className="text-xs">Sum of in-house service fees</p>
                           </TooltipContent>
                         </UITooltip>
                       </TooltipProvider>
                     </div>
                     <div className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(parseFloat(calculations.totalBudget || "0") * 0.115)}
+                      {formatCurrency(totalLouisAmyFee)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      11.5% of construction
+                      {formatPercent(totalLouisAmyFee / parseFloat(calculations.totalBudget || "1"))} of construction
                     </div>
                   </div>
                 </div>
 
                 <Separator />
 
+                {/* Detailed Fee Table */}
                 <div>
-                  <Label className="text-sm mb-2">Fee Breakdown by Discipline</Label>
-                  <div className="space-y-2">
-                    {fees && fees.map((fee) => (
-                      <div key={fee.scope} className="flex items-center justify-between py-1">
-                        <span className="text-sm">{fee.scope}</span>
-                        <div className="flex items-center gap-2 md:gap-4">
-                          <span className="text-sm font-medium">{formatCurrency(parseFloat(fee.louisAmyFee))}</span>
-                          <Badge variant={fee.isInhouse ? "default" : "secondary"} className="text-xs">
-                            {fee.isInhouse ? "In-House" : "Outsourced"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-semibold">Detailed Fee Analysis by Discipline</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Coordination Fee</Label>
+                      <Input
+                        type="number"
+                        value={coordinationFeePercent}
+                        onChange={(e) => setCoordinationFeePercent(parseFloat(e.target.value))}
+                        className="w-16 h-6 text-xs"
+                        min={10}
+                        max={25}
+                        step={1}
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2">Discipline</th>
+                          <th className="text-right py-2">% of Cost</th>
+                          <th className="text-right py-2">Rate/ft²</th>
+                          <th className="text-right py-2">Market Fee</th>
+                          <th className="text-right py-2">Louis Amy</th>
+                          <th className="text-right py-2">Consultant</th>
+                          <th className="text-right py-2">Coordination</th>
+                          <th className="text-center py-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fees && fees.map((fee) => {
+                          const coordinationFee = !fee.isInhouse ? parseFloat(fee.consultantFee || "0") * (coordinationFeePercent / 100) : 0;
+                          return (
+                            <tr key={fee.scope} className="border-b hover:bg-gray-50">
+                              <td className="py-2">{fee.scope}</td>
+                              <td className="text-right py-2">{formatPercent(parseFloat(fee.percentOfCost || "0"))}</td>
+                              <td className="text-right py-2">${formatNumber(parseFloat(fee.ratePerSqFt || "0"), 2)}</td>
+                              <td className="text-right py-2 font-medium">{formatCurrency(parseFloat(fee.marketFee))}</td>
+                              <td className="text-right py-2">{fee.isInhouse ? formatCurrency(parseFloat(fee.louisAmyFee)) : '-'}</td>
+                              <td className="text-right py-2">{!fee.isInhouse ? formatCurrency(parseFloat(fee.consultantFee || "0")) : '-'}</td>
+                              <td className="text-right py-2">{!fee.isInhouse ? formatCurrency(coordinationFee) : '-'}</td>
+                              <td className="text-center py-2">
+                                <Badge variant={fee.isInhouse ? "default" : "secondary"} className="text-xs">
+                                  {fee.isInhouse ? "In-House" : "Outsourced"}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 font-semibold">
+                          <td className="py-2">TOTAL</td>
+                          <td className="text-right py-2">{formatPercent(totalMarketFee / parseFloat(calculations.totalBudget || "1"))}</td>
+                          <td className="text-right py-2">${formatNumber(totalMarketFee / (newBuildingArea + existingBuildingArea || 1), 2)}</td>
+                          <td className="text-right py-2">{formatCurrency(totalMarketFee)}</td>
+                          <td className="text-right py-2">{formatCurrency(totalLouisAmyFee)}</td>
+                          <td className="text-right py-2">{formatCurrency(totalConsultantFee)}</td>
+                          <td className="text-right py-2">{formatCurrency(totalConsultantFee * (coordinationFeePercent / 100))}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="bottomup" className="space-y-4 mt-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Labor Rate ($/hr)</Label>
-                    <Input
-                      type="number"
-                      value={laborRate}
-                      onChange={(e) => setLaborRate(parseFloat(e.target.value))}
-                      className="h-8"
-                      min={50}
-                      max={500}
-                      step={10}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Overhead Rate ($/hr)</Label>
-                    <Input
-                      type="number"
-                      value={overheadRate}
-                      onChange={(e) => setOverheadRate(parseFloat(e.target.value))}
-                      className="h-8"
-                      min={20}
-                      max={100}
-                      step={5}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Markup Factor</Label>
-                    <Input
-                      type="number"
-                      value={markupFactor}
-                      onChange={(e) => setMarkupFactor(parseFloat(e.target.value))}
-                      className="h-8"
-                      min={1}
-                      max={3}
-                      step={0.1}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Discount %</Label>
-                    <div className="flex items-center gap-1">
+                {/* Input Parameters */}
+                <div>
+                  <Label className="text-sm font-semibold mb-3">Bottom-Up Parameters</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Labor Rate ($/hr)</Label>
                       <Input
                         type="number"
-                        value={discountPercent * 100}
-                        onChange={(e) => setDiscountPercent(parseFloat(e.target.value) / 100)}
+                        value={laborRate}
+                        onChange={(e) => setLaborRate(parseFloat(e.target.value))}
                         className="h-8"
-                        min={0}
-                        max={50}
+                        min={20}
+                        max={100}
                         step={5}
                       />
-                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Overhead Rate ($/hr)</Label>
+                      <Input
+                        type="number"
+                        value={overheadRate}
+                        onChange={(e) => setOverheadRate(parseFloat(e.target.value))}
+                        className="h-8"
+                        min={20}
+                        max={100}
+                        step={5}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Markup Factor</Label>
+                      <Input
+                        type="number"
+                        value={markupFactor}
+                        onChange={(e) => setMarkupFactor(parseFloat(e.target.value))}
+                        className="h-8"
+                        min={1}
+                        max={3}
+                        step={0.1}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Discount %</Label>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={discountPercent * 100}
+                          onChange={(e) => setDiscountPercent(parseFloat(e.target.value) / 100)}
+                          className="h-8"
+                          min={0}
+                          max={50}
+                          step={5}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Total Hours</span>
-                    <span className="text-xl font-bold">
-                      {hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0).toFixed(0) : "0"} hrs
-                    </span>
+                {/* Calculation Breakdown */}
+                <div>
+                  <Label className="text-sm font-semibold mb-3">Fee Calculation Breakdown</Label>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Total Hours</span>
+                        <TooltipProvider>
+                          <UITooltip>
+                            <TooltipTrigger>
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Based on area × hours/ft² factor</p>
+                            </TooltipContent>
+                          </UITooltip>
+                        </TooltipProvider>
+                      </div>
+                      <span className="text-lg font-bold">
+                        {totalHours.toFixed(0)} hrs
+                      </span>
+                    </div>
+                    
+                    <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">× Labor Rate</span>
+                        <span className="text-sm">${laborRate}/hr</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Labor Cost</span>
+                        <span className="font-medium">{formatCurrency(totalHours * laborRate)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">+ Overhead</span>
+                        <span className="text-sm">${overheadRate}/hr × {totalHours.toFixed(0)} hrs</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">With Overhead</span>
+                        <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate))}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">× Markup</span>
+                        <span className="text-sm">{((markupFactor - 1) * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">With Markup</span>
+                        <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor)}</span>
+                      </div>
+                    </div>
+                    
+                    {discountPercent > 0 && (
+                      <div className="pl-4 space-y-2 border-l-2 border-gray-300">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">- Discount</span>
+                          <span className="text-sm">{(discountPercent * 100).toFixed(0)}%</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <Separator className="my-3" />
+                    
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="font-semibold">Bottom-Up Fee</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Labor Cost</span>
-                    <span className="font-medium">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * laborRate)}
-                    </span>
+                </div>
+
+                {/* Comparison with Top-Down */}
+                <div>
+                  <Label className="text-sm font-semibold mb-3">Top-Down vs Bottom-Up Comparison</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 border rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Top-Down (Market)</div>
+                      <div className="text-lg font-bold">{formatCurrency(totalMarketFee)}</div>
+                    </div>
+                    <div className="p-3 border rounded-lg">
+                      <div className="text-xs text-muted-foreground mb-1">Bottom-Up</div>
+                      <div className="text-lg font-bold">{formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}</div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">With Overhead</span>
-                    <span className="font-medium">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">With Markup</span>
-                    <span className="font-medium">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate) * markupFactor)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-t pt-2">
-                    <span className="text-sm font-semibold">Bottom-Up Fee</span>
-                    <span className="text-xl font-bold text-green-600">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}
-                    </span>
+                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm text-amber-800">
+                        Variance: {formatPercent(Math.abs((totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent) - totalMarketFee) / totalMarketFee))}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
