@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, 
@@ -377,14 +378,25 @@ export default function ModernProjectDashboard() {
                   <Label className="text-sm font-medium">New Building Area</Label>
                   <Badge variant="outline">{formatNumber(newBuildingArea)} ft²</Badge>
                 </div>
-                <Slider
-                  value={[newBuildingArea]}
-                  onValueChange={(value) => setNewBuildingArea(value[0])}
-                  max={50000}
-                  min={0}
-                  step={100}
-                  className="w-full"
-                />
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[newBuildingArea]}
+                    onValueChange={(value) => setNewBuildingArea(value[0])}
+                    max={50000}
+                    min={0}
+                    step={100}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={newBuildingArea}
+                    onChange={(e) => setNewBuildingArea(Math.max(0, Math.min(50000, parseInt(e.target.value) || 0)))}
+                    className="w-24 text-center"
+                    min={0}
+                    max={50000}
+                    step={100}
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -392,14 +404,25 @@ export default function ModernProjectDashboard() {
                   <Label className="text-sm font-medium">Existing Building Area</Label>
                   <Badge variant="outline">{formatNumber(existingBuildingArea)} ft²</Badge>
                 </div>
-                <Slider
-                  value={[existingBuildingArea]}
-                  onValueChange={(value) => setExistingBuildingArea(value[0])}
-                  max={50000}
-                  min={0}
-                  step={100}
-                  className="w-full"
-                />
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[existingBuildingArea]}
+                    onValueChange={(value) => setExistingBuildingArea(value[0])}
+                    max={50000}
+                    min={0}
+                    step={100}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={existingBuildingArea}
+                    onChange={(e) => setExistingBuildingArea(Math.max(0, Math.min(50000, parseInt(e.target.value) || 0)))}
+                    className="w-24 text-center"
+                    min={0}
+                    max={50000}
+                    step={100}
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -407,14 +430,25 @@ export default function ModernProjectDashboard() {
                   <Label className="text-sm font-medium">Site Area</Label>
                   <Badge variant="outline">{formatNumber(siteArea)} ft²</Badge>
                 </div>
-                <Slider
-                  value={[siteArea]}
-                  onValueChange={(value) => setSiteArea(value[0])}
-                  max={100000}
-                  min={0}
-                  step={500}
-                  className="w-full"
-                />
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[siteArea]}
+                    onValueChange={(value) => setSiteArea(value[0])}
+                    max={100000}
+                    min={0}
+                    step={500}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={siteArea}
+                    onChange={(e) => setSiteArea(Math.max(0, Math.min(100000, parseInt(e.target.value) || 0)))}
+                    className="w-24 text-center"
+                    min={0}
+                    max={100000}
+                    step={500}
+                  />
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -422,14 +456,27 @@ export default function ModernProjectDashboard() {
                   <Label className="text-sm font-medium">Remodel Cost Factor</Label>
                   <Badge variant="outline">{formatPercent(remodelMultiplier)}</Badge>
                 </div>
-                <Slider
-                  value={[remodelMultiplier]}
-                  onValueChange={(value) => setRemodelMultiplier(value[0])}
-                  max={1}
-                  min={0.1}
-                  step={0.05}
-                  className="w-full"
-                />
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[remodelMultiplier]}
+                    onValueChange={(value) => setRemodelMultiplier(value[0])}
+                    max={1}
+                    min={0.1}
+                    step={0.05}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={Math.round(remodelMultiplier * 100)}
+                    onChange={(e) => setRemodelMultiplier(Math.max(10, Math.min(100, parseInt(e.target.value) || 50)) / 100)}
+                    className="w-20 text-center"
+                    min={10}
+                    max={100}
+                    step={5}
+                    suffix="%"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
