@@ -12,6 +12,13 @@ This is a comprehensive engineering cost calculator web application that provide
 - **Enhanced Parameter Controls**: Added dual-input system with both sliders and text fields for precise parameter adjustment
 - **Improved Data Visualization**: Replaced inappropriate charts with range bars for cost analysis and donut charts for fee breakdown
 - **Real-time Updates**: Implemented auto-recalculation with toggle and manual recalculate options
+- **Enhanced Data Visibility** (Latest):
+  - Added Shell, Interior, and Landscape budget breakdown cards showing new/remodel splits
+  - Created detailed Engineering Discipline Budget section with architecture, structural, civil, mechanical, electrical, and plumbing budgets
+  - Enhanced Professional Fees Analysis with % of cost, rate per ft², coordination fees, and consultant fees
+  - Improved Hours Distribution display with role-based breakdown (Designer 1/2, Architect, Engineer, Principal)
+  - Added Budget Calculation Methodology card with tooltips explaining category multipliers, historic property adjustments, and remodel factors
+  - All budget components now properly show underlying calculations and percentages for full transparency
 
 # User Preferences
 

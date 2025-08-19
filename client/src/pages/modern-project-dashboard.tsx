@@ -10,6 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   ArrowLeft, 
   Building, 
@@ -26,7 +32,8 @@ import {
   Home,
   Target,
   Zap,
-  Activity
+  Activity,
+  Info
 } from "lucide-react";
 import {
   BarChart,
@@ -361,6 +368,194 @@ export default function ModernProjectDashboard() {
           </Card>
         </div>
 
+        {/* Shell, Interior, and Landscape Budget Breakdown */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 backdrop-blur">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Building className="h-4 w-4 text-cyan-600" />
+                  Shell Budget
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {((parseFloat(calculations.shellBudgetTotal) / parseFloat(calculations.totalBudget)) * 100).toFixed(1)}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-cyan-700 dark:text-cyan-400">
+                {formatCurrency(calculations.shellBudgetTotal)}
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">New Construction</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.newBudget) * 0.66)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Remodel</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.remodelBudget) * 0.66)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 backdrop-blur">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Home className="h-4 w-4 text-amber-600" />
+                  Interior Budget
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {((parseFloat(calculations.interiorBudgetTotal) / parseFloat(calculations.totalBudget)) * 100).toFixed(1)}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                {formatCurrency(calculations.interiorBudgetTotal)}
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">New Construction</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.newBudget) * 0.22)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Remodel</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.remodelBudget) * 0.22)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <PieChart className="h-4 w-4 text-green-600" />
+                  Landscape Budget
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {((parseFloat(calculations.landscapeBudgetTotal) / parseFloat(calculations.totalBudget)) * 100).toFixed(1)}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-400">
+                {formatCurrency(calculations.landscapeBudgetTotal)}
+              </div>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">New Construction</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.newBudget) * 0.12)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Remodel</span>
+                  <span className="font-medium">{formatCurrency(parseFloat(calculations.remodelBudget) * 0.12)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Engineering Discipline Budgets */}
+        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <Settings className="h-5 w-5 text-indigo-600" />
+              Engineering Discipline Budgets
+            </CardTitle>
+            <CardDescription>Detailed budget allocation by engineering discipline</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Architecture */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Architecture</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.architectureBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-violet-700 dark:text-violet-400">
+                  {formatCurrency(calculations.architectureBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Design + Consultant Admin</div>
+              </div>
+
+              {/* Structural */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Structural</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.structuralBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-blue-700 dark:text-blue-400">
+                  {formatCurrency(calculations.structuralBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">50% reduction for remodel</div>
+              </div>
+
+              {/* Civil */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-teal-50 to-green-50 dark:from-teal-900/20 dark:to-green-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Civil / Site</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.civilBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-teal-700 dark:text-teal-400">
+                  {formatCurrency(calculations.civilBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Site engineering</div>
+              </div>
+
+              {/* Mechanical */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Mechanical</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.mechanicalBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-orange-700 dark:text-orange-400">
+                  {formatCurrency(calculations.mechanicalBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">HVAC systems</div>
+              </div>
+
+              {/* Electrical */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Electrical</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.electricalBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-yellow-700 dark:text-yellow-400">
+                  {formatCurrency(calculations.electricalBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Power & lighting</div>
+              </div>
+
+              {/* Plumbing */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Plumbing</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatPercent(parseFloat(calculations.plumbingBudget) / parseFloat(calculations.shellBudgetTotal))}
+                  </Badge>
+                </div>
+                <div className="text-xl font-bold text-red-700 dark:text-red-400">
+                  {formatCurrency(calculations.plumbingBudget)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Water systems</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Interactive Parameters & Budget Breakdown Row */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Interactive Parameters */}
@@ -473,7 +668,6 @@ export default function ModernProjectDashboard() {
                     min={10}
                     max={100}
                     step={5}
-                    suffix="%"
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
@@ -671,28 +865,59 @@ export default function ModernProjectDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <DollarSign className="h-5 w-5 text-green-600" />
-                Professional Fees
+                Professional Fees Analysis
               </CardTitle>
-              <CardDescription>Detailed fee breakdown by service</CardDescription>
+              <CardDescription>Comprehensive fee breakdown with metrics</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {fees.map((fee, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800 dark:to-slate-700">
-                    <div>
-                      <div className="font-medium text-sm">{fee.scope}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                        {fee.isInhouse ? (
-                          <Badge variant="secondary" className="text-xs">In-house</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">Outsourced</Badge>
-                        )}
-                        <span>{formatNumber(parseFloat(fee.hours || '0'), 0)} hrs</span>
+                  <div key={index} className="p-4 rounded-lg bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800 dark:to-slate-700">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium text-sm">{fee.scope}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          {fee.isInhouse ? (
+                            <Badge variant="secondary" className="text-xs">In-house</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Outsourced</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">{formatCurrency(fee.marketFee)}</div>
+                        <div className="text-xs text-muted-foreground">Market Fee</div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatCurrency(fee.marketFee)}</div>
-                      <div className="text-xs text-muted-foreground">{formatCurrency(fee.louisAmyFee)} LA</div>
+                    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t">
+                      <div>
+                        <div className="text-xs text-muted-foreground">% of Cost</div>
+                        <div className="font-medium text-sm">{formatPercent(parseFloat(fee.percentOfCost || '0'))}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Rate/ft²</div>
+                        <div className="font-medium text-sm">${formatNumber(parseFloat(fee.ratePerSqFt || '0'), 2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Louis Amy Fee</div>
+                        <div className="font-medium text-sm">{formatCurrency(fee.louisAmyFee)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Hours</div>
+                        <div className="font-medium text-sm">{formatNumber(parseFloat(fee.hours || '0'), 0)} hrs</div>
+                      </div>
+                      {fee.coordinationFee && parseFloat(fee.coordinationFee) > 0 && (
+                        <div>
+                          <div className="text-xs text-muted-foreground">Coordination</div>
+                          <div className="font-medium text-sm">{formatCurrency(fee.coordinationFee)}</div>
+                        </div>
+                      )}
+                      {fee.consultantFee && parseFloat(fee.consultantFee) > 0 && (
+                        <div>
+                          <div className="text-xs text-muted-foreground">Consultant</div>
+                          <div className="font-medium text-sm">{formatCurrency(fee.consultantFee)}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -705,33 +930,176 @@ export default function ModernProjectDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Clock className="h-5 w-5 text-orange-600" />
-                Hours Distribution
+                Detailed Hours Distribution
               </CardTitle>
-              <CardDescription>Team effort breakdown by phase</CardDescription>
+              <CardDescription>Team effort breakdown by phase and role</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {hours.map((hour, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
+                  <div key={index} className="p-3 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20">
+                    <div className="flex justify-between items-center mb-3">
                       <span className="font-medium text-sm">{hour.phase}</span>
-                      <span className="text-sm font-semibold">{formatNumber(parseFloat(hour.totalHours), 0)} hrs</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {formatPercent(parseFloat(hour.phasePercent))}
+                        </Badge>
+                        <span className="text-sm font-semibold">{formatNumber(parseFloat(hour.totalHours), 0)} hrs</span>
+                      </div>
                     </div>
                     <Progress 
                       value={(parseFloat(hour.totalHours) / totalHours) * 100} 
-                      className="h-2 bg-gradient-to-r from-blue-200 to-purple-200"
+                      className="h-2 bg-gradient-to-r from-blue-200 to-purple-200 mb-3"
                     />
-                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
-                      <span>Designer1: {formatNumber(parseFloat(hour.designer1Hours || '0'), 0)}</span>
-                      <span>Designer2: {formatNumber(parseFloat(hour.designer2Hours || '0'), 0)}</span>
-                      <span>Architect: {formatNumber(parseFloat(hour.architectHours || '0'), 0)}</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Designer 1:</span>
+                        <span className="font-medium">{formatNumber(parseFloat(hour.designer1Hours || '0'), 0)} hrs</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Designer 2:</span>
+                        <span className="font-medium">{formatNumber(parseFloat(hour.designer2Hours || '0'), 0)} hrs</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Architect:</span>
+                        <span className="font-medium">{formatNumber(parseFloat(hour.architectHours || '0'), 0)} hrs</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Engineer:</span>
+                        <span className="font-medium">{formatNumber(parseFloat(hour.engineerHours || '0'), 0)} hrs</span>
+                      </div>
+                      {hour.principalHours && parseFloat(hour.principalHours) > 0 && (
+                        <div className="flex justify-between col-span-2">
+                          <span className="text-muted-foreground">Principal:</span>
+                          <span className="font-medium">{formatNumber(parseFloat(hour.principalHours), 0)} hrs</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
+              
+              {/* Total Hours Summary by Role */}
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="text-sm font-semibold mb-3">Total Hours by Role</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Designer 1:</span>
+                    <span className="font-medium">
+                      {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.designer1Hours || '0'), 0), 0)} hrs
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Designer 2:</span>
+                    <span className="font-medium">
+                      {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.designer2Hours || '0'), 0), 0)} hrs
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Architect:</span>
+                    <span className="font-medium">
+                      {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.architectHours || '0'), 0), 0)} hrs
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Engineer:</span>
+                    <span className="font-medium">
+                      {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.engineerHours || '0'), 0), 0)} hrs
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm col-span-2">
+                    <span className="text-muted-foreground">Principal:</span>
+                    <span className="font-medium">
+                      {formatNumber(hours.reduce((sum, h) => sum + parseFloat(h.principalHours || '0'), 0), 0)} hrs
+                    </span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Calculation Methodology Summary */}
+        <TooltipProvider>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Calculator className="h-5 w-5 text-indigo-600" />
+                Budget Calculation Methodology
+              </CardTitle>
+              <CardDescription>Understanding how your budget is calculated</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Category Multiplier */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Category {project.category} Multiplier</span>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Category multipliers adjust costs based on project complexity (1-5 scale)</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </div>
+                  <Badge variant="secondary">{(0.8 + 0.1 * project.category).toFixed(1)}x</Badge>
+                </div>
+
+                {/* Historic Property Multiplier */}
+                {parseFloat(project.historicMultiplier) > 1.0 && (
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Historic Property Adjustment</span>
+                      <UITooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>20% cost increase for historic property preservation requirements</p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </div>
+                    <Badge variant="secondary">+20%</Badge>
+                  </div>
+                )}
+
+                {/* Remodel Cost Factor */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Remodel Cost Factor</span>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Remodel costs are calculated as a percentage of new construction costs</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </div>
+                  <Badge variant="secondary">{formatPercent(project.remodelMultiplier)}</Badge>
+                </div>
+
+                {/* Building Type & Tier */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/60 dark:bg-slate-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Building Configuration</span>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Type: {project.buildingType}<br/>Tier: {project.buildingTier}<br/>Design Level: {project.designLevel}</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </div>
+                  <Badge variant="outline">{project.buildingTier}</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TooltipProvider>
 
         {/* Construction Cost Summary */}
         <Card className="border-0 shadow-xl bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-800 dark:to-slate-700">
