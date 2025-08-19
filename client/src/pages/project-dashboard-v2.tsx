@@ -1182,13 +1182,19 @@ export default function ProjectDashboardV2() {
               <div>
                 <Label className="text-sm mb-2">Distribution by Role</Label>
                 <div className="space-y-2">
-                  {["Designer1", "Designer2", "Architect", "Engineer", "Principal"].map((role) => {
+                  {[
+                    { label: "Designer1", key: "designer1Hours" },
+                    { label: "Designer2", key: "designer2Hours" },
+                    { label: "Architect", key: "architectHours" },
+                    { label: "Engineer", key: "engineerHours" },
+                    { label: "Principal", key: "principalHours" }
+                  ].map((role) => {
                     const roleHours = hours?.reduce((sum, h) => 
-                      sum + parseFloat(h[`hours${role}` as keyof typeof h] as string || "0"), 0
+                      sum + parseFloat(h[role.key as keyof typeof h] as string || "0"), 0
                     ) || 0;
                     return (
-                      <div key={role} className="flex items-center justify-between">
-                        <span className="text-sm">{role}</span>
+                      <div key={role.label} className="flex items-center justify-between">
+                        <span className="text-sm">{role.label}</span>
                         <div className="flex items-center gap-2">
                           <Progress value={(roleHours / (hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 1) : 1)) * 100} className="w-24 h-2" />
                           <span className="text-sm font-medium w-16 text-right">{roleHours.toFixed(0)} hrs</span>
