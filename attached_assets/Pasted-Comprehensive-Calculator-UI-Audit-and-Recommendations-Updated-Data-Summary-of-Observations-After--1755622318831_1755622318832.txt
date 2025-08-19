@@ -1,0 +1,104 @@
+Comprehensive Calculator UI Audit and Recommendations (Updated Data)
+Summary of Observations
+
+After opening the Comprehensive Calculator for the updated demo project, I compared the web UI against the original Excel logic. The interface has improved significantly; it now clearly displays budgets, fees and hours for the project. Key observations include:
+
+Top‑level summary: The interface now shows Total Budget, Market Fee, Louis Amy Fee, and Total Hours as separate cards. The total budget card also shows the breakdown of new and existing construction costs (e.g., $11.37 M total with $9.75 M new and $1.63 M remodel)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. Shell, interior, and landscape budgets are shown with their percentages and their new vs remodel portions
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Engineering discipline budgets: A dedicated section summarises budgets for each discipline (Architecture, Structural, Civil/Site, Mechanical, Electrical, Plumbing). Each card lists the share of the shell budget, the discipline’s total budget and a note about the remodel reduction (e.g., Structural has a 50 % reduction for remodel)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. However, Telecommunication budgets are missing from this summary.
+
+Project parameters: Users can adjust New Building Area, Existing Building Area, Site Area and Remodel Cost Factor using sliders. A donut chart on the right visualises the budget breakdown between new construction and remodel
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. There is also a toggle for Historic Property, which applies a 20 % cost increase.
+
+Cost range analysis and summary: The UI displays minimum, target and maximum cost per ft² for new construction and remodel, drawn from the database. A separate card at the bottom repeats this information
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Fee distribution and professional fees analysis: A donut chart shows the breakdown of Market Fee, Louis Amy Fee, Consultant and Coordination fees. A detailed table lists each scope (Scan to BIM – Building/Site, Architecture, Interior, Landscape, Structural, Civil, Mechanical, Electrical, Plumbing, Telecommunication) with the % of project cost, rate per ft², market fee, Louis Amy fee, hours, coordination fee and consultant fee
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. This matches the spreadsheet’s top‑down fee analysis.
+
+Hours distribution: A bar chart breaks down total hours by phase and role (Designer 1, Designer 2, Architect, Engineer, Principal) with the exact hours per role and total hours per phase
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. The totals per role are also listed.
+
+Budget calculation methodology: A card summarises the selected Category Multiplier, Remodel Cost Factor and Building Configuration (e.g., Category 3 = 1.1×, Remodel Cost Factor = 50 %, Building Configuration = High‑End Custom Residential)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Positive Improvements
+
+Clear high‑level overview: The four summary cards (Total Budget, Market Fee, Louis Amy Fee, Total Hours) provide an immediate sense of project scale. This addresses earlier feedback about missing totals.
+
+Budget breakdowns: Adding cards for Shell, Interior, and Landscape budgets with explicit new vs remodel values aligns closely with the spreadsheet and helps users understand where dollars go
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Fee analysis transparency: The Professional Fees Analysis table exposes the same metrics as the Excel sheet (percent of cost, rate per ft², market fee, etc.), and the donut chart clearly shows the composition of fees
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Hours distribution detail: The new hours chart showing phase and role distributions replicates the spreadsheet’s hours calculation and helps users see workload by team member
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Methodology card: Summarising the category multiplier, remodel factor and building configuration helps users understand the assumptions behind the calculations
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Gaps and Recommendations
+
+Despite the improvements, a few elements from the Excel model are not yet represented or could be enhanced. Recommendations are grouped by area:
+
+1. Building and Cost Parameters
+
+Expose building tier and type selection: The Building Configuration is currently locked to “High‑End Custom Residential” for single‑family projects. The updated CSV includes other building types (e.g., Custom Houses, Private Housing Development). Add dropdowns to select building type and tier (Low/Mid/High) so users can calculate costs for different categories, consistent with the new database.
+
+Allow target cost overrides: The Excel sheet lets users override the default target $/ft² by dragging a slider. Provide input fields or sliders so users can adjust the target cost per ft² for new and remodel separately.
+
+2. Budget Allocation Details
+
+Include Telecommunication in the discipline summary: Telecommunication budgets are shown in the fee analysis but not in the Engineering Discipline Budgets summary. Add a card for Telecommunication (or “Low‑Voltage”) with its share and budget for completeness
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Show new vs remodel split for each discipline: The summary cards only show the discipline’s total budget and share. Display the split between new and remodel budgets for disciplines (as the Excel sheet calculates) so users can see how the remodel reduction affects each discipline.
+
+Make discipline shares adjustable: The Excel model allows overwriting default engineering shares (e.g., users could increase structural share from 27.9 % to 30 %). Add sliders or input boxes to override each discipline’s percentage share and recalculate budgets/fees accordingly.
+
+Persist working minimum budget: The spreadsheet shows a Working Minimum Budget (sum of discipline budgets). Add this value in the summary or methodology card so users know the minimum required budget.
+
+3. Fee Analysis
+
+Show both top‑down and bottom‑up fees: The UI only displays top‑down fees (percent of cost). The Excel workbook also calculates fees by hours using bottom‑up rates, overhead, margin, markup and discount. Include a Bottom‑Up Fee option or toggle that shows fees based on total hours × cost per hour, and allows comparison against the top‑down approach.
+
+Clarify consultant/coordination logic: In the table, mechanical, electrical and telecommunication scopes are outsourced; their market fee appears under “Consultant,” and there is a coordination fee. Include a tooltip or legend explaining why these scopes are outsourced and how coordination fees are applied.
+
+Allow discounting/markup adjustments: The spreadsheet applies an overall discount and markup when calculating contract price. Provide controls to adjust markup/discount rates and show the resulting contract price.
+
+4. Hours and Role Distribution
+
+Include total hours for outsourced scopes: The hours column shows zero hours for outsourced scopes. Clarify that hours represent only in‑house efforts and consider adding a column for external consultant hours (or clearly state why external hours are not shown).
+
+Allow category multiplier override for hours: The hours calculation uses a base factor multiplied by the category multiplier. Offer a field to override the category multiplier or show the hours factor used in the calculation for transparency.
+
+Add rebalanced hours section: The Excel sheet includes rebalanced hours after discounting/contract changes. Add a rebalanced hours section so users can see how fee adjustments affect hours allocation.
+
+5. User Experience Enhancements
+
+Enable saving and comparison of scenarios: Allow users to save multiple configurations (e.g., with and without historic property multiplier, different remodel factors) and compare budgets, fees and hours side by side.
+
+Improve navigation: The top navigation links (“Budget Calculator,” “Fee Calculator,” “Fee Matrix v2,” “Hourly Factor”) are visible. Add tooltips or descriptions to explain what each tool does. Provide breadcrumb navigation within the comprehensive calculator to jump to key sections (budget, fees, hours, methodology).
+
+Responsive design: Ensure all cards fit well on smaller screens; some tables currently require vertical scrolling. Consider collapsing sections or using tabs to reduce page length.
+
+Conclusion
+
+The updated Comprehensive Calculator UI shows substantial progress toward replicating the Excel‑based cost and fee model. It now surfaces key budgets, fees and hours in a clear, interactive format. Implementing the recommendations above—particularly adding building/tier selection, exposing telecommunication budgets, allowing share overrides and introducing bottom‑up fee analysis—would make the calculator fully align with the original spreadsheet while improving transparency and user control.

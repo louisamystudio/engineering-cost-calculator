@@ -481,6 +481,16 @@ export default function ModernProjectDashboard() {
                   {formatCurrency(calculations.architectureBudget)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Design + Consultant Admin</div>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">New</p>
+                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.architectureBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Remodel (50%)</p>
+                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.architectureBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Structural */}
@@ -551,6 +561,50 @@ export default function ModernProjectDashboard() {
                   {formatCurrency(calculations.plumbingBudget)}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Water systems</div>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">New</p>
+                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.plumbingBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Remodel</p>
+                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.plumbingBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Telecommunication */}
+              <div className="p-4 rounded-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Telecommunication</span>
+                  <Badge variant="secondary" className="text-xs">Low-Voltage</Badge>
+                </div>
+                <div className="text-xl font-bold text-purple-700 dark:text-purple-400">
+                  {formatCurrency(
+                    parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0')
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Outsourced service</div>
+                <div className="flex gap-2 mt-2">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">New</p>
+                    <p className="text-xs font-medium">
+                      {formatCurrency(
+                        parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
+                        (newBuildingArea / (newBuildingArea + existingBuildingArea))
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">Remodel</p>
+                    <p className="text-xs font-medium">
+                      {formatCurrency(
+                        parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
+                        (existingBuildingArea / (newBuildingArea + existingBuildingArea))
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -1095,6 +1149,34 @@ export default function ModernProjectDashboard() {
                     </UITooltip>
                   </div>
                   <Badge variant="outline">{project.buildingTier}</Badge>
+                </div>
+
+                {/* Working Minimum Budget */}
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Working Minimum Budget</span>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Sum of all engineering discipline budgets - the minimum required budget for project completion</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-green-700 dark:text-green-400">
+                      {formatCurrency(
+                        parseFloat(calculations.architectureBudget || '0') +
+                        parseFloat(calculations.structuralBudget || '0') +
+                        parseFloat(calculations.civilBudget || '0') +
+                        parseFloat(calculations.mechanicalBudget || '0') +
+                        parseFloat(calculations.electricalBudget || '0') +
+                        parseFloat(calculations.plumbingBudget || '0')
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Required minimum</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
