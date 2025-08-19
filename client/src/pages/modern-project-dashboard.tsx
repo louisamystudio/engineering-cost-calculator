@@ -483,60 +483,111 @@ export default function ModernProjectDashboard() {
 
         {/* Cost Analysis Charts */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Cost per Square Foot */}
+          {/* Cost Range Analysis */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <BarChart3 className="h-5 w-5 text-blue-600" />
-                Cost per Square Foot Analysis
+                Cost Range Analysis
               </CardTitle>
-              <CardDescription>Min, target, and max cost ranges</CardDescription>
+              <CardDescription>Construction cost ranges per square foot</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={costPerSqFtData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="category" />
-                  <YAxis tickFormatter={(value) => `$${value}`} />
-                  <Tooltip formatter={(value) => [`$${value}/ft²`, '']} />
-                  <Bar dataKey="minimum" fill="#ef4444" name="Minimum" />
-                  <Bar dataKey="target" fill="#3b82f6" name="Target" />
-                  <Bar dataKey="maximum" fill="#10b981" name="Maximum" />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent className="space-y-6">
+              {/* New Construction Range */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-green-700">New Construction</h4>
+                  <span className="text-sm text-muted-foreground">per ft²</span>
+                </div>
+                <div className="relative">
+                  <div className="h-8 bg-gradient-to-r from-red-200 via-blue-200 to-green-200 rounded-lg relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium text-gray-700">
+                      <span>{formatCurrency(costPerSqFtData[0].minimum)}</span>
+                      <span className="bg-white px-2 py-0.5 rounded font-bold text-blue-700">
+                        {formatCurrency(costPerSqFtData[0].target)}
+                      </span>
+                      <span>{formatCurrency(costPerSqFtData[0].maximum)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>Minimum</span>
+                    <span>Target</span>
+                    <span>Maximum</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Remodel Range */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-orange-700">Remodel</h4>
+                  <span className="text-sm text-muted-foreground">per ft²</span>
+                </div>
+                <div className="relative">
+                  <div className="h-8 bg-gradient-to-r from-red-200 via-blue-200 to-green-200 rounded-lg relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-between px-3 text-xs font-medium text-gray-700">
+                      <span>{formatCurrency(costPerSqFtData[1].minimum)}</span>
+                      <span className="bg-white px-2 py-0.5 rounded font-bold text-blue-700">
+                        {formatCurrency(costPerSqFtData[1].target)}
+                      </span>
+                      <span>{formatCurrency(costPerSqFtData[1].maximum)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>Minimum</span>
+                    <span>Target</span>
+                    <span>Maximum</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Fee Breakdown */}
+          {/* Fee Breakdown Pie Chart */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <Calculator className="h-5 w-5 text-purple-600" />
-                Fee Structure
+                <PieChart className="h-5 w-5 text-purple-600" />
+                Fee Distribution
               </CardTitle>
               <CardDescription>Professional service fee breakdown</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={feeBreakdownData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" />
-                  <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#8b5cf6" 
-                    fill="url(#feeGradient)" 
-                  />
-                  <defs>
-                    <linearGradient id="feeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={250}>
+                  <RechartsPieChart>
+                    <Pie
+                      dataKey="value"
+                      data={feeBreakdownData.filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={40}
+                      paddingAngle={5}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {feeBreakdownData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Fee Legend */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {feeBreakdownData.filter(item => item.value > 0).map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="text-muted-foreground">{item.name}</span>
+                    <span className="font-medium ml-auto">{formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
