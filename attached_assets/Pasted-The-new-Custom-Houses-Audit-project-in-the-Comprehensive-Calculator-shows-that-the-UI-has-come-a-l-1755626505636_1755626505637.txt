@@ -1,0 +1,45 @@
+The new “Custom Houses Audit” project in the Comprehensive Calculator shows that the UI has come a long way—project creation is easy, and the page now exposes many more metrics than before.  However, there are still areas for improvement.
+
+**What’s still missing**
+
+* Although you now list Telecommunication budgets, there’s no way to adjust that (it shows \$0) and the discipline budgets still can’t be overridden.
+* The cost‑range bars (e.g., \$340/\$350/\$360 per ft² for new construction) are static; you can’t drag the target value or set a custom cost within the range.
+* There is no bottom‑up fee calculation or margin/markup controls; users can’t view or adjust labor rates, overhead or discount factors.
+* The page remains long and scroll‑heavy; related elements (like cost ranges and budget breakdowns) are spread apart rather than grouped together.
+
+**Overall opinion**
+
+The ability to choose residential subtypes (e.g. Custom Houses) and categories is a big step forward.  The summary cards, engineering breakdown, fee analysis and hours distribution are clear and align with the spreadsheet model.  The methodology card now shows the working minimum budget, which was missing before.  However, the calculator still feels more like a report than an interactive tool.  Making the page more modular and interactive will help users explore scenarios instead of just viewing calculated results.
+
+**What could improve the app**
+
+* **Interactive target cost sliders:** Turn the cost‑range bars into true sliders.  Let users drag the target cost per ft² for new and remodel within the min/max range; recalculate budgets and fees instantly.
+* **Adjustable shares and factors:** Provide controls to override shell/interior/landscape shares, discipline percentages and the remodel cost factor.  A set of sliders or numeric inputs could live under the Budget Calculation Methodology card.
+* **Bottom‑up fee option:** Add a toggle to show fees calculated from hours × cost per hour (with adjustable labor rate, overhead, markup and discount) alongside the top‑down percentages.
+* **Scenario management:** Allow saving multiple versions of a project (e.g. different design levels or category multipliers) and compare their budgets/fees/hours side by side.
+
+**Layout and organisation**
+
+* **Use tabs or collapsible sections:** Split the long page into tabs (e.g. “Budgets”, “Fees & Hours”, “Parameters & Assumptions”) or collapsible panels.  This reduces scrolling and helps users focus.
+* **Group related information:** Place cost range sliders, cost summaries and budget shares in one section; put fees and hours together; and move parameters and assumptions under a dedicated “Inputs” tab.  This will make the flow more intuitive.
+* **Make cards consistent:** Align all cards to the same baseline and ensure equal spacing.  At times the cards vary in height or spacing, causing visual distraction.
+
+**Data visualisation improvements**
+
+* **Stacked bar charts:** Replace or supplement the donut charts with stacked bars showing how the total budget splits into shell/interior/landscape, and how each discipline’s budget splits into new vs remodel.  Stacked bars make proportions and absolute values easier to compare.
+* **Dynamic tooltips and legends:** Add hover tooltips on chart segments to show exact values and descriptions, and allow users to toggle series on/off (e.g. hide consultant fees).
+* **Highlight interactions:** When a user changes a parameter, temporarily highlight the affected cards or chart segments (e.g. fade in/out) so the impact is obvious.
+
+**Aesthetic refinements**
+
+* **Simplify the colour palette:** Use a cohesive set of colours for cards and charts (e.g. shades of blue/teal with one accent colour) and reduce the number of bright hues.
+* **Add white space:** Increase padding between cards and sections to improve readability and reduce visual overload.
+* **Typography hierarchy:** Use consistent font sizes and weights to distinguish headings, labels and values; ensure that important numbers stand out.
+
+**Tweaking and overwriting values on the fly**
+
+* For each numeric input (area, cost factor, shares, discipline percentages), use sliders or spin boxes so users can quickly adjust values without typing.
+* Provide a “reset” button to return to default values and an “apply” button to confirm changes.
+* Consider an “advanced mode” toggle that reveals more detailed inputs for power users; keep the default mode simple for casual users.
+
+By focusing on interactivity, modular layout and polished visuals, the Comprehensive Calculator can transform from a static report into a powerful tool for exploring and comparing construction budgets and professional fees.
