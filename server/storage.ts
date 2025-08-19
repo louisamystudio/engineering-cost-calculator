@@ -40,7 +40,8 @@ import {
   engineeringCosts,
   type EngineeringCosts,
   buildingCost2025Parcial,
-  type BuildingCost
+  type BuildingCost,
+  type ComprehensiveBuildingCost
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -114,6 +115,7 @@ export interface IStorage {
   getBuildingTypesByUse(buildingUse: string): Promise<string[]>;
   getBuildingTiersByType(buildingType: string): Promise<string[]>;
   getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined>;
+  getComprehensiveBuildingCostData(buildingType: string, buildingTier: string): Promise<ComprehensiveBuildingCost | undefined>;
   getEngineeringCostsByDiscipline(buildingType: string, tier: number, discipline: string): Promise<EngineeringCosts | undefined>;
 }
 
@@ -421,13 +423,35 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined> {
+    // Map tier number to tier text
+    const tierMap: Record<number, string> = {
+      1: 'Low-end',
+      2: 'Mid', 
+      3: 'High-end'
+    };
+    
+    const tierText = tierMap[tier] || 'Mid';
+    
     const [result] = await db
       .select()
       .from(buildingCost2025Parcial)
       .where(
         and(
           eq(buildingCost2025Parcial.buildingType, buildingType),
-          eq(buildingCost2025Parcial.tier, tier)
+          eq(buildingCost2025Parcial.buildingTier, tierText)
+        )
+      );
+    return result || undefined;
+  }
+  
+  async getComprehensiveBuildingCostData(buildingType: string, buildingTier: string): Promise<ComprehensiveBuildingCost | undefined> {
+    const [result] = await db
+      .select()
+      .from(buildingCost2025Parcial)
+      .where(
+        and(
+          eq(buildingCost2025Parcial.buildingType, buildingType),
+          eq(buildingCost2025Parcial.buildingTier, buildingTier)
         )
       );
     return result || undefined;

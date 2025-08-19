@@ -115,20 +115,39 @@ export class ProjectCalculatorService {
   }
   
   private async getBuildingCostData(input: ComprehensiveProjectInput) {
-    // Map UI building type to database building type
-    const buildingTypeMap: Record<string, string> = {
-      'Residence - Private': 'Mid-Range Standard Residential', // Default residential
-      'High-End Custom Residential': 'High-End Custom Residential',
-      'Mid-Range Standard Residential': 'Mid-Range Standard Residential',
-      'Hospitality (Hotel/Resort)': 'Hospitality (Hotel/Resort)',
-      'Commercial / Mixed-Use': 'Commercial / Mixed-Use',
+    // Use the new comprehensive database structure
+    // buildingTier in the input maps directly to building_tier in database
+    let mappedBuildingType = input.buildingTier || input.buildingType;
+    
+    // Handle legacy building type mappings
+    if (input.buildingType === 'Residence - Private') {
+      mappedBuildingType = 'Custom Houses'; // Default to Custom Houses for private residences
+    }
+    
+    // Map design level to tier text for the new database
+    const tierMap: Record<number, string> = {
+      1: 'Low-end',
+      2: 'Mid', 
+      3: 'High-end'
     };
+    const tierText = tierMap[input.designLevel] || 'Mid';
     
-    // Map the building type from UI to database key
-    const mappedBuildingType = buildingTypeMap[input.buildingType] || buildingTypeMap[input.buildingTier] || input.buildingType;
-    const costData = await storage.getBuildingCostData(mappedBuildingType, input.designLevel);
+    // Get comprehensive data from new database structure
+    const comprehensiveData = await storage.getComprehensiveBuildingCostData(mappedBuildingType, tierText);
     
-    if (!costData) {
+    if (comprehensiveData) {
+      // Convert comprehensive data to the expected format for existing calculator logic
+      return {
+        allInMin: (parseFloat(comprehensiveData.shellNewMin) + parseFloat(comprehensiveData.interiorNewMin) + 
+                  parseFloat(comprehensiveData.landscapeNewMin) + parseFloat(comprehensiveData.siteNewMin)).toString(),
+        allInMax: (parseFloat(comprehensiveData.shellNewMax) + parseFloat(comprehensiveData.interiorNewMax) + 
+                  parseFloat(comprehensiveData.landscapeNewMax) + parseFloat(comprehensiveData.siteNewMax)).toString(),
+        archShare: (parseFloat(comprehensiveData.shellShareNew) / 100).toString(),
+        intShare: (parseFloat(comprehensiveData.interiorShareNew) / 100).toString(),
+        landShare: (parseFloat(comprehensiveData.landscapeShareNew) / 100).toString(),
+        comprehensiveData // Pass along the full data for advanced calculations
+      };
+    } else {
       // Fallback to default values that properly use design level
       const defaults: Record<string, any> = {
         'High-End Custom Residential': {
@@ -164,8 +183,6 @@ export class ProjectCalculatorService {
         landShare: tierDefaults.landShare.toString()
       };
     }
-    
-    return costData;
   }
   
   private async calculateBudgets(

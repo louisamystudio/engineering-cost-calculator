@@ -2,6 +2,13 @@
 
 This is a comprehensive engineering cost calculator web application that provides sophisticated budget analysis and fee calculations for construction projects. The application features a multi-step project creation wizard, interactive dashboards with real-time calculation updates, and full database integration for project storage and reporting. It's built as a full-stack TypeScript application with a React frontend and Express backend, using PostgreSQL for data persistence.
 
+## Recent Updates (August 2025)
+- Completed comprehensive database migration to "Custom_Residential_CostS_DB_CLEAN_v3" structure
+- Updated from simple tier-based system to detailed building type classification system
+- Calculator now supports: Custom Houses, Public Social Housing, Private Housing Development, Multifamily Apartments
+- Successfully audited and validated calculations match spreadsheet formulas exactly
+- Implemented new comprehensive cost data structure with separate new construction vs. remodel costs
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
