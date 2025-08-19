@@ -811,46 +811,46 @@ export default function ProjectDashboardV2() {
           </Collapsible>
         </Card>
 
-        {/* Engineering Discipline Budgets */}
+        {/* Shell Budget Allocation */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Engineering Discipline Budgets</CardTitle>
-            <CardDescription>Budget allocation and percentage overrides for engineering disciplines</CardDescription>
+            <CardTitle className="text-lg font-semibold">Shell Budget Allocation</CardTitle>
+            <CardDescription>Budget allocation and percentage overrides for shell components including architecture and engineering disciplines</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Telecommunication */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+              {/* Architecture */}
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Telecommunication</span>
+                  <span className="text-sm font-medium">Architecture</span>
                   <TooltipProvider>
                     <UITooltip>
                       <TooltipTrigger>
                         <Info className="h-3 w-3 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p className="text-xs">Low-voltage and IT infrastructure design</p>
+                        <p className="text-xs">Architectural design and shell coordination</p>
                       </TooltipContent>
                     </UITooltip>
                   </TooltipProvider>
                 </div>
-                <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
+                <div className="text-xl font-bold text-violet-700 dark:text-violet-400 mb-2">
+                  {formatCurrency(parseFloat(calculations.architectureBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.telecomBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.architectureBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
                   <Input
                     type="number"
-                    value={telecomShareOverride ? telecomShareOverride * 100 : ''}
-                    onChange={(e) => setTelecomShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    value={architecturePercentage ? architecturePercentage * 100 : ''}
+                    onChange={(e) => setArchitecturePercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                     placeholder="Auto"
                     className="w-16 h-6 text-xs"
                     min={0}
-                    max={10}
-                    step={0.1}
+                    max={50}
+                    step={1}
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
@@ -875,7 +875,7 @@ export default function ProjectDashboardV2() {
                   {formatCurrency(parseFloat(calculations.structuralBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -912,7 +912,7 @@ export default function ProjectDashboardV2() {
                   {formatCurrency(parseFloat(calculations.civilBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -949,7 +949,7 @@ export default function ProjectDashboardV2() {
                   {formatCurrency(parseFloat(calculations.mechanicalBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -986,7 +986,7 @@ export default function ProjectDashboardV2() {
                   {formatCurrency(parseFloat(calculations.electricalBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1023,7 +1023,7 @@ export default function ProjectDashboardV2() {
                   {formatCurrency(parseFloat(calculations.plumbingBudget || "0"))}
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                  {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1031,6 +1031,43 @@ export default function ProjectDashboardV2() {
                     type="number"
                     value={plumbingPercentage ? plumbingPercentage * 100 : ''}
                     onChange={(e) => setPlumbingPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              {/* Telecommunication */}
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Telecommunication</span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Low-voltage and IT infrastructure design</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">
+                  {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
+                </div>
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.telecomBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={telecomShareOverride ? telecomShareOverride * 100 : ''}
+                    onChange={(e) => setTelecomShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                     placeholder="Auto"
                     className="w-16 h-6 text-xs"
                     min={0}
