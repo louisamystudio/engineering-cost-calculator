@@ -1,0 +1,59 @@
+Suggested changes to align with the Excel logic
+
+Move overrides and sliders into the dashboard
+
+Make the cost‑range bars interactive: let users drag the target cost marker between min and max for new and remodel costs
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Add sliders or numeric inputs next to Shell/Interior/Landscape shares and discipline percentages, so users can override the default values after seeing the calculated budgets.
+
+Provide a toggle or slider to adjust the hours‑per‑ft² factor; show the base value from the database but let users override it.
+
+Reorder and group the dashboard sections
+
+Inputs & Cost Ranges: Start with project information (building use, type, tier, category, design level) and area parameters. Immediately beneath, show the cost‑range sliders, with fields to adjust remodel factor and historic multiplier (with explanations).
+
+Budget Allocation: Next, display New and Remodel budgets, then Shell/Interior/Landscape budgets (with new vs remodel breakdown and overrides). Then list discipline budgets (architecture, structural, civil/site, mechanical, electrical, plumbing, telecom) with new vs remodel splits
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Fee Analysis: After budgets, show two tabs: Top‑Down Analysis and Bottom‑Up Analysis.
+– Top‑Down should display, for each scope, the percentage of project cost, rate per ft², market fee, Louis Amy fee, consultant fee and coordination fee. Include sliders or inputs for category multiplier, discount rate and remodel factor.
+– Bottom‑Up should list team roles (Designer 1, Designer 2, Architect, Engineer, Principal) with labour cost per hour, overhead per hour, margin and markup. Allow users to modify these values and see how fees change. Show how many hours each role contributes, and let users select which services (Louis Amy vs consultants) are included.
+
+Hours Distribution: After fees, display hours by phase and role, with the current hours‑factor and an option to override it. Show how total hours correspond to each discipline’s fee and highlight differences between top‑down and bottom‑up hours.
+
+Provide context for key metrics
+
+Add info icons or collapsible “Details” links on the Market Fee, Louis Amy Fee and Total Hours cards that reveal the exact formulas and inputs used in their calculation. For example, clicking Market Fee could show the fee percentage, the budget used, and whether the remodel factor and discounts have been applied
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Include a “Working Minimum Budget” line in the methodology section with a tooltip explaining that it sums the minimum shell, interior and landscape budgets
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Match the Excel’s order
+
+Mirror the spreadsheet’s flow: Inputs → Cost Ranges → Budgets → Discipline Shares → Engineering & Design Budgets → Top‑Down Fee Analysis → Bottom‑Up Fee Analysis → Hours → Summary & Sanity Check. This structure makes it easier for users familiar with the Excel model to follow the logic
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Allow service selection
+
+In the Fee Analysis section, provide checkboxes to include/exclude Louis Amy services and individual consultant disciplines. The summary should update dynamically so users can see how dropping mechanical or electrical affects fees and hours.
+
+Offer deeper explanations and data sources
+
+For each calculated value, provide a hover tooltip or expandable section that lists the data pulled from the database (e.g., cost ranges from Cost_Ranges, engineering percentages from Engineering_Costs) and shows the formula used (e.g., marketFee = percentOfCost × disciplineBudget).
+
+Enhance aesthetics while simplifying
+
+Reduce the number of colours used; adopt a coherent palette and limit accent colours to highlight interactive elements.
+
+Increase whitespace and use collapsible cards to reduce scroll length.
+
+Ensure typography clearly distinguishes headings, labels and values.
+
+By implementing these changes—particularly moving interactive controls into the dashboard, providing clear context for metrics, and following the spreadsheet’s logical order—you’ll transform the app from a static report into an interactive, data‑driven calculator that mirrors the Excel tool.
