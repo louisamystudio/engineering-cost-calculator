@@ -11,6 +11,7 @@ import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
 import ProjectsPage from "@/pages/projects";
 import NewProjectPage from "@/pages/new-project";
 import ModernProjectDashboard from "@/pages/modern-project-dashboard";
+import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -89,7 +90,7 @@ function Router() {
         <Route path="/" component={ProjectsPage} />
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />
-        <Route path="/projects/:id" component={ModernProjectDashboard} />
+        <Route path="/projects/:id" component={ProjectDashboardV2} />
         <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />
