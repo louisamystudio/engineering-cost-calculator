@@ -21,7 +21,7 @@ const projectSchema = z.object({
   projectName: z.string().min(1, "Project name is required"),
   buildingUse: z.string().min(1, "Building use is required"),
   buildingType: z.string().min(1, "Building type is required"),
-  buildingTier: z.string().min(1, "Building tier is required"),
+
   designLevel: z.number().min(1).max(3),
   category: z.number().min(1).max(5),
   newBuildingArea: z.number().min(0),
@@ -42,7 +42,7 @@ export default function NewProjectPage() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(1);
   const [selectedBuildingUse, setSelectedBuildingUse] = useState("");
-  const [selectedBuildingType, setSelectedBuildingType] = useState("");
+
   const [isHistoric, setIsHistoric] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -54,7 +54,7 @@ export default function NewProjectPage() {
       projectName: "",
       buildingUse: "",
       buildingType: "",
-      buildingTier: "",
+
       designLevel: 2,
       category: 3,
       newBuildingArea: 10000,
@@ -76,11 +76,7 @@ export default function NewProjectPage() {
     enabled: !!selectedBuildingUse,
   });
 
-  // Fetch building tiers when type is selected
-  const { data: buildingTiers = [] } = useQuery<string[]>({
-    queryKey: ['/api/building-types', selectedBuildingType, 'available-tiers'],
-    enabled: !!selectedBuildingType,
-  });
+
 
   // Fetch category multipliers
   const { data: categoryMultipliers = [] } = useQuery<Array<{ category: number; description: string; multiplier: string }>>({
@@ -112,8 +108,16 @@ export default function NewProjectPage() {
   };
 
   const handleSubmit = (data: ProjectFormData) => {
+    // Map design level to building tier
+    const tierMap: Record<number, string> = {
+      1: 'Low-end',
+      2: 'Mid', 
+      3: 'High-end'
+    };
+    
     const input: ComprehensiveProjectInput = {
       ...data,
+      buildingTier: tierMap[data.designLevel] || 'Mid', // Automatically set tier based on design level
       historicMultiplier: isHistoric ? 1.2 : 1.0,
     };
     createProjectMutation.mutate(input);
@@ -122,7 +126,7 @@ export default function NewProjectPage() {
   const getFieldsForStep = (currentStep: number): (keyof ProjectFormData)[] => {
     switch (currentStep) {
       case 1:
-        return ["projectName", "buildingUse", "buildingType", "buildingTier"];
+        return ["projectName", "buildingUse", "buildingType"];
       case 2:
         return ["designLevel", "category"];
       case 3:
@@ -183,9 +187,7 @@ export default function NewProjectPage() {
                           onValueChange={(value) => {
                             field.onChange(value);
                             setSelectedBuildingUse(value);
-                            setSelectedBuildingType("");
                             form.setValue("buildingType", "");
-                            form.setValue("buildingTier", "");
                           }}
                           defaultValue={field.value}
                         >
@@ -214,11 +216,7 @@ export default function NewProjectPage() {
                       <FormItem>
                         <FormLabel>Building Type</FormLabel>
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setSelectedBuildingType(value);
-                            form.setValue("buildingTier", "");
-                          }}
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
                           disabled={!selectedBuildingUse}
                         >
@@ -240,34 +238,7 @@ export default function NewProjectPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="buildingTier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Building Tier</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          disabled={!selectedBuildingType}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select building tier" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {buildingTiers.map((tier) => (
-                              <SelectItem key={tier} value={tier}>
-                                {tier}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </div>
               )}
 
@@ -282,7 +253,7 @@ export default function NewProjectPage() {
                       <FormItem>
                         <FormLabel>Design Level</FormLabel>
                         <FormDescription>
-                          Choose the complexity level of your design
+                          Choose the cost tier and complexity level of your design
                         </FormDescription>
                         <FormControl>
                           <RadioGroup
