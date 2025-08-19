@@ -160,6 +160,7 @@ export default function ProjectDashboardV2() {
   const [siteArea, setSiteArea] = useState(0);
   const [remodelMultiplier, setRemodelMultiplier] = useState(0.5);
   const [isHistoric, setIsHistoric] = useState(false);
+  const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState<number>(1.0);
   
   // Section 2: Cost Range Controls
   const [newConstructionTarget, setNewConstructionTarget] = useState<number | undefined>();
@@ -208,7 +209,7 @@ export default function ProjectDashboardV2() {
   const [hoursFactorOverride, setHoursFactorOverride] = useState<number | undefined>();
   const [hoursPerSqFt, setHoursPerSqFt] = useState<number>(0.5);
   const [discountPercent, setDiscountPercent] = useState<number>(0.0);
-  const [telecomShareOverride, setTelecomShareOverride] = useState<number>(0.02);
+  const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
   
   // UI Controls
   const [autoRecalc, setAutoRecalc] = useState(true);
@@ -240,7 +241,7 @@ export default function ProjectDashboardV2() {
         newBuildingArea: params?.newBuildingArea ?? newBuildingArea,
         existingBuildingArea: params?.existingBuildingArea ?? existingBuildingArea,
         siteArea: params?.siteArea ?? siteArea,
-        historicMultiplier: isHistoric ? 1.2 : 1.0,
+        historicMultiplier: historicPropertyMultiplier,
         remodelMultiplier: params?.remodelMultiplier ?? remodelMultiplier,
         newConstructionTargetCost: newConstructionTarget,
         remodelTargetCost: remodelTarget,
@@ -611,8 +612,11 @@ export default function ProjectDashboardV2() {
                       </div>
                     </div>
                     <Switch 
-                      checked={isHistoric} 
-                      onCheckedChange={setIsHistoric}
+                      checked={historicPropertyMultiplier === 1.2} 
+                      onCheckedChange={(checked) => {
+                        setIsHistoric(checked);
+                        setHistoricPropertyMultiplier(checked ? 1.2 : 1.0);
+                      }}
                     />
                   </div>
                 </div>
@@ -1175,19 +1179,16 @@ export default function ProjectDashboardV2() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Overhead Rate</Label>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        value={overheadRate * 100}
-                        onChange={(e) => setOverheadRate(parseFloat(e.target.value) / 100)}
-                        className="h-8"
-                        min={100}
-                        max={300}
-                        step={10}
-                      />
-                      <span className="text-xs text-muted-foreground">%</span>
-                    </div>
+                    <Label className="text-xs">Overhead Rate ($/hr)</Label>
+                    <Input
+                      type="number"
+                      value={overheadRate}
+                      onChange={(e) => setOverheadRate(parseFloat(e.target.value))}
+                      className="h-8"
+                      min={20}
+                      max={100}
+                      step={5}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Markup Factor</Label>
@@ -1236,19 +1237,19 @@ export default function ProjectDashboardV2() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">With Overhead</span>
                     <span className="font-medium">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * laborRate * overheadRate)}
+                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate))}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">With Markup</span>
                     <span className="font-medium">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * laborRate * overheadRate * markupFactor)}
+                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate) * markupFactor)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center border-t pt-2">
                     <span className="text-sm font-semibold">Bottom-Up Fee</span>
                     <span className="text-xl font-bold text-green-600">
-                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * laborRate * overheadRate * markupFactor * (1 - discountPercent))}
+                      {formatCurrency((hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) : 0) * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}
                     </span>
                   </div>
                 </div>

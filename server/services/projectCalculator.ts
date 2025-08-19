@@ -456,7 +456,7 @@ export class ProjectCalculatorService {
         feeAdjustment: input.plumbingFeeAdjustment ?? 1.0
       },
       { 
-        scope: 'Telecomunication', 
+        scope: 'Telecommunication', 
         budget: parseFloat(calculations.telecomBudget), 
         isInhouse: false,
         feeAdjustment: input.telecomFeeAdjustment ?? 1.0
