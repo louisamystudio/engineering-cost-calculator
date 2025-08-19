@@ -292,15 +292,15 @@ export default function NewProjectPage() {
                             <div className="space-y-2">
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="1" id="level1" />
-                                <Label htmlFor="level1">Level 1 - Basic</Label>
+                                <Label htmlFor="level1">Level 1 - Low-end</Label>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="2" id="level2" />
-                                <Label htmlFor="level2">Level 2 - Standard</Label>
+                                <Label htmlFor="level2">Level 2 - Mid-range</Label>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <RadioGroupItem value="3" id="level3" />
-                                <Label htmlFor="level3">Level 3 - Premium</Label>
+                                <Label htmlFor="level3">Level 3 - High-end</Label>
                               </div>
                             </div>
                           </RadioGroup>

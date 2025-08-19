@@ -397,13 +397,36 @@ export class DatabaseStorage implements IStorage {
   
   // Building data methods
   async getAllBuildingUses(): Promise<string[]> {
-    const results = await db
+    // Get building uses from the comprehensive database
+    const comprehensiveResults = await db
+      .selectDistinct({ buildingUse: buildingCost2025Parcial.buildingUse })
+      .from(buildingCost2025Parcial);
+    
+    // Get building uses from the legacy database
+    const legacyResults = await db
       .selectDistinct({ buildingUse: buildingTypes.buildingUse })
       .from(buildingTypes);
-    return results.map(r => r.buildingUse);
+    
+    // Combine and deduplicate
+    const allUses = [
+      ...comprehensiveResults.map(r => r.buildingUse),
+      ...legacyResults.map(r => r.buildingUse)
+    ].filter((use, index, array) => use && array.indexOf(use) === index);
+    
+    return allUses;
   }
   
   async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
+    if (buildingUse === 'Residential') {
+      // Return the actual building types from comprehensive database
+      const results = await db
+        .selectDistinct({ buildingType: buildingCost2025Parcial.buildingType })
+        .from(buildingCost2025Parcial)
+        .where(eq(buildingCost2025Parcial.buildingUse, buildingUse));
+      return results.map(r => r.buildingType).filter(type => type !== null);
+    }
+    
+    // For other building uses, use the old system
     const results = await db
       .selectDistinct({ buildingType: buildingTypes.buildingType })
       .from(buildingTypes)
@@ -412,14 +435,13 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getBuildingTiersByType(buildingType: string): Promise<string[]> {
-    // Map building types to their available tiers
-    const tierMap: Record<string, string[]> = {
-      'High-End Custom Residential': ['High-End Custom Residential'],
-      'Mid-Range Standard Residential': ['Mid-Range Standard Residential'],
-      'Hospitality (Hotel/Resort)': ['Hospitality (Hotel/Resort)', 'Hospitality 4-Star'],
-      'Commercial / Mixed-Use': ['Commercial / Mixed-Use', 'Commercial Class A'],
-    };
-    return tierMap[buildingType] || [buildingType];
+    // Get available tiers from the comprehensive database
+    const results = await db
+      .selectDistinct({ buildingTier: buildingCost2025Parcial.buildingTier })
+      .from(buildingCost2025Parcial)
+      .where(eq(buildingCost2025Parcial.buildingType, buildingType));
+    
+    return results.map(r => r.buildingTier).filter(tier => tier !== null);
   }
   
   async getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined> {
