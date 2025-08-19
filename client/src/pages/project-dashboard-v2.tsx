@@ -815,12 +815,13 @@ export default function ProjectDashboardV2() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Engineering Discipline Budgets</CardTitle>
+            <CardDescription>Budget allocation and percentage overrides for engineering disciplines</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Telecom */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Telecommunication */}
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Telecommunication</span>
                   <TooltipProvider>
                     <UITooltip>
@@ -833,107 +834,211 @@ export default function ProjectDashboardV2() {
                     </UITooltip>
                   </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">
                   {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
+                </div>
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.telecomBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
                   <Input
                     type="number"
-                    value={telecomShareOverride * 100 || 2}
-                    onChange={(e) => setTelecomShareOverride(parseFloat(e.target.value) / 100)}
+                    value={telecomShareOverride ? telecomShareOverride * 100 : ''}
+                    onChange={(e) => setTelecomShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
                     className="w-16 h-6 text-xs"
                     min={0}
                     max={10}
-                    step={0.5}
+                    step={0.1}
                   />
                   <span className="text-xs text-muted-foreground">%</span>
                 </div>
               </div>
 
               {/* Structural */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Structural</span>
-                  <span className="text-xs text-muted-foreground">
-                    {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}%
-                  </span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Structural engineering and design</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">
                   {formatCurrency(parseFloat(calculations.structuralBudget || "0"))}
                 </div>
-                <Progress 
-                  value={(parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100} 
-                  className="h-1"
-                />
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={structuralPercentage ? structuralPercentage * 100 : ''}
+                    onChange={(e) => setStructuralPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               {/* Civil */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Civil</span>
-                  <span className="text-xs text-muted-foreground">
-                    {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}%
-                  </span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Site work and civil engineering</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-xl font-bold text-orange-700 dark:text-orange-400 mb-2">
                   {formatCurrency(parseFloat(calculations.civilBudget || "0"))}
                 </div>
-                <Progress 
-                  value={(parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100} 
-                  className="h-1"
-                />
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={civilPercentage ? civilPercentage * 100 : ''}
+                    onChange={(e) => setCivilPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               {/* Mechanical */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Mechanical</span>
-                  <span className="text-xs text-muted-foreground">
-                    {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}%
-                  </span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">HVAC and mechanical systems</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-xl font-bold text-red-700 dark:text-red-400 mb-2">
                   {formatCurrency(parseFloat(calculations.mechanicalBudget || "0"))}
                 </div>
-                <Progress 
-                  value={(parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100} 
-                  className="h-1"
-                />
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={mechanicalPercentage ? mechanicalPercentage * 100 : ''}
+                    onChange={(e) => setMechanicalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               {/* Electrical */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Electrical</span>
-                  <span className="text-xs text-muted-foreground">
-                    {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}%
-                  </span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Electrical systems and power distribution</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-xl font-bold text-yellow-700 dark:text-yellow-400 mb-2">
                   {formatCurrency(parseFloat(calculations.electricalBudget || "0"))}
                 </div>
-                <Progress 
-                  value={(parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100} 
-                  className="h-1"
-                />
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={electricalPercentage ? electricalPercentage * 100 : ''}
+                    onChange={(e) => setElectricalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
 
               {/* Plumbing */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Plumbing</span>
-                  <span className="text-xs text-muted-foreground">
-                    {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}%
-                  </span>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Plumbing and water systems</p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
                 </div>
-                <div className="text-2xl font-bold">
+                <div className="text-xl font-bold text-purple-700 dark:text-purple-400 mb-2">
                   {formatCurrency(parseFloat(calculations.plumbingBudget || "0"))}
                 </div>
-                <Progress 
-                  value={(parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100} 
-                  className="h-1"
-                />
+                <div className="text-xs text-muted-foreground mb-3">
+                  {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.totalBudget || "1")) * 100).toFixed(1)}% of total budget
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={plumbingPercentage ? plumbingPercentage * 100 : ''}
+                    onChange={(e) => setPlumbingPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    placeholder="Auto"
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
               </div>
             </div>
           </CardContent>
