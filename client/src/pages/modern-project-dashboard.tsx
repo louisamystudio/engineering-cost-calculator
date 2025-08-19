@@ -361,10 +361,10 @@ export default function ModernProjectDashboard() {
           </Card>
         </div>
 
-        {/* Interactive Parameters & Charts Row */}
-        <div className="grid gap-6 lg:grid-cols-2">
+        {/* Interactive Parameters & Budget Breakdown Row */}
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Interactive Parameters */}
-          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-semibold">
                 <Settings className="h-5 w-5 text-blue-600" />
@@ -496,34 +496,59 @@ export default function ModernProjectDashboard() {
             </CardContent>
           </Card>
 
-          {/* Budget Breakdown Chart */}
+          {/* Budget Breakdown Donut Chart */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <PieChart className="h-5 w-5 text-emerald-600" />
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <PieChart className="h-4 w-4 text-emerald-600" />
                 Budget Breakdown
               </CardTitle>
-              <CardDescription>Construction cost distribution</CardDescription>
+              <CardDescription className="text-xs">Construction cost distribution</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RechartsPieChart>
-                  <Pie
-                    dataKey="value"
-                    data={budgetChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {budgetChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
+            <CardContent className="pt-0">
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={180}>
+                  <RechartsPieChart>
+                    <Pie
+                      dataKey="value"
+                      data={budgetChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={65}
+                      fill="#8884d8"
+                      paddingAngle={2}
+                    >
+                      {budgetChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+                {/* Center label */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <div className="text-xs font-medium text-muted-foreground">Total</div>
+                    <div className="text-sm font-bold">{formatCurrency(calculations.totalBudget)}</div>
+                  </div>
+                </div>
+              </div>
+              {/* Compact Legend */}
+              <div className="space-y-1 mt-2">
+                {budgetChartData.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="text-muted-foreground">{item.name}</span>
+                    </div>
+                    <span className="font-medium">{formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
