@@ -545,11 +545,19 @@ export default function ModernProjectDashboard() {
                 <div className="flex gap-2 mt-2">
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">New</p>
-                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.architectureBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                    <p className="text-xs font-medium">{formatCurrency(
+                      (newBuildingArea + existingBuildingArea) > 0
+                        ? parseFloat(calculations.architectureBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
+                        : 0
+                    )}</p>
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Remodel (50%)</p>
-                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.architectureBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                    <p className="text-xs font-medium">{formatCurrency(
+                      (newBuildingArea + existingBuildingArea) > 0
+                        ? parseFloat(calculations.architectureBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
+                        : 0
+                    )}</p>
                   </div>
                 </div>
               </div>
@@ -625,11 +633,19 @@ export default function ModernProjectDashboard() {
                 <div className="flex gap-2 mt-2">
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">New</p>
-                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.plumbingBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                    <p className="text-xs font-medium">{formatCurrency(
+                      (newBuildingArea + existingBuildingArea) > 0 
+                        ? parseFloat(calculations.plumbingBudget) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
+                        : 0
+                    )}</p>
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">Remodel</p>
-                    <p className="text-xs font-medium">{formatCurrency(parseFloat(calculations.plumbingBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea)))}</p>
+                    <p className="text-xs font-medium">{formatCurrency(
+                      (newBuildingArea + existingBuildingArea) > 0
+                        ? parseFloat(calculations.plumbingBudget) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
+                        : 0
+                    )}</p>
                   </div>
                 </div>
               </div>
@@ -651,8 +667,10 @@ export default function ModernProjectDashboard() {
                     <p className="text-xs text-muted-foreground">New</p>
                     <p className="text-xs font-medium">
                       {formatCurrency(
-                        parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
-                        (newBuildingArea / (newBuildingArea + existingBuildingArea))
+                        (newBuildingArea + existingBuildingArea) > 0
+                          ? parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
+                            (newBuildingArea / (newBuildingArea + existingBuildingArea))
+                          : 0
                       )}
                     </p>
                   </div>
@@ -660,8 +678,10 @@ export default function ModernProjectDashboard() {
                     <p className="text-xs text-muted-foreground">Remodel</p>
                     <p className="text-xs font-medium">
                       {formatCurrency(
-                        parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
-                        (existingBuildingArea / (newBuildingArea + existingBuildingArea))
+                        (newBuildingArea + existingBuildingArea) > 0
+                          ? parseFloat(fees.find(f => f.scope === 'Telecommunication')?.louisAmyFee || '0') * 
+                            (existingBuildingArea / (newBuildingArea + existingBuildingArea))
+                          : 0
                       )}
                     </p>
                   </div>

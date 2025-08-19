@@ -29,6 +29,11 @@ This is a comprehensive engineering cost calculator web application that provide
   - Included reset to defaults functionality for quick restoration of standard values
   - All advanced parameters integrate seamlessly with backend calculation engine
   - Parameters persist with auto-recalculation when changed
+- **Dashboard Restructuring Plan** (January 2025):
+  - Created comprehensive implementation plan to align dashboard with Excel spreadsheet logic
+  - Plan addresses: moving overrides to dashboard, providing context for fees, matching Excel structure
+  - Key improvements planned: interactive cost-range bars, grouped sections following spreadsheet flow, top-down and bottom-up fee analysis tabs
+  - Focus on making app an interactive data-driven calculator rather than static report
 
 # User Preferences
 
