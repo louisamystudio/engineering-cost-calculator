@@ -95,10 +95,14 @@ export default function NewProjectPage() {
   });
 
   const handleNext = () => {
+    console.log(`Advancing from step ${step} to step ${step + 1}`);
     const fieldsToValidate = getFieldsForStep(step);
     form.trigger(fieldsToValidate).then((isValid) => {
       if (isValid) {
         setStep(step + 1);
+        console.log(`Successfully advanced to step ${step + 1}`);
+      } else {
+        console.log(`Validation failed for step ${step}`, form.formState.errors);
       }
     });
   };
@@ -108,6 +112,14 @@ export default function NewProjectPage() {
   };
 
   const handleSubmit = (data: ProjectFormData) => {
+    console.log(`Form submitted on step ${step}`);
+    
+    // Only allow submission on the final step
+    if (step !== totalSteps) {
+      console.log(`Preventing submission - not on final step (current: ${step}, total: ${totalSteps})`);
+      return;
+    }
+    
     // Map design level to building tier
     const tierMap: Record<number, string> = {
       1: 'Low-end',
