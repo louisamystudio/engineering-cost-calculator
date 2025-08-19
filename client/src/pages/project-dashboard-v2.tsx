@@ -206,6 +206,9 @@ export default function ProjectDashboardV2() {
   
   // Section 6: Hours Factor Override
   const [hoursFactorOverride, setHoursFactorOverride] = useState<number | undefined>();
+  const [hoursPerSqFt, setHoursPerSqFt] = useState<number>(0.5);
+  const [discountPercent, setDiscountPercent] = useState<number>(0.0);
+  const [telecomShareOverride, setTelecomShareOverride] = useState<number>(0.02);
   
   // UI Controls
   const [autoRecalc, setAutoRecalc] = useState(true);
@@ -808,8 +811,386 @@ export default function ProjectDashboardV2() {
           </Collapsible>
         </Card>
 
-        {/* Continue with remaining sections... */}
-        {/* The file is getting long, but this establishes the pattern for the complete restructure */}
+        {/* Engineering Discipline Budgets */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Engineering Discipline Budgets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Telecom */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Telecommunication</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Low-voltage and IT infrastructure design</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs">% Override</Label>
+                  <Input
+                    type="number"
+                    value={telecomShareOverride * 100 || 2}
+                    onChange={(e) => setTelecomShareOverride(parseFloat(e.target.value) / 100)}
+                    className="w-16 h-6 text-xs"
+                    min={0}
+                    max={10}
+                    step={0.5}
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              {/* Structural */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Structural</span>
+                  <span className="text-xs text-muted-foreground">
+                    {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(parseFloat(calculations.structuralBudget || "0"))}
+                </div>
+                <Progress 
+                  value={(parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100} 
+                  className="h-1"
+                />
+              </div>
+
+              {/* Civil */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Civil</span>
+                  <span className="text-xs text-muted-foreground">
+                    {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(parseFloat(calculations.civilBudget || "0"))}
+                </div>
+                <Progress 
+                  value={(parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100} 
+                  className="h-1"
+                />
+              </div>
+
+              {/* Mechanical */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Mechanical</span>
+                  <span className="text-xs text-muted-foreground">
+                    {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(parseFloat(calculations.mechanicalBudget || "0"))}
+                </div>
+                <Progress 
+                  value={(parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100} 
+                  className="h-1"
+                />
+              </div>
+
+              {/* Electrical */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Electrical</span>
+                  <span className="text-xs text-muted-foreground">
+                    {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(parseFloat(calculations.electricalBudget || "0"))}
+                </div>
+                <Progress 
+                  value={(parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100} 
+                  className="h-1"
+                />
+              </div>
+
+              {/* Plumbing */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Plumbing</span>
+                  <span className="text-xs text-muted-foreground">
+                    {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(parseFloat(calculations.plumbingBudget || "0"))}
+                </div>
+                <Progress 
+                  value={(parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100} 
+                  className="h-1"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Professional Fees Analysis with Tabs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Professional Fees Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="topdown" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="topdown">Top-Down Analysis</TabsTrigger>
+                <TabsTrigger value="bottomup">Bottom-Up Calculation</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="topdown" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Market Fee (10-15%)</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Industry standard fee as percentage of construction cost</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency(parseFloat(calculations.marketFee || "0"))}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((parseFloat(calculations.marketFee || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}% of construction
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Louis Amy Fee</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Custom fee structure based on project complexity</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(parseFloat(calculations.louisAmyFee || "0"))}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((parseFloat(calculations.louisAmyFee || "0") / parseFloat(calculations.constructionBudgetTotal || "1")) * 100).toFixed(1)}% of construction
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <Label className="text-sm mb-2">Fee Breakdown by Discipline</Label>
+                  <div className="space-y-2">
+                    {fees && fees.map((fee) => (
+                      <div key={fee.discipline} className="flex items-center justify-between py-1">
+                        <span className="text-sm">{fee.discipline}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-medium">{formatCurrency(parseFloat(fee.inHouseFee))}</span>
+                          <Badge variant={fee.isInHouse ? "default" : "secondary"} className="text-xs">
+                            {fee.isInHouse ? "In-House" : "Outsourced"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="bottomup" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Labor Rate ($/hr)</Label>
+                    <Input
+                      type="number"
+                      value={laborRate}
+                      onChange={(e) => setLaborRate(parseFloat(e.target.value))}
+                      className="h-8"
+                      min={50}
+                      max={500}
+                      step={10}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Overhead Rate</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        value={overheadRate * 100}
+                        onChange={(e) => setOverheadRate(parseFloat(e.target.value) / 100)}
+                        className="h-8"
+                        min={100}
+                        max={300}
+                        step={10}
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Markup Factor</Label>
+                    <Input
+                      type="number"
+                      value={markupFactor}
+                      onChange={(e) => setMarkupFactor(parseFloat(e.target.value))}
+                      className="h-8"
+                      min={1}
+                      max={3}
+                      step={0.1}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Discount %</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        value={discountPercent * 100}
+                        onChange={(e) => setDiscountPercent(parseFloat(e.target.value) / 100)}
+                        className="h-8"
+                        min={0}
+                        max={50}
+                        step={5}
+                      />
+                      <span className="text-xs text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Total Hours</span>
+                    <span className="text-xl font-bold">{parseFloat(calculations.totalHours || "0").toFixed(0)} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Labor Cost</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(calculations.totalHours || "0") * laborRate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">With Overhead</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(calculations.totalHours || "0") * laborRate * overheadRate)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">With Markup</span>
+                    <span className="font-medium">{formatCurrency(parseFloat(calculations.totalHours || "0") * laborRate * overheadRate * markupFactor)}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span className="text-sm font-semibold">Bottom-Up Fee</span>
+                    <span className="text-xl font-bold text-green-600">
+                      {formatCurrency(parseFloat(calculations.totalHours || "0") * laborRate * overheadRate * markupFactor * (1 - discountPercent))}
+                    </span>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Hours Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Hours Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Total Project Hours</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Based on area × hours/ft² × complexity factor</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <div className="text-2xl font-bold">{parseFloat(calculations.totalHours || "0").toFixed(0)} hrs</div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Hours per ft² Factor</Label>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[hoursPerSqFt]}
+                    onValueChange={([value]) => setHoursPerSqFt(value)}
+                    min={0.1}
+                    max={2}
+                    step={0.1}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    value={hoursPerSqFt}
+                    onChange={(e) => setHoursPerSqFt(parseFloat(e.target.value))}
+                    className="w-20 h-8"
+                    min={0.1}
+                    max={2}
+                    step={0.1}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-sm mb-2">Distribution by Phase</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {hours && hours.map((hour) => (
+                    <div key={hour.phase} className="p-2 border rounded">
+                      <div className="text-xs text-muted-foreground">{hour.phase}</div>
+                      <div className="font-semibold">{parseFloat(hour.totalHours).toFixed(0)} hrs</div>
+                      <Progress value={(parseFloat(hour.totalHours) / parseFloat(calculations.totalHours || "1")) * 100} className="h-1 mt-1" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm mb-2">Distribution by Role</Label>
+                <div className="space-y-2">
+                  {["Designer1", "Designer2", "Architect", "Engineer", "Principal"].map((role) => {
+                    const roleHours = hours?.reduce((sum, h) => 
+                      sum + parseFloat(h[`hours${role}` as keyof typeof h] as string || "0"), 0
+                    ) || 0;
+                    return (
+                      <div key={role} className="flex items-center justify-between">
+                        <span className="text-sm">{role}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={(roleHours / parseFloat(calculations.totalHours || "1")) * 100} className="w-24 h-2" />
+                          <span className="text-sm font-medium w-16 text-right">{roleHours.toFixed(0)} hrs</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

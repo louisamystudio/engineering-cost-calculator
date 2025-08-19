@@ -1,0 +1,17 @@
+It appears you already have the core components in place—interactive sliders for area and cost targets, and high‑level budget breakdowns for shell, interior and landscape. However, the app still lacks many of the deeper features found in your Excel model. Specifically:
+
+No bottom‑up fee calculations or inputs: There’s no way to enter labor rates, overhead, markup or discount percentages, nor to see how those inputs translate into fees and profit margins.
+
+Limited ability to override discipline shares: Shell/interior/landscape share override fields exist, but discipline percentages (structural, civil, mechanical, etc.) and remodel reduction factors aren’t adjustable. In the spreadsheet, you can fine‑tune these values.
+
+Missing Telecommunication budget controls: Telecommunication appears only in the fee table; there’s no budget card or override slider for low‑voltage design.
+
+No service selection controls: The app doesn’t let you choose which disciplines are in‑house vs outsourced or remove a consultant entirely. In the spreadsheet you can turn services on or off.
+
+Lack of bottom‑up vs top‑down comparison: The UI shows “Market Fee” and “Louis Amy Fee,” but doesn’t explain how those numbers differ from a bottom‑up estimate or allow you to toggle between the two approaches.
+
+No adjustable hours factor: The spreadsheet derives total hours from a formula (hours per ft² × area × category multiplier). The app doesn’t let you override this factor or see the calculation.
+
+Missing phase‑by‑phase explanation: The hours distribution by phase and role isn’t accompanied by the calculations behind it or options to modify the phase percentages.
+
+These omissions make the app feel more like a read‑only report than a fully interactive calculator. To match the Excel file’s capabilities, you’ll need to add bottom‑up cost inputs, share‑override controls for each discipline, telecommunication budgets, the ability to select or deselect services, and a clear comparison between top‑down and bottom‑up fee calculations, along with adjustable hours factors and phase parameters.
