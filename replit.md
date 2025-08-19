@@ -12,13 +12,23 @@ This is a comprehensive engineering cost calculator web application that provide
 - **Enhanced Parameter Controls**: Added dual-input system with both sliders and text fields for precise parameter adjustment
 - **Improved Data Visualization**: Replaced inappropriate charts with range bars for cost analysis and donut charts for fee breakdown
 - **Real-time Updates**: Implemented auto-recalculation with toggle and manual recalculate options
-- **Enhanced Data Visibility** (Latest):
+- **Enhanced Data Visibility**:
   - Added Shell, Interior, and Landscape budget breakdown cards showing new/remodel splits
   - Created detailed Engineering Discipline Budget section with architecture, structural, civil, mechanical, electrical, and plumbing budgets
   - Enhanced Professional Fees Analysis with % of cost, rate per ft², coordination fees, and consultant fees
   - Improved Hours Distribution display with role-based breakdown (Designer 1/2, Architect, Engineer, Principal)
   - Added Budget Calculation Methodology card with tooltips explaining category multipliers, historic property adjustments, and remodel factors
   - All budget components now properly show underlying calculations and percentages for full transparency
+- **Advanced Settings Panel** (Latest - Phase 3 Complete):
+  - Added collapsible advanced settings panel with toggle button in dashboard
+  - Implemented adjustable telecom budget percentage controls
+  - Created interactive cost range sliders for new construction and remodel targets ($/ft²)
+  - Added engineering discipline percentage overrides for all disciplines (telecom, structural, civil, mechanical, electrical, plumbing)
+  - Implemented bottom-up fee calculation controls with labor rate, overhead rate, and markup factor adjustments
+  - Added fee adjustment multipliers (0.5x-2.0x) for all disciplines with visual sliders
+  - Included reset to defaults functionality for quick restoration of standard values
+  - All advanced parameters integrate seamlessly with backend calculation engine
+  - Parameters persist with auto-recalculation when changed
 
 # User Preferences
 

@@ -95,6 +95,25 @@ export class ProjectCalculatorService {
       shellShareOverride: input.shellShareOverride?.toString(),
       interiorShareOverride: input.interiorShareOverride?.toString(),
       landscapeShareOverride: input.landscapeShareOverride?.toString(),
+      // Convert new override fields to strings
+      telecomPercentageOverride: input.telecomPercentageOverride?.toString(),
+      structuralPercentageOverride: input.structuralPercentageOverride?.toString(),
+      civilPercentageOverride: input.civilPercentageOverride?.toString(),
+      mechanicalPercentageOverride: input.mechanicalPercentageOverride?.toString(),
+      electricalPercentageOverride: input.electricalPercentageOverride?.toString(),
+      plumbingPercentageOverride: input.plumbingPercentageOverride?.toString(),
+      laborRateOverride: input.laborRateOverride?.toString(),
+      overheadRateOverride: input.overheadRateOverride?.toString(),
+      markupFactorOverride: input.markupFactorOverride?.toString(),
+      architectureFeeAdjustment: input.architectureFeeAdjustment?.toString(),
+      interiorFeeAdjustment: input.interiorFeeAdjustment?.toString(),
+      landscapeFeeAdjustment: input.landscapeFeeAdjustment?.toString(),
+      structuralFeeAdjustment: input.structuralFeeAdjustment?.toString(),
+      civilFeeAdjustment: input.civilFeeAdjustment?.toString(),
+      mechanicalFeeAdjustment: input.mechanicalFeeAdjustment?.toString(),
+      electricalFeeAdjustment: input.electricalFeeAdjustment?.toString(),
+      plumbingFeeAdjustment: input.plumbingFeeAdjustment?.toString(),
+      telecomFeeAdjustment: input.telecomFeeAdjustment?.toString(),
       isDemo: input.projectName === 'Demo Project'
     };
     
@@ -311,10 +330,18 @@ export class ProjectCalculatorService {
       tierKey = 'Commercial Class A';
     }
     
-    const percentages = defaults[tierKey]?.[input.designLevel] || 
-                       defaults['Mid-Range Standard Residential'][2];
+    const defaultPercentages = defaults[tierKey]?.[input.designLevel] || 
+                              defaults['Mid-Range Standard Residential'][2];
     
-    return percentages;
+    // Apply overrides if provided
+    return {
+      structural: input.structuralPercentageOverride ?? defaultPercentages.structural,
+      civil: input.civilPercentageOverride ?? defaultPercentages.civil,
+      mechanical: input.mechanicalPercentageOverride ?? defaultPercentages.mechanical,
+      electrical: input.electricalPercentageOverride ?? defaultPercentages.electrical,
+      plumbing: input.plumbingPercentageOverride ?? defaultPercentages.plumbing,
+      telecom: input.telecomPercentageOverride ?? defaultPercentages.telecom
+    };
   }
   
   private async calculateFees(
@@ -324,8 +351,14 @@ export class ProjectCalculatorService {
     categoryMultiplier: number
   ): Promise<ProjectFee[]> {
     const fees: ProjectFee[] = [];
+    
+    // Use override values if provided, otherwise use defaults
+    const laborRate = input.laborRateOverride ?? this.AVERAGE_LABOR_COST_PER_HOUR;
+    const overheadRate = input.overheadRateOverride ?? this.AVERAGE_OVERHEAD_COST_PER_HOUR;
+    const markupFactor = input.markupFactorOverride ?? this.MARKUP_FACTOR;
+    
     const averagePricingPerHour = Math.round(
-      (this.AVERAGE_LABOR_COST_PER_HOUR + this.AVERAGE_OVERHEAD_COST_PER_HOUR) * this.MARKUP_FACTOR
+      (laborRate + overheadRate) * markupFactor
     );
     
     const totalArea = input.newBuildingArea + input.existingBuildingArea;
@@ -372,17 +405,62 @@ export class ProjectCalculatorService {
       });
     }
     
-    // Design discipline fees
+    // Design discipline fees with fee adjustments
     const disciplines = [
-      { scope: 'Architecture (Design + Consultant Admin.)', budget: parseFloat(calculations.architectureBudget), isInhouse: true },
-      { scope: 'Interior design', budget: parseFloat(calculations.interiorBudgetTotal), isInhouse: true },
-      { scope: 'Landscape architecture', budget: parseFloat(calculations.landscapeBudgetTotal), isInhouse: true },
-      { scope: 'Structural engineer', budget: parseFloat(calculations.structuralBudget), isInhouse: true },
-      { scope: 'Civil / site engineer', budget: parseFloat(calculations.civilBudget), isInhouse: true },
-      { scope: 'Mechanical (HVAC, energy, pools)', budget: parseFloat(calculations.mechanicalBudget), isInhouse: false },
-      { scope: 'Electrical (power / lighting)', budget: parseFloat(calculations.electricalBudget), isInhouse: false },
-      { scope: 'Plumbing engineer', budget: parseFloat(calculations.plumbingBudget), isInhouse: true },
-      { scope: 'Telecomunication', budget: parseFloat(calculations.telecomBudget), isInhouse: false }
+      { 
+        scope: 'Architecture (Design + Consultant Admin.)', 
+        budget: parseFloat(calculations.architectureBudget), 
+        isInhouse: true,
+        feeAdjustment: input.architectureFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Interior design', 
+        budget: parseFloat(calculations.interiorBudgetTotal), 
+        isInhouse: true,
+        feeAdjustment: input.interiorFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Landscape architecture', 
+        budget: parseFloat(calculations.landscapeBudgetTotal), 
+        isInhouse: true,
+        feeAdjustment: input.landscapeFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Structural engineer', 
+        budget: parseFloat(calculations.structuralBudget), 
+        isInhouse: true,
+        feeAdjustment: input.structuralFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Civil / site engineer', 
+        budget: parseFloat(calculations.civilBudget), 
+        isInhouse: true,
+        feeAdjustment: input.civilFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Mechanical (HVAC, energy, pools)', 
+        budget: parseFloat(calculations.mechanicalBudget), 
+        isInhouse: false,
+        feeAdjustment: input.mechanicalFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Electrical (power / lighting)', 
+        budget: parseFloat(calculations.electricalBudget), 
+        isInhouse: false,
+        feeAdjustment: input.electricalFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Plumbing engineer', 
+        budget: parseFloat(calculations.plumbingBudget), 
+        isInhouse: true,
+        feeAdjustment: input.plumbingFeeAdjustment ?? 1.0
+      },
+      { 
+        scope: 'Telecomunication', 
+        budget: parseFloat(calculations.telecomBudget), 
+        isInhouse: false,
+        feeAdjustment: input.telecomFeeAdjustment ?? 1.0
+      }
     ];
     
     for (const disc of disciplines) {
@@ -402,18 +480,19 @@ export class ProjectCalculatorService {
         basePercentage = 0.07498 + 0.007824 * Math.pow(disc.budget / 1000000, -0.7495);
       }
       
-      const marketFee = basePercentage * disc.budget;
-      const louisAmyFee = disc.isInhouse ? marketFee : 0;
-      const coordinationFee = disc.isInhouse ? 0 : marketFee * this.COORDINATION_FEE_PERCENT;
-      const consultantFee = disc.isInhouse ? 0 : marketFee;
+      // Apply fee adjustment (discount or premium)
+      const adjustedMarketFee = basePercentage * disc.budget * disc.feeAdjustment;
+      const louisAmyFee = disc.isInhouse ? adjustedMarketFee : 0;
+      const coordinationFee = disc.isInhouse ? 0 : adjustedMarketFee * this.COORDINATION_FEE_PERCENT;
+      const consultantFee = disc.isInhouse ? 0 : adjustedMarketFee;
       
       fees.push({
         id: '',
         projectId: project.id,
         scope: disc.scope,
         percentOfCost: basePercentage.toString(),
-        ratePerSqFt: (marketFee / totalArea).toString(),
-        marketFee: marketFee.toString(),
+        ratePerSqFt: (adjustedMarketFee / totalArea).toString(),
+        marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
         hours: disc.isInhouse ? (louisAmyFee / averagePricingPerHour).toString() : '0',
         coordinationFee: coordinationFee.toString(),

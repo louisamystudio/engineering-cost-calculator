@@ -33,7 +33,9 @@ import {
   Target,
   Zap,
   Activity,
-  Info
+  Info,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import {
   BarChart,
@@ -95,6 +97,37 @@ export default function ModernProjectDashboard() {
   const [remodelMultiplier, setRemodelMultiplier] = useState(0.5);
   const [isHistoric, setIsHistoric] = useState(false);
   const [autoRecalc, setAutoRecalc] = useState(true);
+  
+  // Cost target states
+  const [newConstructionTarget, setNewConstructionTarget] = useState<number | undefined>();
+  const [remodelTarget, setRemodelTarget] = useState<number | undefined>();
+  
+  // Engineering percentage overrides
+  const [telecomPercentage, setTelecomPercentage] = useState<number | undefined>();
+  const [structuralPercentage, setStructuralPercentage] = useState<number | undefined>();
+  const [civilPercentage, setCivilPercentage] = useState<number | undefined>();
+  const [mechanicalPercentage, setMechanicalPercentage] = useState<number | undefined>();
+  const [electricalPercentage, setElectricalPercentage] = useState<number | undefined>();
+  const [plumbingPercentage, setPlumbingPercentage] = useState<number | undefined>();
+  
+  // Labor and pricing overrides
+  const [laborRate, setLaborRate] = useState<number | undefined>();
+  const [overheadRate, setOverheadRate] = useState<number | undefined>();
+  const [markupFactor, setMarkupFactor] = useState<number | undefined>();
+  
+  // Fee adjustments
+  const [architectureFeeAdj, setArchitectureFeeAdj] = useState<number>(1.0);
+  const [interiorFeeAdj, setInteriorFeeAdj] = useState<number>(1.0);
+  const [landscapeFeeAdj, setLandscapeFeeAdj] = useState<number>(1.0);
+  const [structuralFeeAdj, setStructuralFeeAdj] = useState<number>(1.0);
+  const [civilFeeAdj, setCivilFeeAdj] = useState<number>(1.0);
+  const [mechanicalFeeAdj, setMechanicalFeeAdj] = useState<number>(1.0);
+  const [electricalFeeAdj, setElectricalFeeAdj] = useState<number>(1.0);
+  const [plumbingFeeAdj, setPlumbingFeeAdj] = useState<number>(1.0);
+  const [telecomFeeAdj, setTelecomFeeAdj] = useState<number>(1.0);
+  
+  // UI state
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   const { data, isLoading, error } = useQuery<ProjectData>({
     queryKey: ['/api/projects', projectId],
@@ -116,11 +149,32 @@ export default function ModernProjectDashboard() {
         siteArea: params?.siteArea ?? siteArea,
         historicMultiplier: isHistoric ? 1.2 : 1.0,
         remodelMultiplier: params?.remodelMultiplier ?? remodelMultiplier,
-        newConstructionTargetCost: data.project.newConstructionTargetCost ? parseFloat(data.project.newConstructionTargetCost) : undefined,
-        remodelTargetCost: data.project.remodelTargetCost ? parseFloat(data.project.remodelTargetCost) : undefined,
+        newConstructionTargetCost: newConstructionTarget ?? (data.project.newConstructionTargetCost ? parseFloat(data.project.newConstructionTargetCost) : undefined),
+        remodelTargetCost: remodelTarget ?? (data.project.remodelTargetCost ? parseFloat(data.project.remodelTargetCost) : undefined),
         shellShareOverride: data.project.shellShareOverride ? parseFloat(data.project.shellShareOverride) : undefined,
         interiorShareOverride: data.project.interiorShareOverride ? parseFloat(data.project.interiorShareOverride) : undefined,
         landscapeShareOverride: data.project.landscapeShareOverride ? parseFloat(data.project.landscapeShareOverride) : undefined,
+        // Engineering percentage overrides
+        telecomPercentageOverride: telecomPercentage,
+        structuralPercentageOverride: structuralPercentage,
+        civilPercentageOverride: civilPercentage,
+        mechanicalPercentageOverride: mechanicalPercentage,
+        electricalPercentageOverride: electricalPercentage,
+        plumbingPercentageOverride: plumbingPercentage,
+        // Labor and pricing overrides
+        laborRateOverride: laborRate,
+        overheadRateOverride: overheadRate,
+        markupFactorOverride: markupFactor,
+        // Fee adjustments
+        architectureFeeAdjustment: architectureFeeAdj !== 1.0 ? architectureFeeAdj : undefined,
+        interiorFeeAdjustment: interiorFeeAdj !== 1.0 ? interiorFeeAdj : undefined,
+        landscapeFeeAdjustment: landscapeFeeAdj !== 1.0 ? landscapeFeeAdj : undefined,
+        structuralFeeAdjustment: structuralFeeAdj !== 1.0 ? structuralFeeAdj : undefined,
+        civilFeeAdjustment: civilFeeAdj !== 1.0 ? civilFeeAdj : undefined,
+        mechanicalFeeAdjustment: mechanicalFeeAdj !== 1.0 ? mechanicalFeeAdj : undefined,
+        electricalFeeAdjustment: electricalFeeAdj !== 1.0 ? electricalFeeAdj : undefined,
+        plumbingFeeAdjustment: plumbingFeeAdj !== 1.0 ? plumbingFeeAdj : undefined,
+        telecomFeeAdjustment: telecomFeeAdj !== 1.0 ? telecomFeeAdj : undefined,
       };
       
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -150,7 +204,14 @@ export default function ModernProjectDashboard() {
       }, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric, autoRecalc]);
+  }, [
+    newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric, 
+    newConstructionTarget, remodelTarget,
+    telecomPercentage, structuralPercentage, civilPercentage, mechanicalPercentage, electricalPercentage, plumbingPercentage,
+    laborRate, overheadRate, markupFactor,
+    architectureFeeAdj, interiorFeeAdj, landscapeFeeAdj, structuralFeeAdj, civilFeeAdj, mechanicalFeeAdj, electricalFeeAdj, plumbingFeeAdj, telecomFeeAdj,
+    autoRecalc
+  ]);
 
   if (isLoading) {
     return (
@@ -741,8 +802,409 @@ export default function ModernProjectDashboard() {
                   className="data-[state=checked]:bg-amber-600"
                 />
               </div>
+              
+              {/* Advanced Settings Toggle */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="w-full justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Advanced Settings
+                  </span>
+                  {showAdvancedSettings ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Advanced Settings Panel */}
+          {showAdvancedSettings && (
+            <Card className="border-0 shadow-xl bg-white/80 backdrop-blur lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                  <Settings className="h-5 w-5 text-purple-600" />
+                  Advanced Configuration
+                </CardTitle>
+                <CardDescription>Fine-tune calculation parameters</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Cost Range Targets */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Cost Range Targets
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs">New Construction Target ($/ft²)</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[newConstructionTarget || parseFloat(calculations.newCostTarget) || 300]}
+                          onValueChange={(value) => setNewConstructionTarget(value[0])}
+                          max={800}
+                          min={100}
+                          step={10}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={newConstructionTarget || parseFloat(calculations.newCostTarget) || 300}
+                          onChange={(e) => setNewConstructionTarget(parseFloat(e.target.value) || undefined)}
+                          className="w-20 text-center text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Remodel Target ($/ft²)</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[remodelTarget || parseFloat(calculations.remodelCostTarget) || 150]}
+                          onValueChange={(value) => setRemodelTarget(value[0])}
+                          max={400}
+                          min={50}
+                          step={5}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={remodelTarget || parseFloat(calculations.remodelCostTarget) || 150}
+                          onChange={(e) => setRemodelTarget(parseFloat(e.target.value) || undefined)}
+                          className="w-20 text-center text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Engineering Percentages */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Engineering Discipline Percentages
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Telecom %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={telecomPercentage !== undefined ? telecomPercentage * 100 : ''}
+                          onChange={(e) => setTelecomPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Structural %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={structuralPercentage !== undefined ? structuralPercentage * 100 : ''}
+                          onChange={(e) => setStructuralPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Civil %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={civilPercentage !== undefined ? civilPercentage * 100 : ''}
+                          onChange={(e) => setCivilPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mechanical %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={mechanicalPercentage !== undefined ? mechanicalPercentage * 100 : ''}
+                          onChange={(e) => setMechanicalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Electrical %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={electricalPercentage !== undefined ? electricalPercentage * 100 : ''}
+                          onChange={(e) => setElectricalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Plumbing %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={plumbingPercentage !== undefined ? plumbingPercentage * 100 : ''}
+                          onChange={(e) => setPlumbingPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                          placeholder="Auto"
+                          className="w-full text-xs"
+                          step={0.1}
+                          min={0}
+                          max={100}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Labor and Pricing */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    Labor and Pricing
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Labor Rate ($/hr)</Label>
+                      <Input
+                        type="number"
+                        value={laborRate || ''}
+                        onChange={(e) => setLaborRate(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        placeholder="Auto ($250)"
+                        className="w-full text-xs"
+                        step={10}
+                        min={50}
+                        max={500}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Overhead Rate ($/hr)</Label>
+                      <Input
+                        type="number"
+                        value={overheadRate || ''}
+                        onChange={(e) => setOverheadRate(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        placeholder="Auto ($150)"
+                        className="w-full text-xs"
+                        step={10}
+                        min={50}
+                        max={300}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Markup Factor</Label>
+                      <Input
+                        type="number"
+                        value={markupFactor || ''}
+                        onChange={(e) => setMarkupFactor(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        placeholder="Auto (1.2x)"
+                        className="w-full text-xs"
+                        step={0.05}
+                        min={1}
+                        max={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fee Adjustments */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Fee Adjustments (Multipliers)
+                  </h3>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Architecture</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[architectureFeeAdj]}
+                          onValueChange={(value) => setArchitectureFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{architectureFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Interior</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[interiorFeeAdj]}
+                          onValueChange={(value) => setInteriorFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{interiorFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Landscape</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[landscapeFeeAdj]}
+                          onValueChange={(value) => setLandscapeFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{landscapeFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Structural</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[structuralFeeAdj]}
+                          onValueChange={(value) => setStructuralFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{structuralFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Civil</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[civilFeeAdj]}
+                          onValueChange={(value) => setCivilFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{civilFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mechanical</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[mechanicalFeeAdj]}
+                          onValueChange={(value) => setMechanicalFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{mechanicalFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Electrical</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[electricalFeeAdj]}
+                          onValueChange={(value) => setElectricalFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{electricalFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Plumbing</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[plumbingFeeAdj]}
+                          onValueChange={(value) => setPlumbingFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{plumbingFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Telecom</Label>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          value={[telecomFeeAdj]}
+                          onValueChange={(value) => setTelecomFeeAdj(value[0])}
+                          max={2}
+                          min={0.5}
+                          step={0.05}
+                          className="flex-1"
+                        />
+                        <span className="text-xs w-10 text-right">{telecomFeeAdj.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                <div className="flex justify-end pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewConstructionTarget(undefined);
+                      setRemodelTarget(undefined);
+                      setTelecomPercentage(undefined);
+                      setStructuralPercentage(undefined);
+                      setCivilPercentage(undefined);
+                      setMechanicalPercentage(undefined);
+                      setElectricalPercentage(undefined);
+                      setPlumbingPercentage(undefined);
+                      setLaborRate(undefined);
+                      setOverheadRate(undefined);
+                      setMarkupFactor(undefined);
+                      setArchitectureFeeAdj(1.0);
+                      setInteriorFeeAdj(1.0);
+                      setLandscapeFeeAdj(1.0);
+                      setStructuralFeeAdj(1.0);
+                      setCivilFeeAdj(1.0);
+                      setMechanicalFeeAdj(1.0);
+                      setElectricalFeeAdj(1.0);
+                      setPlumbingFeeAdj(1.0);
+                      setTelecomFeeAdj(1.0);
+                    }}
+                  >
+                    Reset to Defaults
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Budget Breakdown Donut Chart */}
           <Card className="border-0 shadow-xl bg-white/80 backdrop-blur">

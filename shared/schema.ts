@@ -310,6 +310,27 @@ export const projects = pgTable("projects", {
   shellShareOverride: decimal("shell_share_override", { precision: 5, scale: 4 }),
   interiorShareOverride: decimal("interior_share_override", { precision: 5, scale: 4 }),
   landscapeShareOverride: decimal("landscape_share_override", { precision: 5, scale: 4 }),
+  // Telecom and engineering discipline overrides
+  telecomPercentageOverride: decimal("telecom_percentage_override", { precision: 5, scale: 4 }),
+  structuralPercentageOverride: decimal("structural_percentage_override", { precision: 5, scale: 4 }),
+  civilPercentageOverride: decimal("civil_percentage_override", { precision: 5, scale: 4 }),
+  mechanicalPercentageOverride: decimal("mechanical_percentage_override", { precision: 5, scale: 4 }),
+  electricalPercentageOverride: decimal("electrical_percentage_override", { precision: 5, scale: 4 }),
+  plumbingPercentageOverride: decimal("plumbing_percentage_override", { precision: 5, scale: 4 }),
+  // Labor and overhead rate overrides
+  laborRateOverride: decimal("labor_rate_override", { precision: 10, scale: 2 }),
+  overheadRateOverride: decimal("overhead_rate_override", { precision: 10, scale: 2 }),
+  markupFactorOverride: decimal("markup_factor_override", { precision: 3, scale: 2 }),
+  // Per-discipline fee adjustments (discount/margin)
+  architectureFeeAdjustment: decimal("architecture_fee_adjustment", { precision: 5, scale: 4 }),
+  interiorFeeAdjustment: decimal("interior_fee_adjustment", { precision: 5, scale: 4 }),
+  landscapeFeeAdjustment: decimal("landscape_fee_adjustment", { precision: 5, scale: 4 }),
+  structuralFeeAdjustment: decimal("structural_fee_adjustment", { precision: 5, scale: 4 }),
+  civilFeeAdjustment: decimal("civil_fee_adjustment", { precision: 5, scale: 4 }),
+  mechanicalFeeAdjustment: decimal("mechanical_fee_adjustment", { precision: 5, scale: 4 }),
+  electricalFeeAdjustment: decimal("electrical_fee_adjustment", { precision: 5, scale: 4 }),
+  plumbingFeeAdjustment: decimal("plumbing_fee_adjustment", { precision: 5, scale: 4 }),
+  telecomFeeAdjustment: decimal("telecom_fee_adjustment", { precision: 5, scale: 4 }),
 });
 
 // Project Calculations Table for storing calculation results
@@ -416,12 +437,34 @@ export const comprehensiveProjectInputSchema = z.object({
   siteArea: z.number().min(0),
   historicMultiplier: z.number().min(1).default(1.0),
   remodelMultiplier: z.number().min(0).max(1).default(0.5),
-  // Optional overrides
+  // Optional overrides - Cost targets
   newConstructionTargetCost: z.number().optional(),
   remodelTargetCost: z.number().optional(),
+  // Optional overrides - Project shares
   shellShareOverride: z.number().min(0).max(1).optional(),
   interiorShareOverride: z.number().min(0).max(1).optional(),
   landscapeShareOverride: z.number().min(0).max(1).optional(),
+  // Optional overrides - Engineering percentages
+  telecomPercentageOverride: z.number().min(0).max(1).optional(),
+  structuralPercentageOverride: z.number().min(0).max(1).optional(),
+  civilPercentageOverride: z.number().min(0).max(1).optional(),
+  mechanicalPercentageOverride: z.number().min(0).max(1).optional(),
+  electricalPercentageOverride: z.number().min(0).max(1).optional(),
+  plumbingPercentageOverride: z.number().min(0).max(1).optional(),
+  // Optional overrides - Labor and pricing
+  laborRateOverride: z.number().min(0).optional(),
+  overheadRateOverride: z.number().min(0).optional(),
+  markupFactorOverride: z.number().min(0).optional(),
+  // Optional overrides - Fee adjustments (1.0 = no adjustment, 0.9 = 10% discount, 1.1 = 10% premium)
+  architectureFeeAdjustment: z.number().min(0).max(2).optional(),
+  interiorFeeAdjustment: z.number().min(0).max(2).optional(),
+  landscapeFeeAdjustment: z.number().min(0).max(2).optional(),
+  structuralFeeAdjustment: z.number().min(0).max(2).optional(),
+  civilFeeAdjustment: z.number().min(0).max(2).optional(),
+  mechanicalFeeAdjustment: z.number().min(0).max(2).optional(),
+  electricalFeeAdjustment: z.number().min(0).max(2).optional(),
+  plumbingFeeAdjustment: z.number().min(0).max(2).optional(),
+  telecomFeeAdjustment: z.number().min(0).max(2).optional(),
 });
 
 export type ComprehensiveProjectInput = z.infer<typeof comprehensiveProjectInputSchema>;
