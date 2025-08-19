@@ -1,0 +1,33 @@
+Errors and Omissions in the Current Implementation
+
+Telecommunication Fees Missing – the Engineering Discipline Budgets section correctly shows a telecommunication budget (e.g., $3,818
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+) but the fee table lists Telecommunication with $0 fee
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. In the Excel model, low‑voltage/telecom design is a valid discipline with its own share and fee; even if outsourced, there should still be a market fee and consultant/coordination fees.
+
+Share Override Fields Are Static – the Shell/Interior/Landscape and engineering share percentages display “Share Override” labels, but there is no way to modify them. The Excel sheet allows you to override shares for each component and discipline.
+
+Overhead Rate Bug in Bottom‑Up Calculation – the Bottom‑Up tab displays an overhead rate of “4600” instead of $46.00
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+, making the bottom‑up fee unrealistic (e.g., $2.2 M). This appears to be a decimal scaling error.
+
+No Discipline‑Level Overrides – engineering share percentages (structural 8.9 %, civil 1.6 %, etc.
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+) are fixed; the user cannot adjust them or the remodel‑reduction factor. In the Excel workbook, structural remodel costs are reduced by 50 % (B14), but other engineering disciplines are not.
+
+Lack of Top‑Down/Bottom‑Up Context – the Market Fee and Louis Amy Fee cards appear without showing the formulas or inputs used. There is no way to see or change the category multiplier, discount rate, or the remodel multiplier used in the fee calculation
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+In‑house vs Outsourced Controls Missing – the fee table labels disciplines as “In‑House” or “Outsourced”
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+, but the user cannot change which services are handled in‑house versus by a consultant.
+
+Hours Formula Simplification – the total hours are derived from a single “Hours per ft² Factor” slider (0.5)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+, but the Excel formula uses a non‑linear function of area and category, with different factors for new (0.9) and remodel (0.8) areas. The ability to override the hours‑factor is missing.
+
+No Bottom‑Up Input Controls – the bottom‑up calculation lacks fields for margin or discount by discipline, and there’s no ability to specify which scopes are included in the bottom‑up fee.
+
+Order and Explanation – The dashboard’s order (summary metrics first, then inputs) is fine, but the app does not mirror the Excel’s logical sequence of inputs → budgets → discipline budgets → fee calculations → hours, making it hard to trace values to their sources.

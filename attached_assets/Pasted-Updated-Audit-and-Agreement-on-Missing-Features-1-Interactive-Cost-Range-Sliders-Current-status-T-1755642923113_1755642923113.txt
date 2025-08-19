@@ -1,0 +1,108 @@
+Updated Audit and Agreement on Missing Features
+1. Interactive Cost Range Sliders
+
+Current status: The dashboard shows min/target/max values for New Construction and Remodel cost per ft², but the target is fixed and cannot be overridden.
+
+Missing: User‑adjustable sliders for new and remodel $/ft² with min/target/max markers and the ability to manually set the target.
+
+Impact: Without sliders, users cannot explore different cost scenarios or fine‑tune the target cost within the defined range.
+
+2. Historic Property and Remodel Multipliers
+
+Current status: A remodel cost factor slider exists, but the “Historic Property Multiplier” (1.0 vs 1.2) is missing, and remodel multiplier is hard‑coded at 0.5.
+
+Missing: Controls for historic properties and remodel cost factors. These affect all subsequent budgets and fees.
+
+3. Complete Fee Analysis Sections
+
+Current status: There is a basic top‑down analysis showing market fee and Louis Amy fee, but it lacks detailed scope breakdown. A bottom‑up tab exists but has scaling errors and no connection to the hours logic.
+
+Missing:
+
+Top‑Down fee analysis table with percent‑of‑cost, rate per ft², discipline fee, consultant fees and coordination fees for every scope.
+
+Bottom‑Up fee analysis with team member rates, labor cost, overhead, markup, discount, and hours by role.
+
+Hours distribution by phases (Discovery, Creative, Technical, etc.) with leverage percentages per employee type.
+
+4. Advanced Calculation Features
+
+Missing:
+
+Scan to BIM cost calculations (Building and Site) using the formulas shown in the spreadsheet.
+
+Coordination fee default of 15% for outsourced services.
+
+Category multiplier display (Category 1–5 corresponding to 0.9–1.3) and the ability to override it.
+
+Markup and discount controls for bottom‑up fee calculation.
+
+5. Budget Breakdown Granularity
+
+Current status: Budgets are split into Shell/Interior/Landscape and into engineering disciplines, but there is no new vs remodel split for each discipline and no formulas visible for how the discipline budgets are derived.
+
+Missing:
+
+Display of New vs Remodel budgets for each discipline.
+
+Correct application of the remodel multiplier (50% reduction applies to structural only).
+
+Allow overrides for discipline share percentages and reflect them in the calculations.
+
+6. Project Hours Calculations
+
+Current status: Hours per ft² factor slider is present but simplified (e.g., fixed at 0.5).
+
+Missing:
+
+Computation of hours using the non‑linear formula based on total area and category multiplier, with separate factors for new (0.9) and remodel (0.8) work.
+
+Phase‑based hours distribution (Discovery, Creative – Conceptual, Creative – Schematic, etc.).
+
+Employee‑specific hour allocations and leverage percentages.
+
+7. Sanity Check and Validation
+
+Missing:
+
+Market comparison or “sanity check” that compares top‑down and bottom‑up results (percent differences).
+
+Manual discount override fields and validation of user input ranges.
+
+Visual indicators if top‑down and bottom‑up fees diverge significantly.
+
+8. Input Parameter Organization
+
+Missing:
+
+Proper mapping from building tier to design level (1=Basic, 2=Standard, 3=Full).
+
+Category selection with multiplier mapping (Category 1–5 → 0.9–1.3).
+
+Site area input specifically for Scan to BIM calculations.
+
+9. Visual Data Presentation
+
+Missing:
+
+Donut charts to display New vs Remodel ratios.
+
+Missing:
+
+Expandable cards or collapsible sections for detailed breakdowns (e.g., discipline budget splits and formulas).
+
+Range bars for cost analysis (sliders) instead of static values.
+
+10. Calculation Engine Gaps
+
+Missing:
+
+VLOOKUP-like logic for retrieving engineering cost percentages from the CSV or database.
+
+Dynamic fee calculations that adjust based on project scope (e.g., turning services on/off).
+
+Hours rebalancing based on contract price, as shown in the Excel sheet.
+
+Overall Coverage
+
+As you noted, the app currently implements only about 40 % of the spreadsheet’s functionality. The most critical missing elements are the fee analysis sections (top‑down and bottom‑up) and interactive controls that let users override default values.

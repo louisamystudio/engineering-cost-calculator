@@ -1,0 +1,28 @@
+General Recommendations for the Developer: 
+
+Fix the overhead rate bug – divide the stored overhead rate by 100 (or use the correct value 46.10 instead of 4600). Validate that bottom‑up fees are in a reasonable range.
+
+Implement telecommunication fee calculation – compute the fee for the telecommunication discipline using the same top‑down formula; if outsourced, record the fee in the consultant/coordination fields.
+
+Add interactive overrides – allow users to adjust Shell/Interior/Landscape shares, engineering discipline shares, and the hours factor directly in the dashboard rather than only at project creation. Reflect these overrides in the calculations.
+
+Expose the formulas – display the percent‑of‑cost and rate‑per‑ft² used for each discipline in both top‑down and bottom‑up analyses. Provide input fields for category multiplier, remodel multiplier, and discount.
+
+Enable service selection – let users choose which scopes are in‑house vs outsourced and see the effect on Louis Amy vs consultant fees.
+
+Align with the spreadsheet’s order – present inputs first, then budgets and engineering splits, followed by detailed fee calculations (top‑down and bottom‑up) and hours distribution. Use collapsible sections or tabs to separate top‑down analysis, bottom‑up analysis, and hours.
+
+Use the non‑linear hours formula – replicate the Excel hours factor logic with new vs remodel weighting and the category multiplier rather than a constant factor, and allow overrides for advanced users.
+Additional Guidance to the Developer
+
+Align with the Excel formulas — Use the non‑linear fee curve and hours‑factor equations exactly as specified in the Excel workbook and my earlier guidance. Ensure structural remodel budgets apply the 50 % reduction, but other engineering disciplines do not.
+
+Expose all necessary inputs — Make sure users can override any numeric assumption (cost range target, shares, hours factor, fees) from within the project dashboard; reserve the “advanced options” for seldom‑used settings.
+
+Use VLOOKUP-equivalents — Build functions to pull cost ranges and engineering shares from your CSV/database tables based on building type, tier and design level, just as the Excel uses VLOOKUP.
+
+Implement telecommunication correctly — Compute telecommunication fee and budget using its share and treat it like other outsourced disciplines rather than defaulting to zero.
+
+Ensure decimal scaling — Fix scaling issues (e.g., overhead rate 46.00 vs 4600) to prevent runaway bottom‑up fees.
+
+Provide transparency — Add tooltips or expandable panels showing formulas and data sources so users understand how each number is derived.

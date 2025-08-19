@@ -1,0 +1,38 @@
+Priority Recommendations (Aligned With Your Phases)
+Phase 1 – Critical Fixes (Immediate)
+
+Add Historic Property and Remodel Multiplier Controls — Provide toggles/slider to select 1.0 vs 1.2 for historic property and allow remodel multiplier adjustments.
+
+Implement Interactive Cost Range Sliders — Turn the new/remodel cost ranges into three‑point sliders with user‑editable targets.
+
+Add Site Area Input — Expose site area to support Scan to BIM calculations.
+
+Category Selection — Allow category (1–5) selection and map it to the correct multiplier.
+
+Phase 2 – Fee Analysis Implementation (High Priority)
+
+Top‑Down Analysis Section — Build a table with all scope items (scan to BIM, architecture, interior design, landscape, each engineering discipline) showing percent of cost, rate per ft², market fee, Louis Amy fee, consultant fee and coordination fee, reflecting the fee formulas.
+
+Bottom‑Up Analysis Section — Provide labour and overhead rates, markup, discount fields, and compute labour cost, overhead, markup, and final fee. Allow team member rate adjustments and show hours by role.
+
+Hours Distribution by Phases and Roles — Display how total hours break down by phases (and allow overrides), plus leverage percentages per employee role.
+
+Sanity Check Section — Compare top‑down vs bottom‑up results, show percent differences, and let users override discounts or apply manual adjustments.
+
+Phase 3 – Advanced Features (Medium Priority)
+
+Scan to BIM Calculations — Implement formulas for both building and site scanning (cost rates from your CSV and Excel).
+
+Coordination Fee and Markup Controls — Add a default 15 % coordination fee for outsourced disciplines and let the user adjust markup percentages.
+
+Expandable Budget Cards — Make budget cards expandable to reveal new vs remodel splits and underlying formulas.
+
+Discount Application and Overrides — Provide fields to enter discounts for the top‑down fees and reflect them in the final costs.
+
+Phase 4 – UI/UX Improvements (Lower Priority)
+
+Interactive Charts and Sliders — Replace static numbers with dynamic charts (e.g., donut charts for cost ratios) and range bars for cost analysis.
+
+Real‑Time Validation — Validate user inputs so shares sum to 100 %, costs remain within min/max ranges, etc.
+
+Collapsible Sections — Organize the page into collapsible panels to mirror the Excel’s sequence (Inputs → Budgets → Discipline Budgets → Fee Analysis → Hours → Sanity Check).
