@@ -211,6 +211,25 @@ export default function ProjectDashboardV2() {
   const [discountPercent, setDiscountPercent] = useState<number>(0.0);
   const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
   
+  // Non-linear hours and In-house/Outsourced toggles
+  const [useNonLinearHours, setUseNonLinearHours] = useState(false);
+  const [disciplineInhouse, setDisciplineInhouse] = useState({
+    architecture: true,
+    interiorDesign: true,
+    landscape: true,
+    structural: false,
+    civil: false,
+    mechanical: false,
+    electrical: false,
+    plumbing: false,
+    telecom: false
+  });
+  
+  // Scan to BIM settings
+  const [scanToBimEnabled, setScanToBimEnabled] = useState(false);
+  const [scanToBimArea, setScanToBimArea] = useState(0);
+  const [scanToBimRate, setScanToBimRate] = useState(0.5);
+  
   // UI Controls
   const [autoRecalc, setAutoRecalc] = useState(true);
   const [expandedSections, setExpandedSections] = useState({
@@ -258,7 +277,20 @@ export default function ProjectDashboardV2() {
         plumbingPercentageOverride: plumbingPercentage,
         telecomPercentageOverride: telecomPercentage,
         categoryMultiplier,
-        coordinationFeePercent
+        coordinationFeePercent,
+        useNonLinearHours,
+        architectureInhouse: disciplineInhouse.architecture,
+        interiorDesignInhouse: disciplineInhouse.interiorDesign,
+        landscapeInhouse: disciplineInhouse.landscape,
+        structuralInhouse: disciplineInhouse.structural,
+        civilInhouse: disciplineInhouse.civil,
+        mechanicalInhouse: disciplineInhouse.mechanical,
+        electricalInhouse: disciplineInhouse.electrical,
+        plumbingInhouse: disciplineInhouse.plumbing,
+        telecomInhouse: disciplineInhouse.telecom,
+        scanToBimEnabled,
+        scanToBimArea,
+        scanToBimRate
       };
       
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -294,7 +326,8 @@ export default function ProjectDashboardV2() {
     architecturePercentage, interiorDesignPercentage, landscapePercentage,
     structuralPercentage, civilPercentage, mechanicalPercentage,
     electricalPercentage, plumbingPercentage, telecomPercentage,
-    categoryMultiplier, coordinationFeePercent, autoRecalc
+    categoryMultiplier, coordinationFeePercent, useNonLinearHours,
+    disciplineInhouse, scanToBimEnabled, scanToBimArea, scanToBimRate, autoRecalc
   ]);
 
   if (isLoading) {
@@ -1394,6 +1427,122 @@ export default function ProjectDashboardV2() {
                 </div>
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Advanced Settings</CardTitle>
+            <CardDescription>Configure calculation methods and discipline assignments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Non-Linear Hours Formula */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Non-Linear Hours Formula</Label>
+                    <p className="text-xs text-muted-foreground">Use logarithmic formula for hours calculation</p>
+                  </div>
+                  <Switch
+                    checked={useNonLinearHours}
+                    onCheckedChange={setUseNonLinearHours}
+                  />
+                </div>
+                {useNonLinearHours && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs">Formula: hours = 1000 × (1 + ln(totalFee / 100,000))</p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* In-House vs Outsourced Toggles */}
+              <div>
+                <Label className="text-sm font-semibold mb-3">In-House vs Outsourced Services</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {[
+                    { key: 'architecture', label: 'Architecture', default: true },
+                    { key: 'interiorDesign', label: 'Interior Design', default: true },
+                    { key: 'landscape', label: 'Landscape', default: true },
+                    { key: 'structural', label: 'Structural', default: false },
+                    { key: 'civil', label: 'Civil', default: false },
+                    { key: 'mechanical', label: 'Mechanical', default: false },
+                    { key: 'electrical', label: 'Electrical', default: false },
+                    { key: 'plumbing', label: 'Plumbing', default: false },
+                    { key: 'telecom', label: 'Telecom', default: false }
+                  ].map((discipline) => (
+                    <div key={discipline.key} className="flex items-center justify-between p-2 border rounded-lg">
+                      <span className="text-sm">{discipline.label}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={disciplineInhouse[discipline.key as keyof typeof disciplineInhouse] ? 'default' : 'secondary'}>
+                          {disciplineInhouse[discipline.key as keyof typeof disciplineInhouse] ? 'In-House' : 'Outsourced'}
+                        </Badge>
+                        <Switch
+                          checked={disciplineInhouse[discipline.key as keyof typeof disciplineInhouse]}
+                          onCheckedChange={(checked) => 
+                            setDisciplineInhouse({ ...disciplineInhouse, [discipline.key]: checked })
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Scan to BIM Settings */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Scan to BIM</Label>
+                    <p className="text-xs text-muted-foreground">Enable 3D scanning and BIM model generation</p>
+                  </div>
+                  <Switch
+                    checked={scanToBimEnabled}
+                    onCheckedChange={setScanToBimEnabled}
+                  />
+                </div>
+                {scanToBimEnabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Scan Area (ft²)</Label>
+                      <Input
+                        type="number"
+                        value={scanToBimArea}
+                        onChange={(e) => setScanToBimArea(parseFloat(e.target.value))}
+                        className="h-8"
+                        min={0}
+                        step={1000}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Rate ($/ft²)</Label>
+                      <Input
+                        type="number"
+                        value={scanToBimRate}
+                        onChange={(e) => setScanToBimRate(parseFloat(e.target.value))}
+                        className="h-8"
+                        min={0}
+                        max={5}
+                        step={0.1}
+                      />
+                    </div>
+                    {scanToBimArea > 0 && (
+                      <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Scan to BIM Cost</span>
+                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

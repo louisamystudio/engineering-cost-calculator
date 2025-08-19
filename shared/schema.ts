@@ -331,6 +331,22 @@ export const projects = pgTable("projects", {
   electricalFeeAdjustment: decimal("electrical_fee_adjustment", { precision: 5, scale: 4 }),
   plumbingFeeAdjustment: decimal("plumbing_fee_adjustment", { precision: 5, scale: 4 }),
   telecomFeeAdjustment: decimal("telecom_fee_adjustment", { precision: 5, scale: 4 }),
+  // Non-linear hours formula toggle
+  useNonLinearHours: boolean("use_non_linear_hours").default(false),
+  // In-house vs outsourced toggles for each discipline
+  architectureInhouse: boolean("architecture_inhouse").default(true),
+  interiorDesignInhouse: boolean("interior_design_inhouse").default(true),
+  landscapeInhouse: boolean("landscape_inhouse").default(true),
+  structuralInhouse: boolean("structural_inhouse").default(false),
+  civilInhouse: boolean("civil_inhouse").default(false),
+  mechanicalInhouse: boolean("mechanical_inhouse").default(false),
+  electricalInhouse: boolean("electrical_inhouse").default(false),
+  plumbingInhouse: boolean("plumbing_inhouse").default(false),
+  telecomInhouse: boolean("telecom_inhouse").default(false),
+  // Scan to BIM settings
+  scanToBimEnabled: boolean("scan_to_bim_enabled").default(false),
+  scanToBimArea: decimal("scan_to_bim_area", { precision: 10, scale: 2 }).default("0"),
+  scanToBimRate: decimal("scan_to_bim_rate", { precision: 10, scale: 4 }).default("0.5"),
 });
 
 // Project Calculations Table for storing calculation results
@@ -465,6 +481,28 @@ export const comprehensiveProjectInputSchema = z.object({
   electricalFeeAdjustment: z.number().min(0).max(2).optional(),
   plumbingFeeAdjustment: z.number().min(0).max(2).optional(),
   telecomFeeAdjustment: z.number().min(0).max(2).optional(),
+  // Optional - Non-linear hours formula
+  useNonLinearHours: z.boolean().optional(),
+  // Optional - In-house vs outsourced toggles
+  architectureInhouse: z.boolean().optional(),
+  interiorDesignInhouse: z.boolean().optional(),
+  landscapeInhouse: z.boolean().optional(),
+  structuralInhouse: z.boolean().optional(),
+  civilInhouse: z.boolean().optional(),
+  mechanicalInhouse: z.boolean().optional(),
+  electricalInhouse: z.boolean().optional(),
+  plumbingInhouse: z.boolean().optional(),
+  telecomInhouse: z.boolean().optional(),
+  // Optional - Scan to BIM settings
+  scanToBimEnabled: z.boolean().optional(),
+  scanToBimArea: z.number().min(0).optional(),
+  scanToBimRate: z.number().min(0).optional(),
+  // Additional overrides for calculation
+  architecturePercentageOverride: z.number().min(0).max(1).optional(),
+  interiorDesignPercentageOverride: z.number().min(0).max(1).optional(),
+  landscapePercentageOverride: z.number().min(0).max(1).optional(),
+  categoryMultiplier: z.number().optional(),
+  coordinationFeePercent: z.number().optional(),
 });
 
 export type ComprehensiveProjectInput = z.infer<typeof comprehensiveProjectInputSchema>;

@@ -114,7 +114,21 @@ export class ProjectCalculatorService {
       electricalFeeAdjustment: input.electricalFeeAdjustment?.toString(),
       plumbingFeeAdjustment: input.plumbingFeeAdjustment?.toString(),
       telecomFeeAdjustment: input.telecomFeeAdjustment?.toString(),
-      isDemo: input.projectName === 'Demo Project'
+      isDemo: input.projectName === 'Demo Project',
+      // Add new fields
+      useNonLinearHours: input.useNonLinearHours ?? false,
+      architectureInhouse: input.architectureInhouse ?? true,
+      interiorDesignInhouse: input.interiorDesignInhouse ?? true,
+      landscapeInhouse: input.landscapeInhouse ?? true,
+      structuralInhouse: input.structuralInhouse ?? false,
+      civilInhouse: input.civilInhouse ?? false,
+      mechanicalInhouse: input.mechanicalInhouse ?? false,
+      electricalInhouse: input.electricalInhouse ?? false,
+      plumbingInhouse: input.plumbingInhouse ?? false,
+      telecomInhouse: input.telecomInhouse ?? false,
+      scanToBimEnabled: input.scanToBimEnabled ?? false,
+      scanToBimArea: input.scanToBimArea?.toString() ?? '0',
+      scanToBimRate: input.scanToBimRate?.toString() ?? '0.5'
     };
     
     if (existingDemo && input.projectName === 'Demo Project') {
@@ -410,55 +424,55 @@ export class ProjectCalculatorService {
       { 
         scope: 'Architecture (Design + Consultant Admin.)', 
         budget: parseFloat(calculations.architectureBudget), 
-        isInhouse: true,
+        isInhouse: project.architectureInhouse,
         feeAdjustment: input.architectureFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Interior design', 
         budget: parseFloat(calculations.interiorBudgetTotal), 
-        isInhouse: true,
+        isInhouse: project.interiorDesignInhouse,
         feeAdjustment: input.interiorFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Landscape architecture', 
         budget: parseFloat(calculations.landscapeBudgetTotal), 
-        isInhouse: true,
+        isInhouse: project.landscapeInhouse,
         feeAdjustment: input.landscapeFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Structural engineer', 
         budget: parseFloat(calculations.structuralBudget), 
-        isInhouse: true,
+        isInhouse: project.structuralInhouse,
         feeAdjustment: input.structuralFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Civil / site engineer', 
         budget: parseFloat(calculations.civilBudget), 
-        isInhouse: true,
+        isInhouse: project.civilInhouse,
         feeAdjustment: input.civilFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Mechanical (HVAC, energy, pools)', 
         budget: parseFloat(calculations.mechanicalBudget), 
-        isInhouse: false,
+        isInhouse: project.mechanicalInhouse,
         feeAdjustment: input.mechanicalFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Electrical (power / lighting)', 
         budget: parseFloat(calculations.electricalBudget), 
-        isInhouse: false,
+        isInhouse: project.electricalInhouse,
         feeAdjustment: input.electricalFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Plumbing engineer', 
         budget: parseFloat(calculations.plumbingBudget), 
-        isInhouse: true,
+        isInhouse: project.plumbingInhouse,
         feeAdjustment: input.plumbingFeeAdjustment ?? 1.0
       },
       { 
         scope: 'Telecommunication', 
         budget: parseFloat(calculations.telecomBudget), 
-        isInhouse: false,
+        isInhouse: project.telecomInhouse,
         feeAdjustment: input.telecomFeeAdjustment ?? 1.0
       }
     ];
@@ -513,9 +527,31 @@ export class ProjectCalculatorService {
     
     // Calculate total hours from fees
     const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
-    const totalLAHours = fees
-      .filter(f => f.isInhouse)
-      .reduce((sum, f) => sum + parseFloat(f.hours || '0'), 0);
+    
+    // Non-linear hours formula
+    const useNonLinearFormula = project.useNonLinearHours ?? false;
+    let totalLAHours: number;
+    
+    if (useNonLinearFormula) {
+      // Non-linear formula: hours = baseHours * (1 + ln(totalFee / baseFee))
+      const baseHours = 1000;
+      const baseFee = 100000;
+      const totalInhouseFee = fees
+        .filter(f => f.isInhouse)
+        .reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
+      
+      if (totalInhouseFee > 0) {
+        totalLAHours = baseHours * (1 + Math.log(totalInhouseFee / baseFee));
+        totalLAHours = Math.max(0, totalLAHours); // Ensure non-negative
+      } else {
+        totalLAHours = 0;
+      }
+    } else {
+      // Linear formula: hours based on fee / rate
+      totalLAHours = fees
+        .filter(f => f.isInhouse)
+        .reduce((sum, f) => sum + parseFloat(f.hours || '0'), 0);
+    }
     
     // Distribute hours by phase
     for (const phase of this.PHASE_DISTRIBUTION) {
