@@ -133,18 +133,18 @@ export class ProjectCalculatorService {
     const tierText = tierMap[input.designLevel] || 'Mid';
     
     // Get comprehensive data from new database structure
-    const comprehensiveData = await storage.getComprehensiveBuildingCostData(mappedBuildingType, tierText);
+    const comprehensiveData = await storage.getBuildingCostData(mappedBuildingType, tierText);
     
     if (comprehensiveData) {
       // Convert comprehensive data to the expected format for existing calculator logic
       return {
         allInMin: (parseFloat(comprehensiveData.shellNewMin) + parseFloat(comprehensiveData.interiorNewMin) + 
-                  parseFloat(comprehensiveData.landscapeNewMin) + parseFloat(comprehensiveData.siteNewMin)).toString(),
+                  parseFloat(comprehensiveData.outdoorNewMin)).toString(),
         allInMax: (parseFloat(comprehensiveData.shellNewMax) + parseFloat(comprehensiveData.interiorNewMax) + 
-                  parseFloat(comprehensiveData.landscapeNewMax) + parseFloat(comprehensiveData.siteNewMax)).toString(),
-        archShare: (parseFloat(comprehensiveData.shellShareNew) / 100).toString(),
-        intShare: (parseFloat(comprehensiveData.interiorShareNew) / 100).toString(),
-        landShare: (parseFloat(comprehensiveData.landscapeShareNew) / 100).toString(),
+                  parseFloat(comprehensiveData.outdoorNewMax)).toString(),
+        archShare: (parseFloat(comprehensiveData.projectShellShare) / 100).toString(),
+        intShare: (parseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
+        landShare: (parseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
         comprehensiveData // Pass along the full data for advanced calculations
       };
     } else {

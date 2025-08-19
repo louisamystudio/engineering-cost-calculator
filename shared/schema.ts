@@ -17,13 +17,15 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-export const buildingCost2025Parcial = pgTable("Building-Cost-2025-Parcial", {
+// Comprehensive Building Cost Database v6
+export const buildingCostData = pgTable("building_cost_data_v6", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   buildingUse: text("building_use").notNull(),
   buildingType: text("building_type").notNull(),
+  category: integer("category").notNull(),
   buildingTier: text("building_tier").notNull(),
   
-  // Shell costs ($/ft²)
+  // Shell costs ($/ft²) - All-in
   shellNewMin: decimal("shell_new_min", { precision: 8, scale: 2 }).notNull(),
   shellRemodelMin: decimal("shell_remodel_min", { precision: 8, scale: 2 }).notNull(),
   shellNewTarget: decimal("shell_new_target", { precision: 8, scale: 2 }).notNull(),
@@ -31,7 +33,7 @@ export const buildingCost2025Parcial = pgTable("Building-Cost-2025-Parcial", {
   shellNewMax: decimal("shell_new_max", { precision: 8, scale: 2 }).notNull(),
   shellRemodelMax: decimal("shell_remodel_max", { precision: 8, scale: 2 }).notNull(),
   
-  // Interior costs ($/ft²)
+  // Interior costs ($/ft²) - All-in
   interiorNewMin: decimal("interior_new_min", { precision: 8, scale: 2 }).notNull(),
   interiorRemodelMin: decimal("interior_remodel_min", { precision: 8, scale: 2 }).notNull(),
   interiorNewTarget: decimal("interior_new_target", { precision: 8, scale: 2 }).notNull(),
@@ -39,98 +41,47 @@ export const buildingCost2025Parcial = pgTable("Building-Cost-2025-Parcial", {
   interiorNewMax: decimal("interior_new_max", { precision: 8, scale: 2 }).notNull(),
   interiorRemodelMax: decimal("interior_remodel_max", { precision: 8, scale: 2 }).notNull(),
   
-  // Landscape costs ($/ft²)
-  landscapeNewMin: decimal("landscape_new_min", { precision: 8, scale: 2 }).notNull(),
-  landscapeRemodelMin: decimal("landscape_remodel_min", { precision: 8, scale: 2 }).notNull(),
-  landscapeNewTarget: decimal("landscape_new_target", { precision: 8, scale: 2 }).notNull(),
-  landscapeRemodelTarget: decimal("landscape_remodel_target", { precision: 8, scale: 2 }).notNull(),
-  landscapeNewMax: decimal("landscape_new_max", { precision: 8, scale: 2 }).notNull(),
-  landscapeRemodelMax: decimal("landscape_remodel_max", { precision: 8, scale: 2 }).notNull(),
+  // Outdoor & Landscape costs ($/ft²) - All-in
+  outdoorNewMin: decimal("outdoor_new_min", { precision: 8, scale: 2 }).notNull(),
+  outdoorRemodelMin: decimal("outdoor_remodel_min", { precision: 8, scale: 2 }).notNull(),
+  outdoorNewTarget: decimal("outdoor_new_target", { precision: 8, scale: 2 }).notNull(),
+  outdoorRemodelTarget: decimal("outdoor_remodel_target", { precision: 8, scale: 2 }).notNull(),
+  outdoorNewMax: decimal("outdoor_new_max", { precision: 8, scale: 2 }).notNull(),
+  outdoorRemodelMax: decimal("outdoor_remodel_max", { precision: 8, scale: 2 }).notNull(),
   
-  // Site costs ($/ft²)
-  siteNewMin: decimal("site_new_min", { precision: 8, scale: 2 }).notNull(),
-  siteRemodelMin: decimal("site_remodel_min", { precision: 8, scale: 2 }).notNull(),
-  siteNewTarget: decimal("site_new_target", { precision: 8, scale: 2 }).notNull(),
-  siteRemodelTarget: decimal("site_remodel_target", { precision: 8, scale: 2 }).notNull(),
-  siteNewMax: decimal("site_new_max", { precision: 8, scale: 2 }).notNull(),
-  siteRemodelMax: decimal("site_remodel_max", { precision: 8, scale: 2 }).notNull(),
+  // Swimming Pool costs ($/ft²) - All-in
+  poolNewMin: decimal("pool_new_min", { precision: 8, scale: 2 }).notNull(),
+  poolRemodelMin: decimal("pool_remodel_min", { precision: 8, scale: 2 }).notNull(),
+  poolNewTarget: decimal("pool_new_target", { precision: 8, scale: 2 }).notNull(),
+  poolRemodelTarget: decimal("pool_remodel_target", { precision: 8, scale: 2 }).notNull(),
+  poolNewMax: decimal("pool_new_max", { precision: 8, scale: 2 }).notNull(),
+  poolRemodelMax: decimal("pool_remodel_max", { precision: 8, scale: 2 }).notNull(),
   
-  // Category shares (as percentages)
-  shellShareNew: decimal("shell_share_new", { precision: 5, scale: 2 }).notNull(),
-  interiorShareNew: decimal("interior_share_new", { precision: 5, scale: 2 }).notNull(),
-  landscapeShareNew: decimal("landscape_share_new", { precision: 5, scale: 2 }).notNull(),
+  // Project Shares (%)
+  projectShellShare: decimal("project_shell_share", { precision: 5, scale: 2 }).notNull(),
+  projectInteriorShare: decimal("project_interior_share", { precision: 5, scale: 2 }).notNull(),
+  projectLandscapeShare: decimal("project_landscape_share", { precision: 5, scale: 2 }).notNull(),
   
-  // Engineering percentages of shell budget
-  structuralPct: decimal("structural_pct", { precision: 5, scale: 2 }).notNull(),
-  civilPct: decimal("civil_pct", { precision: 5, scale: 2 }).notNull(),
-  mechanicalPct: decimal("mechanical_pct", { precision: 5, scale: 2 }).notNull(),
-  electricalPct: decimal("electrical_pct", { precision: 5, scale: 2 }).notNull(),
-  plumbingPct: decimal("plumbing_pct", { precision: 5, scale: 2 }).notNull(),
-  telecomPct: decimal("telecom_pct", { precision: 5, scale: 2 }).notNull(),
-  firePct: decimal("fire_pct", { precision: 5, scale: 2 }).notNull(),
-  avPct: decimal("av_pct", { precision: 5, scale: 2 }).notNull(),
-  
-  // Remodel category shares
-  shellShareRemodel: decimal("shell_share_remodel", { precision: 5, scale: 2 }).notNull(),
-  interiorShareRemodel: decimal("interior_share_remodel", { precision: 5, scale: 2 }).notNull(),
-  landscapeShareRemodel: decimal("landscape_share_remodel", { precision: 5, scale: 2 }).notNull(),
-  
-  // Remodel engineering percentages
-  structuralPctRemodel: decimal("structural_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  civilPctRemodel: decimal("civil_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  mechanicalPctRemodel: decimal("mechanical_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  electricalPctRemodel: decimal("electrical_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  plumbingPctRemodel: decimal("plumbing_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  telecomPctRemodel: decimal("telecom_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  firePctRemodel: decimal("fire_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  avPctRemodel: decimal("av_pct_remodel", { precision: 5, scale: 2 }).notNull(),
-  
-  // Market multiplier
-  marketMultiplier: decimal("market_multiplier", { precision: 5, scale: 2 }).notNull(),
+  // Design Shares (%)
+  architecturalDesignShare: decimal("architectural_design_share", { precision: 5, scale: 2 }).notNull(),
+  interiorDesignShare: decimal("interior_design_share", { precision: 5, scale: 2 }).notNull(),
+  landscapeDesignShare: decimal("landscape_design_share", { precision: 5, scale: 2 }).notNull(),
+  structuralDesignShare: decimal("structural_design_share", { precision: 5, scale: 2 }).notNull(),
+  civilDesignShare: decimal("civil_design_share", { precision: 5, scale: 2 }).notNull(),
+  mechanicalDesignShare: decimal("mechanical_design_share", { precision: 5, scale: 2 }).notNull(),
+  electricalDesignShare: decimal("electrical_design_share", { precision: 5, scale: 2 }).notNull(),
+  plumbingDesignShare: decimal("plumbing_design_share", { precision: 5, scale: 2 }).notNull(),
+  telecommunicationDesignShare: decimal("telecommunication_design_share", { precision: 5, scale: 2 }).notNull(),
 });
 
-export const insertBuildingCostSchema = createInsertSchema(buildingCost2025Parcial).omit({
+export const insertBuildingCostDataSchema = createInsertSchema(buildingCostData).omit({
   id: true,
 });
 
-export type InsertBuildingCost = z.infer<typeof insertBuildingCostSchema>;
-export type BuildingCost = typeof buildingCost2025Parcial.$inferSelect;
-export type ComprehensiveBuildingCost = typeof buildingCost2025Parcial.$inferSelect;
+export type InsertBuildingCostData = z.infer<typeof insertBuildingCostDataSchema>;
+export type BuildingCostData = typeof buildingCostData.$inferSelect;
 
-export const engineeringCosts = pgTable("Engineering_Costs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: text("key").notNull(),
-  buildingType: text("building_type").notNull(),
-  numericTier: integer("numeric_tier").notNull(),
-  categorySimple: text("category_simple").notNull(),
-  percentAvg: text("percent_avg").notNull(),
-  percentMin: integer("percent_min").notNull(),
-  percentMax: integer("percent_max").notNull(),
-  costMinPSF: decimal("cost_min_psf", { precision: 8, scale: 2 }).notNull(),
-  costMaxPSF: decimal("cost_max_psf", { precision: 8, scale: 2 }).notNull(),
-});
 
-export const insertEngineeringCostsSchema = createInsertSchema(engineeringCosts).omit({
-  id: true,
-});
-
-export type InsertEngineeringCosts = z.infer<typeof insertEngineeringCostsSchema>;
-export type EngineeringCosts = typeof engineeringCosts.$inferSelect;
-
-export const buildingTypes = pgTable("Building_Types", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  buildingUse: text("building_use").notNull(),
-  buildingType: text("building_type").notNull(),
-  feeCategory: text("fee_category").notNull(),
-  costCategory: text("cost_category").notNull(),
-});
-
-export const insertBuildingTypesSchema = createInsertSchema(buildingTypes).omit({
-  id: true,
-});
-
-export type InsertBuildingTypes = z.infer<typeof insertBuildingTypesSchema>;
-export type BuildingTypes = typeof buildingTypes.$inferSelect;
 
 // Database Views for Budget Calculator
 export const buildingCostRangesView = pgTable("building_cost_ranges", {
@@ -154,14 +105,7 @@ export const engineeringCostsView = pgTable("engineering_costs_v", {
   costMaxPsf: decimal("cost_max_psf").notNull(),
 });
 
-export const buildingTypesView = pgView("building_types_v").as((qb) => {
-  return qb.select({
-    buildingType: buildingTypes.buildingType,
-    buildingUse: buildingTypes.buildingUse,
-    feeCategory: buildingTypes.feeCategory,
-    costCategory: buildingTypes.costCategory,
-  }).from(buildingTypes);
-});
+// Removed buildingTypesView - no longer needed with new schema
 
 // Budget Calculator Types
 export const budgetInputSchema = z.object({
@@ -278,7 +222,6 @@ export type RatePricing = typeof ratePricing.$inferSelect;
 
 export type BuildingCostRange = typeof buildingCostRangesView.$inferSelect;
 export type EngineeringCost = typeof engineeringCostsView.$inferSelect;
-export type BuildingTypeView = typeof buildingTypesView.$inferSelect;
 
 // Fee Matrix Types
 export const feeMatrixInputSchema = z.object({

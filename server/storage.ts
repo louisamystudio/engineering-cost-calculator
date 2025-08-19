@@ -4,10 +4,8 @@ import {
   type InsertUser,
   buildingCostRangesView,
   engineeringCostsView,
-  buildingTypesView,
   type BuildingCostRange,
   type EngineeringCost,
-  type BuildingTypeView,
   hoursLeverage,
   type HoursLeverage,
   type InsertHoursLeverage,
@@ -35,13 +33,9 @@ import {
   projectHours,
   type ProjectHours,
   type InsertProjectHours,
-  buildingTypes,
-  type BuildingTypes,
-  engineeringCosts,
-  type EngineeringCosts,
-  buildingCost2025Parcial,
-  type BuildingCost,
-  type ComprehensiveBuildingCost
+  buildingCostData,
+  type BuildingCostData,
+  type InsertBuildingCostData
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -114,9 +108,7 @@ export interface IStorage {
   getAllBuildingUses(): Promise<string[]>;
   getBuildingTypesByUse(buildingUse: string): Promise<string[]>;
   getBuildingTiersByType(buildingType: string): Promise<string[]>;
-  getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined>;
-  getComprehensiveBuildingCostData(buildingType: string, buildingTier: string): Promise<ComprehensiveBuildingCost | undefined>;
-  getEngineeringCostsByDiscipline(buildingType: string, tier: number, discipline: string): Promise<EngineeringCosts | undefined>;
+  getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -397,97 +389,42 @@ export class DatabaseStorage implements IStorage {
   
   // Building data methods
   async getAllBuildingUses(): Promise<string[]> {
-    // Get building uses from the comprehensive database
-    const comprehensiveResults = await db
-      .selectDistinct({ buildingUse: buildingCost2025Parcial.buildingUse })
-      .from(buildingCost2025Parcial);
+    // Get building uses from the new comprehensive database
+    const results = await db
+      .selectDistinct({ buildingUse: buildingCostData.buildingUse })
+      .from(buildingCostData);
     
-    // Get building uses from the legacy database
-    const legacyResults = await db
-      .selectDistinct({ buildingUse: buildingTypes.buildingUse })
-      .from(buildingTypes);
-    
-    // Combine and deduplicate
-    const allUses = [
-      ...comprehensiveResults.map(r => r.buildingUse),
-      ...legacyResults.map(r => r.buildingUse)
-    ].filter((use, index, array) => use && array.indexOf(use) === index);
-    
-    return allUses;
+    return results.map(r => r.buildingUse).filter(use => use !== null);
   }
   
   async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
-    if (buildingUse === 'Residential') {
-      // Return the actual building types from comprehensive database
-      const results = await db
-        .selectDistinct({ buildingType: buildingCost2025Parcial.buildingType })
-        .from(buildingCost2025Parcial)
-        .where(eq(buildingCost2025Parcial.buildingUse, buildingUse));
-      return results.map(r => r.buildingType).filter(type => type !== null);
-    }
-    
-    // For other building uses, use the old system
+    // Get building types from the new comprehensive database
     const results = await db
-      .selectDistinct({ buildingType: buildingTypes.buildingType })
-      .from(buildingTypes)
-      .where(eq(buildingTypes.buildingUse, buildingUse));
-    return results.map(r => r.buildingType);
+      .selectDistinct({ buildingType: buildingCostData.buildingType })
+      .from(buildingCostData)
+      .where(eq(buildingCostData.buildingUse, buildingUse));
+    
+    return results.map(r => r.buildingType).filter(type => type !== null);
   }
   
   async getBuildingTiersByType(buildingType: string): Promise<string[]> {
-    // Get available tiers from the comprehensive database
+    // Get available tiers from the new comprehensive database
     const results = await db
-      .selectDistinct({ buildingTier: buildingCost2025Parcial.buildingTier })
-      .from(buildingCost2025Parcial)
-      .where(eq(buildingCost2025Parcial.buildingType, buildingType));
+      .selectDistinct({ buildingTier: buildingCostData.buildingTier })
+      .from(buildingCostData)
+      .where(eq(buildingCostData.buildingType, buildingType));
     
     return results.map(r => r.buildingTier).filter(tier => tier !== null);
   }
   
-  async getBuildingCostData(buildingType: string, tier: number): Promise<BuildingCost | undefined> {
-    // Map tier number to tier text
-    const tierMap: Record<number, string> = {
-      1: 'Low-end',
-      2: 'Mid', 
-      3: 'High-end'
-    };
-    
-    const tierText = tierMap[tier] || 'Mid';
-    
+  async getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined> {
     const [result] = await db
       .select()
-      .from(buildingCost2025Parcial)
+      .from(buildingCostData)
       .where(
         and(
-          eq(buildingCost2025Parcial.buildingType, buildingType),
-          eq(buildingCost2025Parcial.buildingTier, tierText)
-        )
-      );
-    return result || undefined;
-  }
-  
-  async getComprehensiveBuildingCostData(buildingType: string, buildingTier: string): Promise<ComprehensiveBuildingCost | undefined> {
-    const [result] = await db
-      .select()
-      .from(buildingCost2025Parcial)
-      .where(
-        and(
-          eq(buildingCost2025Parcial.buildingType, buildingType),
-          eq(buildingCost2025Parcial.buildingTier, buildingTier)
-        )
-      );
-    return result || undefined;
-  }
-  
-  async getEngineeringCostsByDiscipline(buildingType: string, tier: number, discipline: string): Promise<EngineeringCosts | undefined> {
-    const [result] = await db
-      .select()
-      .from(engineeringCosts)
-      .where(
-        and(
-          eq(engineeringCosts.buildingType, buildingType),
-          eq(engineeringCosts.numericTier, tier),
-          eq(engineeringCosts.categorySimple, discipline)
+          eq(buildingCostData.buildingType, buildingType),
+          eq(buildingCostData.buildingTier, buildingTier)
         )
       );
     return result || undefined;
