@@ -1,0 +1,61 @@
+Here’s a concise audit of the Comprehensive Calculator UI, focusing on your demo project, along with recommendations for bringing it fully in line with the Excel model and your updated database (as provided in Custom\_Residential\_CostS\_DB\_FILLED\_v6.csv):
+
+**Key Findings from the Audit**
+
+1. **Cost Range & Target Values**
+
+   * The “Cost Range Analysis” card correctly shows min/target/max \$/ft², but it uses **building type “Custom Houses” with Tier 3** (High) by default, yielding values like \$340/350/360 for new construction.
+   * The updated database defines building types (‘Custom Houses’, ‘Private Housing Development’, etc.) and tiers (‘Low’, ‘Mid’, ‘High’). To reproduce the Mid‑Range Standard Residential case (Tier = Mid, Category 5), the UI needs to let users select **Tier 2 (Mid)** rather than only “High-end” under the Comprehensive Calculator wizard.
+
+2. **Construction Budgets**
+
+   * The **“Total Budget” card** shows only total new vs remodel budgets (e.g., \$700k new, \$350k remodel). The Excel sheet also breaks this into **Shell, Interior, and Landscape budgets** and then further into **new vs existing shares**. Those breakdowns aren’t visible in the current UI.
+   * In the Excel model, with 2,000 ft² new + 2,000 ft² remodel (Category 5, Tier Mid), total budget should be \$1.17 M, split into **\$772k Shell, \$257k Interior, \$140k Landscape**. The demo project using the old dataset shows \$1.05 M total and \$756k architecture budget, indicating mismatched tiers/cost data.
+
+3. **Engineering Discipline Budgets**
+
+   * The UI lists **discipline fees** (Architecture, Civil, Structural, etc.) but not the **underlying budgets** (the gross dollars from which those fees are derived). For example, “Architecture (Design + Consultant Admin.)” shows a fee of \$118,070 but doesn’t display the shell budget or engineering share percentages used to calculate it.
+   * Only the overall **share percentages** (e.g., Architecture 66 %, Structural 0 %) are visible after selecting a discipline, but there is no way to see the new/remodel split or adjust the share values.
+
+4. **Hours & Phase Breakdowns**
+
+   * The UI provides a high-level **phase bar chart** of hours (Discovery, Creative – Schematic, etc.) and shows **hours per discipline** only in the fee card (e.g., 720 hrs for Architecture). It lacks the **detailed per‑role hours** (Designer 1, Designer 2, Architect, Engineer, Principal) or the breakdown of hours by new vs remodel that the spreadsheet calculates.
+   * The **bottom‑up cost & pricing analysis** (total labor cost, overhead per hour, margin, pricing per hour) is absent in the UI even though it appears in the Excel workbook.
+
+**Recommendations for Enhancing the Comprehensive Calculator UI**
+
+1. **Allow Tier Selection Consistent with the New Database**
+
+   * In the project creation wizard, add a **“Building Tier” selector** (Low/Mid/High) rather than combining tier and design level. Mapping it to the new CSV ensures correct cost ranges and shares for each building type/tier/category.
+
+2. **Expose Core Budgets Clearly**
+
+   * After calculating the total budget, show **Shell, Interior, and Landscape budgets** with both **new** and **existing** components. Use cards or a stacked bar chart to visualise the breakdown (e.g., Shell: \$772k → \$514k new + \$257k remodel).
+   * Present each **engineering discipline budget** before fees, including the remodel reduction for structural (i.e., 50 % of remodel portion) and the full remodel cost for other disciplines. Also show the architecture budget as the remainder of shell after engineering allocations.
+
+3. **Provide Adjustable Share Percentages**
+
+   * Include sliders or input fields to override **Project Shell/Interior/Landscape shares** and **engineering shares** directly within the comprehensive calculator, as the spreadsheet allows.
+   * Display the **default percentage values** (e.g., Shell 66 %, Interior 22 %, Landscape 12 %) and alert users if the shares don’t sum to 100 %.
+
+4. **Detail Fee Calculations**
+
+   * In the **Professional Fees** section, show not just the fee amount but also:
+
+     * **Percent of project cost**, **rate per ft²**, **market fee**, **Louis Amy fee**, **coordination fee**, and **consultant fee** (as in the Top‑Down Fee Analysis table).
+     * **Underlying budget** from which the fee is computed.
+   * Allow toggling between **top‑down** and **bottom‑up** fee analyses; include fields for labor rate, overhead per hour, margin, and markup. Show if the top‑down and bottom‑up totals match (sanity check).
+
+5. **Expand Hours & Leverage Reporting**
+
+   * For each phase, display **total hours** and **hours per role** (Designer 1, Designer 2, Architect, Engineer, Principal) with the same rounding rules as the spreadsheet.
+   * Provide the option to show **raw vs rounded** hours and a comparison between **planned total hours** and **Louis Amy hours** (in‑house scopes only).
+   * Incorporate **rebalanced hours** if the user overrides fees or applies discounts.
+
+6. **Miscellaneous Improvements**
+
+   * **Persist project parameters**: If the database is updated (as per the provided CSVs), ensure that new categories, tiers, and cost ranges appear without caching stale data.
+   * Add tooltips or info icons that explain **category multipliers**, **historic property multiplier**, **remodel cost factor**, and the meaning of design tiers, pulling definitions directly from your updated datasets.
+   * Consider adding a **summary download** (PDF or Excel) that captures all budgets, shares, fees, hours, and assumptions so clients can review the calculation details.
+
+By implementing these enhancements and ensuring the calculator uses the updated cost and share data from the new CSV, the Comprehensive Calculator will align closely with the spreadsheet logic and provide a transparent, interactive experience that matches the full scope of the original Excel model.
