@@ -163,7 +163,7 @@ export default function ProjectDashboardV2() {
   const params = useParams();
   const [, navigate] = useLocation();
   const projectId = params.id as string;
-  
+
   // Section 1: Project Inputs & Parameters
   const [newBuildingArea, setNewBuildingArea] = useState(0);
   const [existingBuildingArea, setExistingBuildingArea] = useState(0);
@@ -171,16 +171,16 @@ export default function ProjectDashboardV2() {
   const [remodelMultiplier, setRemodelMultiplier] = useState(0.5);
   const [isHistoric, setIsHistoric] = useState(false);
   const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState<number>(1.0);
-  
+
   // Section 2: Cost Range Controls
-  const [newConstructionTarget, setNewConstructionTarget] = useState<number | undefined>();
-  const [remodelTarget, setRemodelTarget] = useState<number | undefined>();
-  
+  const [newConstructionTargetCost, setNewConstructionTargetCost] = useState<number | undefined>();
+  const [remodelTargetCost, setRemodelTargetCost] = useState<number | undefined>();
+
   // Section 3: Budget Share Overrides
   const [shellShareOverride, setShellShareOverride] = useState<number | undefined>();
   const [interiorShareOverride, setInteriorShareOverride] = useState<number | undefined>();
   const [landscapeShareOverride, setLandscapeShareOverride] = useState<number | undefined>();
-  
+
   // Section 4: Discipline Percentage Overrides
   const [architecturePercentage, setArchitecturePercentage] = useState<number | undefined>();
   const [interiorDesignPercentage, setInteriorDesignPercentage] = useState<number | undefined>();
@@ -191,17 +191,17 @@ export default function ProjectDashboardV2() {
   const [electricalPercentage, setElectricalPercentage] = useState<number | undefined>();
   const [plumbingPercentage, setPlumbingPercentage] = useState<number | undefined>();
   const [telecomPercentage, setTelecomPercentage] = useState<number | undefined>();
-  
+
   // Section 5: Fee Analysis Controls
   const [categoryMultiplier, setCategoryMultiplier] = useState<number | undefined>();
   const [discountRate, setDiscountRate] = useState<number>(0);
   const [coordinationFeePercent, setCoordinationFeePercent] = useState<number>(15);
-  
+
   // Bottom-up Controls
   const [laborRate, setLaborRate] = useState<number>(36);
   const [overheadRate, setOverheadRate] = useState<number>(46);
   const [markupFactor, setMarkupFactor] = useState<number>(1.5);
-  
+
   // Service Selection
   const [includedServices, setIncludedServices] = useState({
     architecture: true,
@@ -214,13 +214,13 @@ export default function ProjectDashboardV2() {
     plumbing: true,
     telecom: false
   });
-  
+
   // Section 6: Hours Factor Override
   const [hoursFactorOverride, setHoursFactorOverride] = useState<number | undefined>();
   const [hoursPerSqFt, setHoursPerSqFt] = useState<number>(0.5);
   const [discountPercent, setDiscountPercent] = useState<number>(0.0);
   const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
-  
+
   // Non-linear hours and In-house/Outsourced toggles
   const [useNonLinearHours, setUseNonLinearHours] = useState(false);
   const [disciplineInhouse, setDisciplineInhouse] = useState({
@@ -234,15 +234,15 @@ export default function ProjectDashboardV2() {
     plumbing: false,
     telecom: false
   });
-  
+
   // Scan to BIM settings
   const [scanToBimEnabled, setScanToBimEnabled] = useState(false);
   const [scanToBimArea, setScanToBimArea] = useState(0);
   const [scanToBimRate, setScanToBimRate] = useState(0.5);
-  
+
   // UI Controls
   const [autoRecalc, setAutoRecalc] = useState(true);
-  
+
   // Preset Management
   const [presetName, setPresetName] = useState('');
   const [savedPresets, setSavedPresets] = useState<Record<string, any>>({});
@@ -263,7 +263,7 @@ export default function ProjectDashboardV2() {
   const recalculateMutation = useMutation({
     mutationFn: async (params?: any) => {
       if (!data?.project) return;
-      
+
       const input = {
         projectName: data.project.projectName,
         buildingUse: data.project.buildingUse,
@@ -276,8 +276,8 @@ export default function ProjectDashboardV2() {
         siteArea: params?.siteArea ?? siteArea,
         historicMultiplier: historicPropertyMultiplier,
         remodelMultiplier: params?.remodelMultiplier ?? remodelMultiplier,
-        newConstructionTargetCost: newConstructionTarget,
-        remodelTargetCost: remodelTarget,
+        newConstructionTargetCost: newConstructionTargetCost,
+        remodelTargetCost: remodelTargetCost,
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
@@ -306,7 +306,7 @@ export default function ProjectDashboardV2() {
         scanToBimArea,
         scanToBimRate
       };
-      
+
       const response = await apiRequest('POST', '/api/projects/calculate', input);
       return response.json();
     },
@@ -323,7 +323,14 @@ export default function ProjectDashboardV2() {
       setSiteArea(parseFloat(data.project.siteArea));
       setRemodelMultiplier(parseFloat(data.project.remodelMultiplier));
       setIsHistoric(parseFloat(data.project.historicMultiplier) > 1.0);
-      
+      setHistoricPropertyMultiplier(parseFloat(data.project.historicMultiplier) > 1.0 ? 1.2 : 1.0);
+
+
+      // Initialize target costs from calculations if not set
+      setNewConstructionTargetCost(parseFloat(data.project.newCostTarget));
+      setRemodelTargetCost(parseFloat(data.project.remodelCostTarget));
+
+
       // Load saved presets from localStorage
       const storedPresets = localStorage.getItem('projectPresets');
       if (storedPresets) {
@@ -331,22 +338,31 @@ export default function ProjectDashboardV2() {
       }
     }
   }, [data]);
-  
+
+  // Determine target costs with overrides
+  const newConstructionTarget = newConstructionTargetCost || parseFloat(data?.project?.newCostTarget || "0");
+  const remodelTarget = remodelTargetCost || parseFloat(data?.project?.remodelCostTarget || "0");
+
+  // Calculate reactive budgets based on current form values
+  const calculatedNewBudget = newBuildingArea * newConstructionTarget;
+  const calculatedRemodelBudget = existingBuildingArea * remodelTarget;
+  const calculatedTotalBudget = calculatedNewBudget + calculatedRemodelBudget;
+
   // Preset management functions
   const savePreset = () => {
     if (!presetName) return;
-    
+
     const preset = {
       name: presetName,
       timestamp: new Date().toISOString(),
       configuration: {
         // Cost and budget settings
-        newConstructionTarget,
-        remodelTarget,
+        newConstructionTargetCost,
+        remodelTargetCost,
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
-        
+
         // Discipline percentages
         architecturePercentage,
         interiorDesignPercentage,
@@ -357,46 +373,46 @@ export default function ProjectDashboardV2() {
         electricalPercentage,
         plumbingPercentage,
         telecomPercentage,
-        
+
         // Bottom-up settings
         laborRate,
         overheadRate,
         markupFactor,
         discountPercent,
-        
+
         // Advanced settings
         useNonLinearHours,
         disciplineInhouse,
         scanToBimEnabled,
         scanToBimArea,
         scanToBimRate,
-        
+
         // Other settings
         categoryMultiplier,
         coordinationFeePercent,
         hoursPerSqFt
       }
     };
-    
+
     const updatedPresets = { ...savedPresets, [presetName]: preset };
     setSavedPresets(updatedPresets);
     localStorage.setItem('projectPresets', JSON.stringify(updatedPresets));
     setPresetName('');
   };
-  
+
   const loadPreset = (presetKey: string) => {
     const preset = savedPresets[presetKey];
     if (!preset) return;
-    
+
     const config = preset.configuration;
-    
+
     // Apply all settings from the preset
-    setNewConstructionTarget(config.newConstructionTarget);
-    setRemodelTarget(config.remodelTarget);
+    setNewConstructionTargetCost(config.newConstructionTargetCost);
+    setRemodelTargetCost(config.remodelTargetCost);
     setShellShareOverride(config.shellShareOverride);
     setInteriorShareOverride(config.interiorShareOverride);
     setLandscapeShareOverride(config.landscapeShareOverride);
-    
+
     setArchitecturePercentage(config.architecturePercentage);
     setInteriorDesignPercentage(config.interiorDesignPercentage);
     setLandscapePercentage(config.landscapePercentage);
@@ -406,30 +422,30 @@ export default function ProjectDashboardV2() {
     setElectricalPercentage(config.electricalPercentage);
     setPlumbingPercentage(config.plumbingPercentage);
     setTelecomPercentage(config.telecomPercentage);
-    
+
     setLaborRate(config.laborRate);
     setOverheadRate(config.overheadRate);
     setMarkupFactor(config.markupFactor);
     setDiscountPercent(config.discountPercent);
-    
+
     setUseNonLinearHours(config.useNonLinearHours);
     setDisciplineInhouse(config.disciplineInhouse);
     setScanToBimEnabled(config.scanToBimEnabled);
     setScanToBimArea(config.scanToBimArea);
     setScanToBimRate(config.scanToBimRate);
-    
+
     setCategoryMultiplier(config.categoryMultiplier);
     setCoordinationFeePercent(config.coordinationFeePercent);
     setHoursPerSqFt(config.hoursPerSqFt);
   };
-  
+
   const exportConfiguration = () => {
     const config = {
       exportDate: new Date().toISOString(),
       projectName: data?.project?.projectName || 'Unknown',
       configuration: {
-        newConstructionTarget,
-        remodelTarget,
+        newConstructionTargetCost,
+        remodelTargetCost,
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
@@ -456,7 +472,7 @@ export default function ProjectDashboardV2() {
         hoursPerSqFt
       }
     };
-    
+
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -465,19 +481,19 @@ export default function ProjectDashboardV2() {
     a.click();
     URL.revokeObjectURL(url);
   };
-  
+
   const importConfiguration = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const config = JSON.parse(e.target?.result as string);
         if (config.configuration) {
           const c = config.configuration;
-          setNewConstructionTarget(c.newConstructionTarget);
-          setRemodelTarget(c.remodelTarget);
+          setNewConstructionTargetCost(c.newConstructionTargetCost);
+          setRemodelTargetCost(c.remodelTargetCost);
           setShellShareOverride(c.shellShareOverride);
           setInteriorShareOverride(c.interiorShareOverride);
           setLandscapeShareOverride(c.landscapeShareOverride);
@@ -510,22 +526,21 @@ export default function ProjectDashboardV2() {
     reader.readAsText(file);
   };
 
-  // Auto-recalculate when parameters change with debounce
+  // Auto-recalculate when parameters change
   useEffect(() => {
     if (autoRecalc && data?.project) {
       const timeoutId = setTimeout(() => {
         recalculateMutation.mutate(undefined);
-      }, 500);
+      }, 1000);
       return () => clearTimeout(timeoutId);
     }
   }, [
-    newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric, historicPropertyMultiplier,
-    newConstructionTarget, remodelTarget, shellShareOverride, interiorShareOverride, landscapeShareOverride,
+    newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric,
+    newConstructionTargetCost, remodelTargetCost, shellShareOverride, interiorShareOverride, landscapeShareOverride,
     architecturePercentage, interiorDesignPercentage, landscapePercentage,
     structuralPercentage, civilPercentage, mechanicalPercentage,
-    electricalPercentage, plumbingPercentage, telecomPercentage, telecomShareOverride,
-    categoryMultiplier, coordinationFeePercent, useNonLinearHours, hoursPerSqFt,
-    laborRate, overheadRate, markupFactor, discountPercent, discountRate,
+    electricalPercentage, plumbingPercentage, telecomPercentage,
+    categoryMultiplier, coordinationFeePercent, useNonLinearHours,
     disciplineInhouse, scanToBimEnabled, scanToBimArea, scanToBimRate, autoRecalc
   ]);
 
@@ -567,14 +582,14 @@ export default function ProjectDashboardV2() {
   }
 
   const { project, calculations, fees, hours } = data;
-  
+
   // Calculate totals
   const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
   const totalLouisAmyFee = fees.reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
   const totalCoordinationFee = fees.reduce((sum, f) => sum + parseFloat(f.coordinationFee || '0'), 0);
   const totalConsultantFee = fees.reduce((sum, f) => sum + parseFloat(f.consultantFee || '0'), 0);
-  const totalHours = fees.reduce((sum, f) => sum + parseFloat(f.hours || '0'), 0);
-  
+  const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
+
   // Calculate Working Minimum Budget
   const workingMinimumBudget = 
     parseFloat(calculations.shellBudgetTotal) + 
@@ -649,17 +664,17 @@ export default function ProjectDashboardV2() {
                     <Info className="h-3 w-3 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-xs">New: {formatCurrency(calculations.newBudget)}</p>
-                    <p className="text-xs">Remodel: {formatCurrency(calculations.remodelBudget)}</p>
+                    <p className="text-xs">New: {formatCurrency(calculatedNewBudget)}</p>
+                    <p className="text-xs">Remodel: {formatCurrency(calculatedRemodelBudget)}</p>
                   </TooltipContent>
                 </UITooltip>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(calculations.totalBudget)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(calculatedTotalBudget)}</div>
             </CardContent>
           </Card>
-          
+
           <Card className="border-l-4 border-l-green-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center justify-between">
@@ -670,7 +685,7 @@ export default function ProjectDashboardV2() {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="text-xs font-semibold mb-1">Market Fee Calculation:</p>
-                    <p className="text-xs">Base Fee: {formatPercent(totalMarketFee / parseFloat(calculations.totalBudget))}</p>
+                    <p className="text-xs">Base Fee: {formatPercent(totalMarketFee / parseFloat(calculatedTotalBudget.toString() || "1"))}</p>
                     <p className="text-xs">Category Multiplier: {categoryMultiplier || project.category}</p>
                     <p className="text-xs">Remodel Factor: {formatPercent(remodelMultiplier)}</p>
                   </TooltipContent>
@@ -681,7 +696,7 @@ export default function ProjectDashboardV2() {
               <div className="text-2xl font-bold">{formatCurrency(totalMarketFee)}</div>
             </CardContent>
           </Card>
-          
+
           <Card className="border-l-4 border-l-orange-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center justify-between">
@@ -703,7 +718,7 @@ export default function ProjectDashboardV2() {
               <div className="text-2xl font-bold">{formatCurrency(totalLouisAmyFee)}</div>
             </CardContent>
           </Card>
-          
+
           <Card className="border-l-4 border-l-purple-500">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center justify-between">
@@ -764,7 +779,7 @@ export default function ProjectDashboardV2() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Existing Building Area (ft²)</Label>
                     <div className="flex gap-2">
@@ -784,7 +799,7 @@ export default function ProjectDashboardV2() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label>Site Area (m²)</Label>
                     <div className="flex gap-2">
@@ -813,17 +828,17 @@ export default function ProjectDashboardV2() {
                   <CostRangeSlider
                     label="New Construction Target"
                     min={parseFloat(calculations.newCostMin)}
-                    target={newConstructionTarget || parseFloat(calculations.newCostTarget)}
+                    target={newConstructionTarget}
                     max={parseFloat(calculations.newCostMax)}
-                    onChange={setNewConstructionTarget}
+                    onChange={setNewConstructionTargetCost}
                   />
-                  
+
                   <CostRangeSlider
                     label="Remodel Target"
                     min={parseFloat(calculations.remodelCostMin)}
-                    target={remodelTarget || parseFloat(calculations.remodelCostTarget)}
+                    target={remodelTarget}
                     max={parseFloat(calculations.remodelCostMax)}
-                    onChange={setRemodelTarget}
+                    onChange={setRemodelTargetCost}
                   />
                 </div>
 
@@ -847,7 +862,7 @@ export default function ProjectDashboardV2() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 rounded-lg bg-amber-50 border border-amber-200">
                     <div className="flex items-center gap-3">
                       <Building className="h-5 w-5 text-amber-600" />
@@ -892,24 +907,24 @@ export default function ProjectDashboardV2() {
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">New Construction Budget</span>
-                        <Badge>{formatPercent(parseFloat(calculations.newBudget) / parseFloat(calculations.totalBudget))}</Badge>
+                        <Badge>{formatPercent(calculatedNewBudget / parseFloat(calculatedTotalBudget.toString() || "1"))}</Badge>
                       </div>
-                      <div className="text-2xl font-bold text-blue-700">{formatCurrency(calculations.newBudget)}</div>
+                      <div className="text-2xl font-bold text-blue-700">{formatCurrency(calculatedNewBudget)}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {formatNumber(newBuildingArea)} ft² × {formatCurrency(newConstructionTarget || parseFloat(calculations.newCostTarget))}/ft²
+                        {formatNumber(newBuildingArea)} ft² × {formatCurrency(newConstructionTarget)}/ft²
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <Card className="bg-green-50 border-green-200">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium">Remodel Budget</span>
-                        <Badge>{formatPercent(parseFloat(calculations.remodelBudget) / parseFloat(calculations.totalBudget))}</Badge>
+                        <Badge>{formatPercent(calculatedRemodelBudget / parseFloat(calculatedTotalBudget.toString() || "1"))}</Badge>
                       </div>
-                      <div className="text-2xl font-bold text-green-700">{formatCurrency(calculations.remodelBudget)}</div>
+                      <div className="text-2xl font-bold text-green-700">{formatCurrency(calculatedRemodelBudget)}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {formatNumber(existingBuildingArea)} ft² × {formatCurrency(remodelTarget || parseFloat(calculations.remodelCostTarget))}/ft²
+                        {formatNumber(existingBuildingArea)} ft² × {formatCurrency(remodelTarget)}/ft²
                       </div>
                     </CardContent>
                   </Card>
@@ -926,7 +941,7 @@ export default function ProjectDashboardV2() {
                       Working Minimum Budget: {formatCurrency(workingMinimumBudget)}
                     </div>
                   </div>
-                  
+
                   <div className="grid gap-4">
                     {/* Shell Budget */}
                     <div className="p-4 rounded-lg border bg-card">
@@ -1089,18 +1104,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-violet-700 dark:text-violet-400 mb-2">
                   {formatCurrency(parseFloat(calculations.architectureBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.architectureBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.architectureBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.architectureBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1136,18 +1141,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">
                   {formatCurrency(parseFloat(calculations.structuralBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.structuralBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.structuralBudget || "0") * existingBuildingArea * remodelMultiplier) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1183,18 +1178,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-orange-700 dark:text-orange-400 mb-2">
                   {formatCurrency(parseFloat(calculations.civilBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.civilBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.civilBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1230,18 +1215,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-red-700 dark:text-red-400 mb-2">
                   {formatCurrency(parseFloat(calculations.mechanicalBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.mechanicalBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.mechanicalBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1277,18 +1252,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-yellow-700 dark:text-yellow-400 mb-2">
                   {formatCurrency(parseFloat(calculations.electricalBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.electricalBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.electricalBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1324,18 +1289,8 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-purple-700 dark:text-purple-400 mb-2">
                   {formatCurrency(parseFloat(calculations.plumbingBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.plumbingBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.plumbingBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
@@ -1371,25 +1326,15 @@ export default function ProjectDashboardV2() {
                 <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">
                   {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
                 </div>
-                <div className="text-xs text-muted-foreground mb-2">
+                <div className="text-xs text-muted-foreground mb-3">
                   {((parseFloat(calculations.telecomBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="grid grid-cols-2 gap-1 mb-2">
-                  <div className="p-1 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">New</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.telecomBudget || "0") * newBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
-                  <div className="p-1 bg-green-50 dark:bg-green-900/20 rounded text-xs">
-                    <div className="text-muted-foreground">Remodel</div>
-                    <div className="font-medium">{formatCurrency((parseFloat(calculations.telecomBudget || "0") * existingBuildingArea) / (newBuildingArea + existingBuildingArea || 1))}</div>
-                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label className="text-xs">% Override</Label>
                   <Input
                     type="number"
-                    value={telecomPercentage ? telecomPercentage * 100 : ''}
-                    onChange={(e) => setTelecomPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                    value={telecomShareOverride ? telecomShareOverride * 100 : ''}
+                    onChange={(e) => setTelecomShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
                     placeholder="Auto"
                     className="w-16 h-6 text-xs"
                     min={0}
@@ -1414,7 +1359,7 @@ export default function ProjectDashboardV2() {
                 <TabsTrigger value="topdown">Top-Down Analysis</TabsTrigger>
                 <TabsTrigger value="bottomup">Bottom-Up Calculation</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="topdown" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -1435,7 +1380,7 @@ export default function ProjectDashboardV2() {
                       {formatCurrency(totalMarketFee)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatPercent(totalMarketFee / parseFloat(calculations.totalBudget || "1"))} of construction
+                      {formatPercent(totalMarketFee / parseFloat(calculatedTotalBudget.toString() || "1"))} of construction
                     </div>
                   </div>
 
@@ -1457,7 +1402,7 @@ export default function ProjectDashboardV2() {
                       {formatCurrency(totalLouisAmyFee)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatPercent(totalLouisAmyFee / parseFloat(calculations.totalBudget || "1"))} of construction
+                      {formatPercent(totalLouisAmyFee / parseFloat(calculatedTotalBudget.toString() || "1"))} of construction
                     </div>
                   </div>
                 </div>
@@ -1474,7 +1419,7 @@ export default function ProjectDashboardV2() {
                         type="number"
                         value={coordinationFeePercent}
                         onChange={(e) => setCoordinationFeePercent(parseFloat(e.target.value))}
-                        className="w-16 h-6 text-xs"
+                        className="w-16 h-8 text-xs"
                         min={10}
                         max={25}
                         step={1}
@@ -1482,7 +1427,7 @@ export default function ProjectDashboardV2() {
                       <span className="text-xs text-muted-foreground">%</span>
                     </div>
                   </div>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -1521,7 +1466,7 @@ export default function ProjectDashboardV2() {
                       <tfoot>
                         <tr className="border-t-2 font-semibold">
                           <td className="py-2">TOTAL</td>
-                          <td className="text-right py-2">{formatPercent(totalMarketFee / parseFloat(calculations.totalBudget || "1"))}</td>
+                          <td className="text-right py-2">{formatPercent(totalMarketFee / parseFloat(calculatedTotalBudget.toString() || "1"))}</td>
                           <td className="text-right py-2">${formatNumber(totalMarketFee / (newBuildingArea + existingBuildingArea || 1), 2)}</td>
                           <td className="text-right py-2">{formatCurrency(totalMarketFee)}</td>
                           <td className="text-right py-2">{formatCurrency(totalLouisAmyFee)}</td>
@@ -1618,7 +1563,7 @@ export default function ProjectDashboardV2() {
                         {totalHours.toFixed(0)} hrs
                       </span>
                     </div>
-                    
+
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">× Labor Rate</span>
@@ -1629,7 +1574,7 @@ export default function ProjectDashboardV2() {
                         <span className="font-medium">{formatCurrency(totalHours * laborRate)}</span>
                       </div>
                     </div>
-                    
+
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">+ Overhead</span>
@@ -1640,7 +1585,7 @@ export default function ProjectDashboardV2() {
                         <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate))}</span>
                       </div>
                     </div>
-                    
+
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">× Markup</span>
@@ -1651,7 +1596,7 @@ export default function ProjectDashboardV2() {
                         <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor)}</span>
                       </div>
                     </div>
-                    
+
                     {discountPercent > 0 && (
                       <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                         <div className="flex justify-between items-center">
@@ -1660,9 +1605,9 @@ export default function ProjectDashboardV2() {
                         </div>
                       </div>
                     )}
-                    
+
                     <Separator className="my-3" />
-                    
+
                     <div className="flex justify-between items-center pt-2">
                       <span className="font-semibold">Bottom-Up Fee</span>
                       <span className="text-2xl font-bold text-green-600">
@@ -1874,399 +1819,6 @@ export default function ProjectDashboardV2() {
           </CardContent>
         </Card>
 
-        {/* Visual Budget Analysis Charts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Visual Budget Analysis</CardTitle>
-            <CardDescription>Interactive charts for budget and fee visualization</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="budget" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="budget">Budget Breakdown</TabsTrigger>
-                <TabsTrigger value="fees">Fee Analysis</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="budget" className="space-y-4 mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Budget Distribution Donut Chart */}
-                  <div className="p-4 border rounded-lg">
-                    <Label className="text-sm font-semibold mb-3 block">Overall Budget Distribution</Label>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={[
-                            { name: 'Shell', value: parseFloat(calculations.shellBudgetTotal || "0") },
-                            { name: 'Interior', value: parseFloat(calculations.interiorBudgetTotal || "0") },
-                            { name: 'Landscape', value: parseFloat(calculations.landscapeBudgetTotal || "0") }
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          <Cell fill="#8b5cf6" />
-                          <Cell fill="#3b82f6" />
-                          <Cell fill="#10b981" />
-                        </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                    <div className="flex justify-center gap-4 mt-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-purple-500 rounded-full" />
-                        <span className="text-xs">Shell</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                        <span className="text-xs">Interior</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full" />
-                        <span className="text-xs">Landscape</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Engineering Disciplines Donut Chart */}
-                  <div className="p-4 border rounded-lg">
-                    <Label className="text-sm font-semibold mb-3 block">Engineering Disciplines</Label>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={[
-                            { name: 'Architecture', value: parseFloat(calculations.architectureBudget || "0") },
-                            { name: 'Structural', value: parseFloat(calculations.structuralBudget || "0") },
-                            { name: 'Civil', value: parseFloat(calculations.civilBudget || "0") },
-                            { name: 'Mechanical', value: parseFloat(calculations.mechanicalBudget || "0") },
-                            { name: 'Electrical', value: parseFloat(calculations.electricalBudget || "0") },
-                            { name: 'Plumbing', value: parseFloat(calculations.plumbingBudget || "0") },
-                            { name: 'Telecom', value: parseFloat(calculations.telecomBudget || "0") }
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={2}
-                          dataKey="value"
-                        >
-                          <Cell fill="#9333ea" />
-                          <Cell fill="#16a34a" />
-                          <Cell fill="#ea580c" />
-                          <Cell fill="#dc2626" />
-                          <Cell fill="#ca8a04" />
-                          <Cell fill="#7c3aed" />
-                          <Cell fill="#2563eb" />
-                        </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                    <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-purple-600 rounded-full" />
-                        <span>Architecture</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-600 rounded-full" />
-                        <span>Structural</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-orange-600 rounded-full" />
-                        <span>Civil</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-red-600 rounded-full" />
-                        <span>Mechanical</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-yellow-600 rounded-full" />
-                        <span>Electrical</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-violet-600 rounded-full" />
-                        <span>Plumbing</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                        <span>Telecom</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* New vs Remodel Stacked Bar Chart */}
-                <div className="p-4 border rounded-lg">
-                  <Label className="text-sm font-semibold mb-3 block">New Construction vs Remodel Budget</Label>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart
-                      data={[
-                        {
-                          name: 'Shell',
-                          new: parseFloat(calculations.shellBudgetTotal || "0") * (newBuildingArea / (newBuildingArea + existingBuildingArea || 1)),
-                          remodel: parseFloat(calculations.shellBudgetTotal || "0") * (existingBuildingArea / (newBuildingArea + existingBuildingArea || 1))
-                        },
-                        {
-                          name: 'Interior',
-                          new: parseFloat(calculations.interiorBudgetTotal || "0") * (newBuildingArea / (newBuildingArea + existingBuildingArea || 1)),
-                          remodel: parseFloat(calculations.interiorBudgetTotal || "0") * (existingBuildingArea / (newBuildingArea + existingBuildingArea || 1))
-                        },
-                        {
-                          name: 'Landscape',
-                          new: parseFloat(calculations.landscapeBudgetTotal || "0") * (newBuildingArea / (newBuildingArea + existingBuildingArea || 1)),
-                          remodel: parseFloat(calculations.landscapeBudgetTotal || "0") * (existingBuildingArea / (newBuildingArea + existingBuildingArea || 1))
-                        }
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      <Bar dataKey="new" stackId="a" fill="#3b82f6" />
-                      <Bar dataKey="remodel" stackId="a" fill="#10b981" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                      <span className="text-xs">New Construction</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full" />
-                      <span className="text-xs">Remodel</span>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="fees" className="space-y-4 mt-4">
-                {/* Fee Distribution Bar Chart */}
-                <div className="p-4 border rounded-lg">
-                  <Label className="text-sm font-semibold mb-3 block">Fee Distribution by Discipline</Label>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={[
-                        { discipline: 'Arch', inHouse: fees?.architecture?.louisAmyFee || 0, outsourced: fees?.architecture?.consultantFee || 0 },
-                        { discipline: 'Interior', inHouse: fees?.interiorDesign?.louisAmyFee || 0, outsourced: fees?.interiorDesign?.consultantFee || 0 },
-                        { discipline: 'Landscape', inHouse: fees?.landscape?.louisAmyFee || 0, outsourced: fees?.landscape?.consultantFee || 0 },
-                        { discipline: 'Structural', inHouse: fees?.structural?.louisAmyFee || 0, outsourced: fees?.structural?.consultantFee || 0 },
-                        { discipline: 'Civil', inHouse: fees?.civil?.louisAmyFee || 0, outsourced: fees?.civil?.consultantFee || 0 },
-                        { discipline: 'Mech', inHouse: fees?.mechanical?.louisAmyFee || 0, outsourced: fees?.mechanical?.consultantFee || 0 },
-                        { discipline: 'Elec', inHouse: fees?.electrical?.louisAmyFee || 0, outsourced: fees?.electrical?.consultantFee || 0 },
-                        { discipline: 'Plumb', inHouse: fees?.plumbing?.louisAmyFee || 0, outsourced: fees?.plumbing?.consultantFee || 0 },
-                        { discipline: 'Telecom', inHouse: fees?.telecom?.louisAmyFee || 0, outsourced: fees?.telecom?.consultantFee || 0 }
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="discipline" />
-                      <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      <Bar dataKey="inHouse" stackId="a" fill="#22c55e" />
-                      <Bar dataKey="outsourced" stackId="a" fill="#f97316" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full" />
-                      <span className="text-xs">In-House Fee</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full" />
-                      <span className="text-xs">Consultant Fee</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hourly Rate Impact Chart */}
-                <div className="p-4 border rounded-lg">
-                  <Label className="text-sm font-semibold mb-3 block">Hourly Rate Impact Analysis</Label>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart
-                      data={[
-                        { rate: 30, fee: (hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0) * (30 + overheadRate) * markupFactor },
-                        { rate: 36, fee: (hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0) * (36 + overheadRate) * markupFactor },
-                        { rate: 42, fee: (hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0) * (42 + overheadRate) * markupFactor },
-                        { rate: 48, fee: (hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0) * (48 + overheadRate) * markupFactor },
-                        { rate: 54, fee: (hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0) * (54 + overheadRate) * markupFactor }
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="rate" label={{ value: 'Labor Rate ($/hr)', position: 'insideBottom', offset: -5 }} />
-                      <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                      <Line type="monotone" dataKey="fee" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6' }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <div className="text-xs text-muted-foreground text-center mt-2">
-                    Current rate: ${laborRate}/hr | Total fee impact based on labor rate changes
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Sanity Check & Contract Price Comparison */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Sanity Check & Contract Price Comparison</CardTitle>
-            <CardDescription>Market price validation and contract rate analysis</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Hours per ft² Sanity Check */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-blue-600" />
-                    <Label className="text-sm font-semibold">Hours per Square Foot Analysis</Label>
-                  </div>
-                  <Badge variant={(() => {
-                    const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
-                    const totalArea = newBuildingArea + existingBuildingArea;
-                    const hoursPerSqFtActual = totalArea > 0 ? totalHours / totalArea : 0;
-                    if (hoursPerSqFtActual < 0.3 || hoursPerSqFtActual > 1.5) return "destructive";
-                    if (hoursPerSqFtActual < 0.5 || hoursPerSqFtActual > 1.2) return "secondary";
-                    return "default";
-                  })()}>
-                    {(() => {
-                      const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
-                      const totalArea = newBuildingArea + existingBuildingArea;
-                      const hoursPerSqFtActual = totalArea > 0 ? totalHours / totalArea : 0;
-                      return `${hoursPerSqFtActual.toFixed(2)} hrs/ft²`;
-                    })()}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1">Low Threshold</div>
-                    <div className="text-lg font-bold text-red-600">0.3 hrs/ft²</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1">Optimal Range</div>
-                    <div className="text-lg font-bold text-green-600">0.5-1.0 hrs/ft²</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1">High Threshold</div>
-                    <div className="text-lg font-bold text-red-600">1.5 hrs/ft²</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Market vs Contract Price Comparison */}
-              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    <Label className="text-sm font-semibold">Market vs Contract Price Analysis</Label>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Market Rate (Top-Down)</div>
-                    <div className="text-xl font-bold text-green-600">{formatCurrency(totalMarketFee)}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatCurrency(totalMarketFee / (newBuildingArea + existingBuildingArea || 1))} per ft²
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Contract Price (Bottom-Up)</div>
-                    <div className="text-xl font-bold text-blue-600">
-                      {formatCurrency(totalLouisAmyFee * (1 - discountRate))}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatCurrency((totalLouisAmyFee * (1 - discountRate)) / (newBuildingArea + existingBuildingArea || 1))} per ft²
-                    </div>
-                  </div>
-                </div>
-                <Separator className="my-3" />
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">Contract Discount Override</Label>
-                    <div className="flex items-center gap-2">
-                      <Slider
-                        value={[discountRate * 100]}
-                        onValueChange={([v]) => setDiscountRate(v / 100)}
-                        min={0}
-                        max={30}
-                        step={1}
-                        className="w-32"
-                      />
-                      <Input
-                        type="number"
-                        value={(discountRate * 100).toFixed(0)}
-                        onChange={(e) => setDiscountRate(parseFloat(e.target.value) / 100)}
-                        className="w-16 h-7 text-xs"
-                        min={0}
-                        max={30}
-                        step={1}
-                      />
-                      <span className="text-xs">%</span>
-                    </div>
-                  </div>
-                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <span className="text-xs text-amber-800 dark:text-amber-200">
-                        Variance: {formatPercent(Math.abs((totalLouisAmyFee * (1 - discountRate) - totalMarketFee) / totalMarketFee))}
-                        {Math.abs((totalLouisAmyFee * (1 - discountRate) - totalMarketFee) / totalMarketFee) > 0.25 && ' - Consider adjusting rates'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Category Multiplier Override */}
-              <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-purple-600" />
-                    <Label className="text-sm font-semibold">Category Multiplier Override</Label>
-                  </div>
-                  <Badge variant="outline">
-                    Current: {categoryMultiplier?.toFixed(2) || 'Auto'}
-                  </Badge>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs flex-1">Override Multiplier</Label>
-                    <Slider
-                      value={[categoryMultiplier || 1.0]}
-                      onValueChange={([v]) => setCategoryMultiplier(v)}
-                      min={0.5}
-                      max={2.0}
-                      step={0.05}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      value={categoryMultiplier?.toFixed(2) || ''}
-                      onChange={(e) => setCategoryMultiplier(e.target.value ? parseFloat(e.target.value) : undefined)}
-                      placeholder="Auto"
-                      className="w-20 h-7 text-xs"
-                      min={0.5}
-                      max={2.0}
-                      step={0.05}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={() => setCategoryMultiplier(undefined)}
-                    >
-                      Reset
-                    </Button>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Adjusts construction cost multiplier based on project category complexity
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Hours Distribution */}
         <Card>
           <CardHeader>
@@ -2288,7 +1840,7 @@ export default function ProjectDashboardV2() {
                     )}
                   </div>
                   <div className="text-3xl font-bold text-purple-600">
-                    {hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0).toFixed(0) : "0"} hrs
+                    {formatNumber(totalHours, 0)} hrs
                   </div>
                 </div>
               </div>
@@ -2300,28 +1852,28 @@ export default function ProjectDashboardV2() {
                   const totalArea = newBuildingArea + existingBuildingArea;
                   const hoursPerSqFtActual = totalArea > 0 ? totalHours / totalArea : 0;
                   const warnings = [];
-                  
+
                   if (hoursPerSqFtActual < 0.2) {
                     warnings.push({ level: 'error', message: 'Hours per ft² is unusually low (< 0.2)' });
                   } else if (hoursPerSqFtActual < 0.3) {
                     warnings.push({ level: 'warning', message: 'Hours per ft² is low (< 0.3)' });
                   }
-                  
+
                   if (hoursPerSqFtActual > 2.0) {
                     warnings.push({ level: 'error', message: 'Hours per ft² is unusually high (> 2.0)' });
                   } else if (hoursPerSqFtActual > 1.5) {
                     warnings.push({ level: 'warning', message: 'Hours per ft² is high (> 1.5)' });
                   }
-                  
+
                   const bottomUpFee = totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent);
-                  const variance = Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee);
-                  
+                  const variance = totalMarketFee ? Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee) : 0;
+
                   if (variance > 0.5) {
                     warnings.push({ level: 'error', message: `Fee variance exceeds 50% (${(variance * 100).toFixed(0)}%)` });
                   } else if (variance > 0.25) {
                     warnings.push({ level: 'warning', message: `Fee variance exceeds 25% (${(variance * 100).toFixed(0)}%)` });
                   }
-                  
+
                   return warnings.length > 0 ? (
                     <div className="space-y-2">
                       {warnings.map((warning, idx) => (
@@ -2377,7 +1929,7 @@ export default function ProjectDashboardV2() {
                             <td className="border p-2 text-xs font-medium">{hour.phase}</td>
                             <td className="border p-2 text-right text-xs">{parseFloat(hour.totalHours).toFixed(0)}</td>
                             <td className="border p-2 text-right text-xs">
-                              {((parseFloat(hour.totalHours) / totalProjectHours) * 100).toFixed(0)}%
+                              {totalProjectHours > 0 ? ((parseFloat(hour.totalHours) / totalProjectHours) * 100).toFixed(0) : '0'}%
                             </td>
                             <td className="border p-2 text-right text-xs">{parseFloat(hour.designer1Hours || '0').toFixed(0)}</td>
                             <td className="border p-2 text-right text-xs">{parseFloat(hour.designer2Hours || '0').toFixed(0)}</td>
@@ -2432,7 +1984,7 @@ export default function ProjectDashboardV2() {
                     ) || 0;
                     const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 1;
                     const percentage = (roleHours / totalHours) * 100;
-                    
+
                     return (
                       <div key={role.label} className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -2485,7 +2037,7 @@ export default function ProjectDashboardV2() {
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <span className="text-xs">Effective Rate</span>
                     <span className="text-sm font-bold">
-                      {((newBuildingArea + existingBuildingArea) * hoursPerSqFt).toFixed(0)} hrs
+                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt, 0)} hrs
                     </span>
                   </div>
                 </div>
