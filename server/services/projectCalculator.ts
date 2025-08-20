@@ -259,7 +259,18 @@ export class ProjectCalculatorService {
     // Get engineering percentages with exact Excel formulas
     const engineeringPercentages = await this.getEngineeringPercentages(input);
     
+    // Calculate architecture share as per Excel: 1 - (sum of all engineering percentages)
+    const totalEngineeringPercentage = engineeringPercentages.structural + engineeringPercentages.civil +
+                                       engineeringPercentages.mechanical + engineeringPercentages.electrical +
+                                       engineeringPercentages.plumbing + engineeringPercentages.telecom;
+    const architecturePercentage = Math.max(0, 1 - totalEngineeringPercentage);
+    
     // Calculate engineering budgets with proper new/remodel split
+    // Architecture uses its calculated percentage
+    const architectureBudgetNew = shellBudgetNew * architecturePercentage;
+    const architectureBudgetRemodel = shellBudgetRemodel * architecturePercentage * input.remodelMultiplier;
+    const architectureBudget = architectureBudgetNew + architectureBudgetRemodel;
+    
     // CRITICAL: Only structural gets remodel reduction, others don't
     const structuralBudgetNew = shellBudgetNew * engineeringPercentages.structural;
     const structuralBudgetRemodel = shellBudgetRemodel * engineeringPercentages.structural * input.remodelMultiplier;
@@ -284,10 +295,6 @@ export class ProjectCalculatorService {
     const telecomBudgetNew = shellBudgetNew * engineeringPercentages.telecom;
     const telecomBudgetRemodel = shellBudgetRemodel * engineeringPercentages.telecom; // NO reduction
     const telecomBudget = telecomBudgetNew + telecomBudgetRemodel;
-    
-    // Architecture budget = Shell budget MINUS all engineering budgets
-    const totalEngineeringBudget = structuralBudget + civilBudget + mechanicalBudget + electricalBudget + plumbingBudget + telecomBudget;
-    const architectureBudget = shellBudgetTotal - totalEngineeringBudget;
     
     return {
       id: '', // Will be set by database
@@ -378,6 +385,10 @@ export class ProjectCalculatorService {
     const newBudget = parseFloat(calculations.newBudget);
     const remodelBudget = parseFloat(calculations.remodelBudget);
     const totalBudget = parseFloat(calculations.totalBudget);
+    
+    // Calculate new construction and remodel shares for fee weighting
+    const newConstructionShare = totalBudget > 0 ? newBudget / totalBudget : 0;
+    const remodelShare = totalBudget > 0 ? remodelBudget / totalBudget : 0;
     
     // Scan to BIM fees
     if (input.existingBuildingArea > 0) {
@@ -477,24 +488,44 @@ export class ProjectCalculatorService {
     ];
     
     for (const disc of disciplines) {
-      // Architecture should use higher fee percentage according to spreadsheet analysis
-      let basePercentage = 0.07; // Default 7% base
+      let feePercentage: number;
+      let marketFee: number;
+      
+      // Use exact Excel formulas for fee calculations
+      const budgetInMillions = disc.budget / 1000000;
+      const baseFeeFormula = 0.07498 + 0.007824 * Math.pow(budgetInMillions, -0.7495);
       
       if (disc.scope.includes('Architecture')) {
-        // Architecture fee should be approximately 28% based on spreadsheet analysis 
-        // ($118,000 on $418,687 budget = 28.2%)
-        basePercentage = 0.282;
-      } else if (disc.scope.includes('Interior')) {
-        basePercentage = 0.06;
-      } else if (disc.scope.includes('Landscape')) {
-        basePercentage = 0.05;
+        // Excel formula for Architecture (Line 114):
+        // ((((0.07498+0.007824*(Budget/1M)^(-0.7495))*(CategoryMultiplier)*(NewShare*0.95)+
+        // ((0.07498+0.007824*(Budget/1M)^(-0.7495))*(CategoryMultiplier)*(RemodelShare*1.05))/TotalBudget)*(1+(1-RemodelMultiplier))
+        const shellBudget = parseFloat(calculations.shellBudgetTotal);
+        const shellBudgetInMillions = shellBudget / 1000000;
+        const shellFeeFormula = 0.07498 + 0.007824 * Math.pow(shellBudgetInMillions, -0.7495);
+        
+        const newWeightedFee = shellFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
+        const remodelWeightedFee = shellFeeFormula * categoryMultiplier * remodelShare * 1.05;
+        
+        feePercentage = ((newWeightedFee + remodelWeightedFee) * shellBudget / totalBudget) * (1 + (1 - input.remodelMultiplier));
+        marketFee = feePercentage * disc.budget;
+      } else if (disc.scope.includes('Interior') || disc.scope.includes('Landscape')) {
+        // Interior and Landscape use similar formula with new/remodel weighting
+        const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
+        const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
+        
+        feePercentage = ((newWeightedFee + remodelWeightedFee) * disc.budget / totalBudget) * (1 + (1 - input.remodelMultiplier));
+        marketFee = feePercentage * disc.budget;
       } else {
-        // Engineering disciplines - simpler percentage based on curve
-        basePercentage = 0.07498 + 0.007824 * Math.pow(disc.budget / 1000000, -0.7495);
+        // Engineering disciplines use formula without the (1+(1-remodelMultiplier)) factor
+        const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
+        const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
+        
+        feePercentage = (newWeightedFee + remodelWeightedFee) * disc.budget / totalBudget;
+        marketFee = feePercentage * disc.budget;
       }
       
       // Apply fee adjustment (discount or premium)
-      const adjustedMarketFee = basePercentage * disc.budget * disc.feeAdjustment;
+      const adjustedMarketFee = marketFee * disc.feeAdjustment;
       const louisAmyFee = disc.isInhouse ? adjustedMarketFee : 0;
       const coordinationFee = disc.isInhouse ? 0 : adjustedMarketFee * this.COORDINATION_FEE_PERCENT;
       const consultantFee = disc.isInhouse ? 0 : adjustedMarketFee;
@@ -503,7 +534,7 @@ export class ProjectCalculatorService {
         id: '',
         projectId: project.id,
         scope: disc.scope,
-        percentOfCost: basePercentage.toString(),
+        percentOfCost: feePercentage.toString(),
         ratePerSqFt: (adjustedMarketFee / totalArea).toString(),
         marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
@@ -524,27 +555,35 @@ export class ProjectCalculatorService {
   ): Promise<ProjectHours[]> {
     const hours: ProjectHours[] = [];
     
-    // Calculate total hours from fees
-    const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
+    // Get category multiplier for hours calculation
+    const categoryMultiplier = await this.getCategoryMultiplier(project.category);
     
-    // Non-linear hours formula
-    const useNonLinearFormula = project.useNonLinearHours ?? false;
+    // Calculate hours using exact Excel formulas (Lines 141-144)
+    const newArea = parseFloat(project.newBuildingArea);
+    const existingArea = parseFloat(project.existingBuildingArea);
+    const totalArea = newArea + existingArea;
+    
     let totalLAHours: number;
     
-    if (useNonLinearFormula) {
-      // Non-linear formula: hours = baseHours * (1 + ln(totalFee / baseFee))
-      const baseHours = 1000;
-      const baseFee = 100000;
-      const totalInhouseFee = fees
-        .filter(f => f.isInhouse)
-        .reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
+    if (project.useNonLinearHours ?? false) {
+      // Use Excel non-linear hours factor formula
+      // New Construction Hours Factor = (0.21767+11.21274*((Area)^-0.53816)-0.08)*CategoryMultiplier*0.9
+      // Existing Hours Factor = (0.21767+11.21274*((Area)^-0.53816)-0.08)*CategoryMultiplier*0.8
       
-      if (totalInhouseFee > 0) {
-        totalLAHours = baseHours * (1 + Math.log(totalInhouseFee / baseFee));
-        totalLAHours = Math.max(0, totalLAHours); // Ensure non-negative
-      } else {
-        totalLAHours = 0;
+      let newConstructionHours = 0;
+      let existingRemodelHours = 0;
+      
+      if (newArea > 0) {
+        const newHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.9;
+        newConstructionHours = newHoursFactor * newArea;
       }
+      
+      if (existingArea > 0) {
+        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.8;
+        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // Excel has 1.15 multiplier for remodel
+      }
+      
+      totalLAHours = newConstructionHours + existingRemodelHours;
     } else {
       // Linear formula: hours based on fee / rate
       totalLAHours = fees

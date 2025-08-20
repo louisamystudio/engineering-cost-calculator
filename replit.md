@@ -2,7 +2,7 @@
 
 This is a comprehensive engineering cost calculator web application that provides sophisticated budget analysis and fee calculations for construction projects. The application features a multi-step project creation wizard, interactive dashboards with real-time calculation updates, and full database integration for project storage and reporting. It's built as a full-stack TypeScript application with a React frontend and Express backend, using PostgreSQL for data persistence.
 
-## Recent Updates (August 2025)
+## Recent Updates (August 2025 - January 2025)
 - Completed comprehensive database migration to "Custom_Residential_CostS_DB_CLEAN_v3" structure
 - Updated from simple tier-based system to detailed building type classification system
 - Calculator now supports: Custom Houses, Public Social Housing, Private Housing Development, Multifamily Apartments
@@ -34,6 +34,14 @@ This is a comprehensive engineering cost calculator web application that provide
   - Plan addresses: moving overrides to dashboard, providing context for fees, matching Excel structure
   - Key improvements planned: interactive cost-range bars, grouped sections following spreadsheet flow, top-down and bottom-up fee analysis tabs
   - Focus on making app an interactive data-driven calculator rather than static report
+- **Formula Alignment Audit & Fixes** (January 2025):
+  - Conducted comprehensive formula audit against Excel spreadsheet revealing critical calculation discrepancies
+  - Fixed Architecture fee formula: Now uses exact Excel formula with category multiplier and new/remodel weighting factors instead of hardcoded 28.2%
+  - Fixed Engineering fee formulas: Added 0.95/1.05 weighting factors for new construction vs remodel
+  - Fixed Hours calculation: Implemented exact Excel formula `(0.21767+11.21274*(Area^-0.53816)-0.08)*CategoryMultiplier*0.9` for new construction
+  - Fixed Architecture percentage calculation: Now properly calculated as `1 - (sum of engineering percentages)` as per Excel
+  - All fee calculations now include proper remodel multiplier application and weighting factors
+  - Formulas verified to match Excel spreadsheet logic exactly for mathematical accuracy
 
 # User Preferences
 
