@@ -24,7 +24,7 @@ export const buildingCostData = pgTable("building_cost_data_v6", {
   buildingType: text("building_type").notNull(),
   category: integer("category").notNull(),
   buildingTier: text("building_tier").notNull(),
-  
+
   // Shell costs ($/ft²) - All-in
   shellNewMin: decimal("shell_new_min", { precision: 8, scale: 2 }).notNull(),
   shellRemodelMin: decimal("shell_remodel_min", { precision: 8, scale: 2 }).notNull(),
@@ -32,7 +32,7 @@ export const buildingCostData = pgTable("building_cost_data_v6", {
   shellRemodelTarget: decimal("shell_remodel_target", { precision: 8, scale: 2 }).notNull(),
   shellNewMax: decimal("shell_new_max", { precision: 8, scale: 2 }).notNull(),
   shellRemodelMax: decimal("shell_remodel_max", { precision: 8, scale: 2 }).notNull(),
-  
+
   // Interior costs ($/ft²) - All-in
   interiorNewMin: decimal("interior_new_min", { precision: 8, scale: 2 }).notNull(),
   interiorRemodelMin: decimal("interior_remodel_min", { precision: 8, scale: 2 }).notNull(),
@@ -40,7 +40,7 @@ export const buildingCostData = pgTable("building_cost_data_v6", {
   interiorRemodelTarget: decimal("interior_remodel_target", { precision: 8, scale: 2 }).notNull(),
   interiorNewMax: decimal("interior_new_max", { precision: 8, scale: 2 }).notNull(),
   interiorRemodelMax: decimal("interior_remodel_max", { precision: 8, scale: 2 }).notNull(),
-  
+
   // Outdoor & Landscape costs ($/ft²) - All-in
   outdoorNewMin: decimal("outdoor_new_min", { precision: 8, scale: 2 }).notNull(),
   outdoorRemodelMin: decimal("outdoor_remodel_min", { precision: 8, scale: 2 }).notNull(),
@@ -48,7 +48,7 @@ export const buildingCostData = pgTable("building_cost_data_v6", {
   outdoorRemodelTarget: decimal("outdoor_remodel_target", { precision: 8, scale: 2 }).notNull(),
   outdoorNewMax: decimal("outdoor_new_max", { precision: 8, scale: 2 }).notNull(),
   outdoorRemodelMax: decimal("outdoor_remodel_max", { precision: 8, scale: 2 }).notNull(),
-  
+
   // Swimming Pool costs ($/ft²) - All-in
   poolNewMin: decimal("pool_new_min", { precision: 8, scale: 2 }).notNull(),
   poolRemodelMin: decimal("pool_remodel_min", { precision: 8, scale: 2 }).notNull(),
@@ -56,12 +56,12 @@ export const buildingCostData = pgTable("building_cost_data_v6", {
   poolRemodelTarget: decimal("pool_remodel_target", { precision: 8, scale: 2 }).notNull(),
   poolNewMax: decimal("pool_new_max", { precision: 8, scale: 2 }).notNull(),
   poolRemodelMax: decimal("pool_remodel_max", { precision: 8, scale: 2 }).notNull(),
-  
+
   // Project Shares (%)
   projectShellShare: decimal("project_shell_share", { precision: 5, scale: 2 }).notNull(),
   projectInteriorShare: decimal("project_interior_share", { precision: 5, scale: 2 }).notNull(),
   projectLandscapeShare: decimal("project_landscape_share", { precision: 5, scale: 2 }).notNull(),
-  
+
   // Design Shares (%)
   architecturalDesignShare: decimal("architectural_design_share", { precision: 5, scale: 2 }).notNull(),
   interiorDesignShare: decimal("interior_design_share", { precision: 5, scale: 2 }).notNull(),
@@ -347,6 +347,19 @@ export const projects = pgTable("projects", {
   scanToBimEnabled: boolean("scan_to_bim_enabled").default(false),
   scanToBimArea: decimal("scan_to_bim_area", { precision: 10, scale: 2 }).default("0"),
   scanToBimRate: decimal("scan_to_bim_rate", { precision: 10, scale: 4 }).default("0.5"),
+  // Additional overrides for calculation
+  architecturePercentageOverride: decimal("architecture_percentage_override", { precision: 5, scale: 4 }),
+  interiorDesignPercentageOverride: decimal("interior_design_percentage_override", { precision: 5, scale: 4 }),
+  landscapePercentageOverride: decimal("landscape_percentage_override", { precision: 5, scale: 4 }),
+  categoryOverride: integer("category_override"),
+  newConstructionTargetCostOverride: decimal("new_construction_target_cost_override", { precision: 10, scale: 2 }),
+  remodelTargetCostOverride: decimal("remodel_target_cost_override", { precision: 10, scale: 2 }),
+  structuralShareOverride: decimal("structural_share_override", { precision: 5, scale: 4 }),
+  civilShareOverride: decimal("civil_share_override", { precision: 5, scale: 4 }),
+  mechanicalShareOverride: decimal("mechanical_share_override", { precision: 5, scale: 4 }),
+  electricalShareOverride: decimal("electrical_share_override", { precision: 5, scale: 4 }),
+  plumbingShareOverride: decimal("plumbing_share_override", { precision: 5, scale: 4 }),
+  telecomShareOverride: decimal("telecom_share_override", { precision: 5, scale: 4 }),
 });
 
 // Project Calculations Table for storing calculation results
@@ -501,8 +514,17 @@ export const comprehensiveProjectInputSchema = z.object({
   architecturePercentageOverride: z.number().min(0).max(1).optional(),
   interiorDesignPercentageOverride: z.number().min(0).max(1).optional(),
   landscapePercentageOverride: z.number().min(0).max(1).optional(),
-  categoryMultiplier: z.number().optional(),
-  coordinationFeePercent: z.number().optional(),
+  categoryOverride: z.number().optional(),
+  newConstructionTargetCostOverride: z.number().optional(),
+  remodelTargetCostOverride: z.number().optional(),
+  structuralShareOverride: z.number().min(0).max(1).optional(),
+  civilShareOverride: z.number().min(0).max(1).optional(),
+  mechanicalShareOverride: z.number().min(0).max(1).optional(),
+  electricalShareOverride: z.number().min(0).max(1).optional(),
+  plumbingShareOverride: z.number().min(0).max(1).optional(),
+  telecomShareOverride: z.number().min(0).max(1).optional(),
+  // Coordination fee percentage
+  coordinationFeePercent: z.number().min(0).optional(),
 });
 
 export type ComprehensiveProjectInput = z.infer<typeof comprehensiveProjectInputSchema>;

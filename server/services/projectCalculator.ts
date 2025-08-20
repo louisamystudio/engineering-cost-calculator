@@ -224,6 +224,70 @@ export class ProjectCalculatorService {
     costData: any,
     categoryMultiplier: number
   ): Promise<ProjectCalculation> {
+    // Use exact Excel formulas from desired_logic.ts
+    const newCostMin = parseFloat(costData.allInMin) * input.historicMultiplier;
+    const newCostMax = parseFloat(costData.allInMax) * input.historicMultiplier;
+    const newCostTarget = input.newConstructionTargetCost || (newCostMin + newCostMax) / 2;
+    
+    const remodelCostMin = newCostMin * input.remodelMultiplier;
+    const remodelCostMax = newCostMax * input.remodelMultiplier;
+    const remodelCostTarget = input.remodelTargetCost || (remodelCostMin + remodelCostMax) / 2;
+    
+    // Calculate budgets using exact Excel logic
+    const newBudget = input.newBuildingArea * newCostTarget;
+    const remodelBudget = input.existingBuildingArea * remodelCostTarget;
+    const totalBudget = newBudget + remodelBudget;
+    
+    // Get share percentages with overrides
+    const shellShare = input.shellShareOverride || parseFloat(costData.archShare || '0.70');
+    const interiorShare = input.interiorShareOverride || parseFloat(costData.intShare || '0.20');
+    const landscapeShare = input.landscapeShareOverride || parseFloat(costData.landShare || '0.10');
+    
+    // Calculate category budgets with exact Excel splits
+    const shellBudgetNew = newBudget * shellShare;
+    const shellBudgetRemodel = remodelBudget * shellShare;
+    const shellBudgetTotal = shellBudgetNew + shellBudgetRemodel;
+    
+    const interiorBudgetNew = newBudget * interiorShare;
+    const interiorBudgetRemodel = remodelBudget * interiorShare;
+    const interiorBudgetTotal = interiorBudgetNew + interiorBudgetRemodel;
+    
+    const landscapeBudgetNew = newBudget * landscapeShare;
+    const landscapeBudgetRemodel = remodelBudget * landscapeShare;
+    const landscapeBudgetTotal = landscapeBudgetNew + landscapeBudgetRemodel;
+    
+    // Get engineering percentages with exact Excel formulas
+    const engineeringPercentages = await this.getEngineeringPercentages(input);
+    
+    // Calculate engineering budgets with proper new/remodel split
+    // CRITICAL: Only structural gets remodel reduction, others don't
+    const structuralBudgetNew = shellBudgetNew * engineeringPercentages.structural;
+    const structuralBudgetRemodel = shellBudgetRemodel * engineeringPercentages.structural * input.remodelMultiplier;
+    const structuralBudget = structuralBudgetNew + structuralBudgetRemodel;
+    
+    const civilBudgetNew = shellBudgetNew * engineeringPercentages.civil;
+    const civilBudgetRemodel = shellBudgetRemodel * engineeringPercentages.civil; // NO reduction
+    const civilBudget = civilBudgetNew + civilBudgetRemodel;
+    
+    const mechanicalBudgetNew = shellBudgetNew * engineeringPercentages.mechanical;
+    const mechanicalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.mechanical; // NO reduction
+    const mechanicalBudget = mechanicalBudgetNew + mechanicalBudgetRemodel;
+    
+    const electricalBudgetNew = shellBudgetNew * engineeringPercentages.electrical;
+    const electricalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.electrical; // NO reduction
+    const electricalBudget = electricalBudgetNew + electricalBudgetRemodel;
+    
+    const plumbingBudgetNew = shellBudgetNew * engineeringPercentages.plumbing;
+    const plumbingBudgetRemodel = shellBudgetRemodel * engineeringPercentages.plumbing; // NO reduction
+    const plumbingBudget = plumbingBudgetNew + plumbingBudgetRemodel;
+    
+    const telecomBudgetNew = shellBudgetNew * engineeringPercentages.telecom;
+    const telecomBudgetRemodel = shellBudgetRemodel * engineeringPercentages.telecom; // NO reduction
+    const telecomBudget = telecomBudgetNew + telecomBudgetRemodel;
+    
+    // Architecture budget = Shell budget MINUS all engineering budgets
+    const totalEngineeringBudget = structuralBudget + civilBudget + mechanicalBudget + electricalBudget + plumbingBudget + telecomBudget;
+    const architectureBudget = shellBudgetTotal - totalEngineeringBudget;
     // Calculate cost per square foot
     const newCostMin = parseFloat(costData.allInMin) * input.historicMultiplier;
     const newCostMax = parseFloat(costData.allInMax) * input.historicMultiplier;
