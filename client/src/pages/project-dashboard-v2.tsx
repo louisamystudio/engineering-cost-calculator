@@ -212,6 +212,13 @@ export default function ProjectDashboardV2() {
   // Additional UI state variables
   const [coordinationFeePercent, setCoordinationFeePercent] = useState<number>(15);
   const [presetName, setPresetName] = useState<string>('');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [useNonLinearHours, setUseNonLinearHours] = useState(false);
+  const [disciplineInhouse, setDisciplineInhouse] = useState<Record<string, boolean>>({});
+  const [scanToBimEnabled, setScanToBimEnabled] = useState(false);
+  const [scanToBimArea, setScanToBimArea] = useState(0);
+  const [scanToBimRate, setScanToBimRate] = useState(0.5);
+  const [hoursPerSqFt, setHoursPerSqFt] = useState(0.22);
   
   // Fetch project data
   const { data, isLoading, error } = useQuery<ProjectData>({
@@ -623,7 +630,7 @@ export default function ProjectDashboardV2() {
                   <TooltipContent className="max-w-xs">
                     <p className="text-xs font-semibold mb-1">Market Fee Calculation:</p>
                     <p className="text-xs">Base Fee: {formatPercent(totalMarketFee / parseFloat(calculatedTotalBudget.toString() || "1"))}</p>
-                    <p className="text-xs">Category Multiplier: {categoryMultiplier || project.category}</p>
+                    <p className="text-xs">Category: {project.category}</p>
                     <p className="text-xs">Remodel Factor: {formatPercent(remodelMultiplier)}</p>
                   </TooltipContent>
                 </UITooltip>
@@ -666,7 +673,7 @@ export default function ProjectDashboardV2() {
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <p className="text-xs font-semibold mb-1">Hours Calculation:</p>
-                    <p className="text-xs">Base Factor: {hoursFactorOverride || 0.31} hrs/ft²</p>
+                    <p className="text-xs">Base Factor: 0.31 hrs/ft²</p>
                     <p className="text-xs">Total Area: {formatNumber(newBuildingArea + existingBuildingArea)} ft²</p>
                     <p className="text-xs">Calculated: {formatNumber(totalHours, 0)} hours</p>
                   </TooltipContent>
@@ -1538,7 +1545,7 @@ export default function ProjectDashboardV2() {
                               message += ' (High)';
                             }
                             
-                            return <Alert variant={status as any}>
+                            return <Alert variant={status === 'error' ? 'destructive' : 'default'}>
                               <AlertCircle className="h-4 w-4" />
                               <AlertDescription>{message}</AlertDescription>
                             </Alert>;
@@ -1569,7 +1576,7 @@ export default function ProjectDashboardV2() {
                               message += ' (Normal)';
                             }
 
-                            return <Alert variant={status as any}>
+                            return <Alert variant={status === 'error' ? 'destructive' : 'default'}>
                               <Activity className="h-4 w-4" />
                               <AlertDescription>{message}</AlertDescription>
                             </Alert>;
@@ -1594,14 +1601,14 @@ export default function ProjectDashboardV2() {
                             ].filter(share => share.value === undefined || share.value === null);
 
                             if (missingShares.length > 0) {
-                              return <Alert variant="warning">
+                              return <Alert variant="destructive">
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertDescription>
                                   Please define share overrides for: {missingShares.map(s => s.label).join(', ')}.
                                 </AlertDescription>
                               </Alert>;
                             } else {
-                              return <Alert variant="success">
+                              return <Alert>
                                 <CheckCircle className="h-4 w-4" />
                                 <AlertDescription>All discipline share overrides are defined.</AlertDescription>
                               </Alert>;
@@ -1678,7 +1685,36 @@ export default function ProjectDashboardV2() {
                   type="file"
                   accept=".json"
                   className="hidden"
-                  onChange={(e) => importConfiguration(e)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (evt) => {
+                        try {
+                          const config = JSON.parse(evt.target?.result as string);
+                          // Apply imported configuration
+                          if (config.overrides) {
+                            setShellShareOverride(config.overrides.shellShareOverride);
+                            setInteriorShareOverride(config.overrides.interiorShareOverride);
+                            setLandscapeShareOverride(config.overrides.landscapeShareOverride);
+                            setStructuralShareOverride(config.overrides.structuralShareOverride);
+                            setCivilShareOverride(config.overrides.civilShareOverride);
+                            setMechanicalShareOverride(config.overrides.mechanicalShareOverride);
+                            setElectricalShareOverride(config.overrides.electricalShareOverride);
+                            setPlumbingShareOverride(config.overrides.plumbingShareOverride);
+                            setTelecomShareOverride(config.overrides.telecomShareOverride);
+                            setLaborRateOverride(config.overrides.laborRateOverride);
+                            setOverheadRateOverride(config.overrides.overheadRateOverride);
+                            setMarkupFactorOverride(config.overrides.markupFactorOverride);
+                            setContractDiscountOverride(config.overrides.contractDiscountOverride);
+                          }
+                        } catch (err) {
+                          console.error('Failed to import configuration:', err);
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -1839,7 +1875,7 @@ export default function ProjectDashboardV2() {
                     warnings.push({ level: 'warning', message: 'Hours per ft² is high (> 1.5)' });
                   }
 
-                  const bottomUpFee = totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent);
+                  const bottomUpFee = totalHours * ((laborRateOverride || 35.73) + (overheadRateOverride || 46.10)) * (markupFactorOverride || 2.0) * (1 - contractDiscountOverride / 100);
                   const variance = totalMarketFee ? Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee) : 0;
 
                   if (variance > 0.5) {
