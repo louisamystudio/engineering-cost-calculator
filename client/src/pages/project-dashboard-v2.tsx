@@ -405,12 +405,12 @@ export default function ProjectDashboardV2() {
         telecomInhouse: data.project.telecomInhouse,
 
         // Include percentage overrides
-        structuralPercentageOverride,
-        civilPercentageOverride,
-        mechanicalPercentageOverride,
-        electricalPercentageOverride,
-        plumbingPercentageOverride,
-        telecomPercentageOverride,
+        structuralPercentageOverride: structuralShareOverride,
+        civilPercentageOverride: civilShareOverride,
+        mechanicalPercentageOverride: mechanicalShareOverride,
+        electricalPercentageOverride: electricalShareOverride,
+        plumbingPercentageOverride: plumbingShareOverride,
+        telecomPercentageOverride: telecomShareOverride,
 
         // Include fee adjustments
         architectureFeeAdjustment,
@@ -451,12 +451,12 @@ export default function ProjectDashboardV2() {
     landscapeShareOverride,
 
     // Engineering percentage overrides
-    structuralPercentageOverride,
-    civilPercentageOverride,
-    mechanicalPercentageOverride,
-    electricalPercentageOverride,
-    plumbingPercentageOverride,
-    telecomPercentageOverride,
+    structuralShareOverride,
+    civilShareOverride,
+    mechanicalShareOverride,
+    electricalShareOverride,
+    plumbingShareOverride,
+    telecomShareOverride,
 
     // Bottom-up parameters
     laborRateOverride,
