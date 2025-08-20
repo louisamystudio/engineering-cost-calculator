@@ -1,7 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -191,13 +191,13 @@ export default function ProjectDashboardV2() {
   const [electricalShareOverride, setElectricalShareOverride] = useState<number | undefined>();
   const [plumbingShareOverride, setPlumbingShareOverride] = useState<number | undefined>();
   const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
-  
+
   // Bottom-up calculation states
   const [laborRateOverride, setLaborRateOverride] = useState<number | undefined>();
   const [overheadRateOverride, setOverheadRateOverride] = useState<number | undefined>();
   const [markupFactorOverride, setMarkupFactorOverride] = useState<number | undefined>();
   const [contractDiscountOverride, setContractDiscountOverride] = useState<number>(0.15);
-  
+
   // Fee adjustment states
   const [architectureFeeAdjustment, setArchitectureFeeAdjustment] = useState<number>(1.0);
   const [interiorFeeAdjustment, setInteriorFeeAdjustment] = useState<number>(1.0);
@@ -208,7 +208,7 @@ export default function ProjectDashboardV2() {
   const [electricalFeeAdjustment, setElectricalFeeAdjustment] = useState<number>(1.0);
   const [plumbingFeeAdjustment, setPlumbingFeeAdjustment] = useState<number>(1.0);
   const [telecomFeeAdjustment, setTelecomFeeAdjustment] = useState<number>(1.0);
-  
+
   // Additional UI state variables
   const [coordinationFeePercent, setCoordinationFeePercent] = useState<number>(15);
   const [presetName, setPresetName] = useState<string>('');
@@ -219,7 +219,7 @@ export default function ProjectDashboardV2() {
   const [scanToBimArea, setScanToBimArea] = useState(0);
   const [scanToBimRate, setScanToBimRate] = useState(0.5);
   const [hoursPerSqFt, setHoursPerSqFt] = useState(0.22);
-  
+
   // Fetch project data
   const { data, isLoading, error } = useQuery<ProjectData>({
     queryKey: ['/api/projects', projectId],
@@ -372,18 +372,75 @@ export default function ProjectDashboardV2() {
     }
   }, [data]);
 
-  // Auto-recalculate when parameters change
-  useEffect(() => {
-    if (autoRecalc && data?.project) {
-      const timer = setTimeout(() => {
-        recalculateMutation.mutate(undefined);
-      }, 500);
-      return () => clearTimeout(timer);
+  // Memoize the recalculation function to prevent infinite loops
+  const performRecalculation = useCallback(() => {
+    if (data?.project && !recalculateMutation.isLoading) {
+      recalculateMutation.mutate({
+        projectName: data.project.projectName || 'Demo Project',
+        buildingType: data.project.buildingType,
+        buildingTier: data.project.buildingTier,
+        category: data.project.category,
+        designLevel: data.project.designLevel,
+        newBuildingArea,
+        existingBuildingArea,
+        siteArea,
+        isHistoric,
+        historicMultiplier,
+        remodelMultiplier,
+        newConstructionTargetCost,
+        remodelTargetCost,
+        shellShareOverride,
+        interiorShareOverride,
+        landscapeShareOverride,
+
+        // Include all discipline settings
+        architectureInhouse: data.project.architectureInhouse,
+        interiorDesignInhouse: data.project.interiorDesignInhouse,
+        landscapeInhouse: data.project.landscapeInhouse,
+        structuralInhouse: data.project.structuralInhouse,
+        civilInhouse: data.project.civilInhouse,
+        mechanicalInhouse: data.project.mechanicalInhouse,
+        electricalInhouse: data.project.electricalInhouse,
+        plumbingInhouse: data.project.plumbingInhouse,
+        telecomInhouse: data.project.telecomInhouse,
+
+        // Include percentage overrides
+        structuralPercentageOverride,
+        civilPercentageOverride,
+        mechanicalPercentageOverride,
+        electricalPercentageOverride,
+        plumbingPercentageOverride,
+        telecomPercentageOverride,
+
+        // Include fee adjustments
+        architectureFeeAdjustment,
+        interiorFeeAdjustment,
+        landscapeFeeAdjustment,
+        structuralFeeAdjustment,
+        civilFeeAdjustment,
+        mechanicalFeeAdjustment,
+        electricalFeeAdjustment,
+        plumbingFeeAdjustment,
+        telecomFeeAdjustment,
+
+        // Include bottom-up calculation parameters
+        laborRateOverride,
+        overheadRateOverride,
+        markupFactorOverride,
+        contractDiscountOverride,
+        useNonLinearHours: data.project.useNonLinearHours,
+
+        // Scan to BIM settings
+        scanToBimEnabled: data.project.scanToBimEnabled,
+        scanToBimArea: parseFloat(data.project.scanToBimArea || '0'),
+        scanToBimRate: parseFloat(data.project.scanToBimRate || '0.5')
+      });
     }
   }, [
-    newBuildingArea, 
-    existingBuildingArea, 
-    siteArea, 
+    // Area and settings
+    newBuildingArea,
+    existingBuildingArea,
+    siteArea,
     newConstructionTargetCost,
     remodelTargetCost,
     remodelMultiplier,
@@ -392,16 +449,22 @@ export default function ProjectDashboardV2() {
     shellShareOverride,
     interiorShareOverride,
     landscapeShareOverride,
-    structuralShareOverride,
-    civilShareOverride,
-    mechanicalShareOverride,
-    electricalShareOverride,
-    plumbingShareOverride,
-    telecomShareOverride,
+
+    // Engineering percentage overrides
+    structuralPercentageOverride,
+    civilPercentageOverride,
+    mechanicalPercentageOverride,
+    electricalPercentageOverride,
+    plumbingPercentageOverride,
+    telecomPercentageOverride,
+
+    // Bottom-up parameters
     laborRateOverride,
     overheadRateOverride,
     markupFactorOverride,
     contractDiscountOverride,
+
+    // Fee adjustments
     architectureFeeAdjustment,
     interiorFeeAdjustment,
     landscapeFeeAdjustment,
@@ -411,10 +474,16 @@ export default function ProjectDashboardV2() {
     electricalFeeAdjustment,
     plumbingFeeAdjustment,
     telecomFeeAdjustment,
-    autoRecalc, 
     data?.project,
     recalculateMutation.mutate
   ]);
+
+  // Auto-recalculation effect
+  useEffect(() => {
+    if (autoRecalc) {
+      performRecalculation();
+    }
+  }, [autoRecalc, performRecalculation]);
 
   if (isLoading) {
     return (
@@ -454,7 +523,7 @@ export default function ProjectDashboardV2() {
   }
 
   const { project, calculations, fees, hours } = data;
-  
+
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
     const preset = savedPresets[presetKey as keyof typeof savedPresets] as any;
@@ -466,7 +535,7 @@ export default function ProjectDashboardV2() {
       // Add more preset loading logic as needed
     }
   };
-  
+
   const savePreset = () => {
     if (!presetName) return;
     const preset = {
@@ -490,7 +559,7 @@ export default function ProjectDashboardV2() {
     localStorage.setItem('projectPresets', JSON.stringify(newPresets));
     setPresetName('');
   };
-  
+
   const exportConfiguration = () => {
     const config = {
       projectName: project.projectName,
@@ -1190,9 +1259,9 @@ export default function ProjectDashboardV2() {
                     </div>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
                   <Label className="text-sm font-semibold mb-3">Fee Adjustment Multipliers</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1548,7 +1617,7 @@ export default function ProjectDashboardV2() {
                               status = 'warning';
                               message += ' (High)';
                             }
-                            
+
                             return <Alert variant={status === 'error' ? 'destructive' : 'default'}>
                               <AlertCircle className="h-4 w-4" />
                               <AlertDescription>{message}</AlertDescription>
