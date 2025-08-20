@@ -1,0 +1,107 @@
+After exploring the updated Comprehensive Calculator, I verified that many of the planned Phase 1–4 features have been implemented, but several gaps remain. The observations below align the live app with the requirements from your phased plan.
+
+What’s Implemented Correctly
+
+Phase 1 – Critical Fixes
+
+Telecommunication budget and fee: Telecommunication now appears in the shell budget allocation and professional fee analysis, with a budget of $3,818 and a fee calculation in the top‑down table
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. This resolves the earlier omission.
+
+Cost range sliders: Both the new construction and remodel target $/ft² values are now interactive via sliders. Min and max values are displayed, and the target marker can be adjusted within the range
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Historic property toggle and remodel multiplier: A “Historic Property” toggle (20 % cost increase) and a “Remodel Cost Factor” slider (default 50 %) are present in the Project Inputs section
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Overhead rate fix: In the bottom‑up calculation, the overhead rate displays as $46/hr instead of the erroneous 4600, and the bottom‑up fee is now reasonable
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Site area input: A Site Area (m²) slider is available
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Phase 2 – Fee Analysis Implementation
+
+Top‑down fee analysis: A detailed table lists each discipline (including scan to BIM), showing % of cost, rate per ft², market fee, Louis Amy fee, consultant fee, coordination fee and status (in‑house vs outsourced)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. Telecommunication is included in this breakdown.
+
+Bottom‑up fee analysis: The bottom‑up tab provides labour rate, overhead rate, markup and discount inputs, then shows the cost breakdown and compares the top‑down and bottom‑up fees
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Hours distribution: The Hours Distribution section breaks down total hours by project phase and role and displays warnings when the hours‑per‑ft² factor is low or when fee variance is high
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Leverage percentages: Phase/role allocation matches the Excel model, and role distribution bars show each role’s hours
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Phase 3 – Advanced Features
+
+Non‑linear hours formula: An advanced setting toggle lets users choose the logarithmic hours calculation as in the spreadsheet
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+In‑house vs outsourced controls: Users can toggle each discipline between In‑House and Outsourced; outsourced disciplines automatically add a 15 % coordination fee
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Scan to BIM toggle: A control to include scan‑to‑BIM calculations is available in advanced settings
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Markup and discount controls: In the bottom‑up parameters, markup factor and discount fields are editable
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Phase 4 – UI/UX Improvements
+
+Hours distribution display: The app clearly shows hours by phase and role with interactive warnings and role bars
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Some improved layout: Sections are labelled and collapsible, and the professional fees analysis provides side‑by‑side top‑down and bottom‑up views.
+
+What’s Still Missing or Needs Refinement
+
+Share override controls: The Shell/Interior/Landscape and discipline share percentages display “Override” labels but remain static; users cannot adjust them. In the Excel sheet, these shares are adjustable.
+
+Category multiplier selection: Category 1–5 (0.9–1.3×) appears only as a tag; there’s no dropdown or slider to change it after project creation.
+
+Discipline‐level new vs remodel splits: The app does not display the new and remodel portions of each discipline’s budget. The spreadsheet shows, for example, how much of the structural budget comes from new construction vs remodel (with a 50 % reduction only for structural remodel).
+
+Sanity check and market comparison: There’s a variance indicator in bottom‑up vs top‑down fees, but no dedicated “sanity check” section to compare market rates, discounts, or apply manual overrides as described in the Excel.
+
+Interactive budgeting and discount overrides: Discounts can be entered in the bottom‑up tab, but there’s no global discount slider or “contract price” calculation with maximum discount and final price, as in the spreadsheet.
+
+Scan‑to‑BIM details: While there’s a toggle for Scan to BIM, the UI doesn’t show the building/site scan budgets and rates separately.
+
+Advanced data visualisation: The app uses static tables for budgets and fees; it lacks donut charts for new vs remodel ratios or stacked bars for discipline budgets. Range bars for cost analysis could replace numeric labels for better visual feedback.
+
+Preset/site export and import: Although the UI hints at save/export/import functionality, these controls are inactive or hidden.
+
+Guidance for the Developer
+
+The desired_logic.ts module I provided earlier encapsulates the required formulas for budgets, discipline splits, top‑down and bottom‑up fees, and hours distribution. To complete the remaining features:
+
+Make share override fields interactive: Bind the UI percentage inputs to state and recalculate budgets and discipline allocations when the user changes them.
+
+Add Category selector: Provide a dropdown or slider for Category 1–5 that updates the category multiplier and re-runs all calculations.
+
+Display new/remodel splits per discipline: In the Shell Budget Allocation cards, show both new and remodel components for each discipline and apply the structural remodel reduction factor only to structural budgets, as per the calculateDisciplineBudgets logic.
+
+Implement sanity check & contract price: Incorporate the spreadsheet’s bottom section, calculating market price, maximum discount, discounted final price and applied discount percentage. Provide a manual override field for discount.
+
+Expose Scan‑to‑BIM details: When the Scan to BIM toggle is enabled, display the building and site scan budgets and rates derived from the area and cost formulas.
+
+Enhance visualisations: Replace static numbers with interactive charts (e.g., donut charts for budget ratios and stacked bars for discipline budgets) and provide range sliders for cost targets, shares and hours factors. Use the interactive warnings (hours/ft² too low, high variance) to prompt users to adjust their inputs.
+
+Activate export/import and presets: Enable the Save, Export and Import functions so users can store configurations and compare scenarios.
+
+Overall, the app now covers most of phases 1–3 and parts of phase 4, but still lacks adjustable share controls, full discipline breakdowns, sanity checks and advanced visualisations. Completing these pieces will bring the tool into full alignment with the Excel model and offer the interactive, data‑driven experience you’ve specified.

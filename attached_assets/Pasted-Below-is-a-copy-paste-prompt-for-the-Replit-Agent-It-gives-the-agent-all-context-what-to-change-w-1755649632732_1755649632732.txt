@@ -1,0 +1,311 @@
+Below is a copy‑paste prompt for the Replit Agent. It gives the agent all context, what to change, where to change it, the exact formulas, and acceptance criteria for Phases 1–4 of the Comprehensive Calculator.
+
+PROMPT TO REPLIT AGENT
+
+Project: louisamystudio/engineering-cost-calculator
+Scope: Comprehensive Calculator only. Align app calculations and UI with the attached Excel model (“New Project Cost Calculator…”) and the formulas below. Complete Phases 1–4.
+
+SOURCE OF TRUTH
+
+Spreadsheet logic and formulas described below (mirrors the user’s Excel).
+
+Category mapping: Category 1..5 → 0.9, 1.0, 1.1, 1.2, 1.3.
+
+Design Level: 1=Basic, 2=Standard, 3=Full; used to select cost ranges and default shares.
+
+Remodel Multiplier (default 0.5). Historic Property Multiplier (default 1.0, optional 1.2).
+
+FILES TO EDIT (typical paths; adjust if different)
+
+server/services/projectCalculator.ts (or equivalent service): centralize ALL formulas here.
+
+client/src/pages/project-dashboard-v2.tsx: UI controls (sliders, toggles, tables, charts), state wiring, and formatting.
+
+@shared/schema (or similar): add fields for overrides (shares, targets, toggles).
+
+server/storage/* (or repository layer): persist overrides and settings.
+
+Create a small pure module if helpful (e.g. server/services/calc/engine.ts) to host pure math so UI and server share the same logic.
+
+PHASE 1 — CRITICAL FIXES
+
+TypeScript state error (telecomShareOverride)
+Fix state typing so overrides can be number | undefined. Don’t cast to any.
+
+Telecommunication fee shows $0
+Fix logic so Telecommunication uses the same top‑down fee pipeline as other disciplines. If outsourced, LouisAmyFee=0, ConsultantFee=MarketFee, CoordinationFee=MarketFee*0.15.
+
+Overhead rate formatting bug
+Bottom‑up tab must show $46.10 not 4600. Store and compute using dollars per hour (not cents), and format with currency helpers.
+
+Historic Property Multiplier & Remodel Multiplier
+Expose as live inputs on the dashboard (not only “create project”). Recompute all downstream values on change.
+
+Acceptance for Phase 1
+
+Telecommunication fee row is non‑zero whenever telecom budget > 0.
+
+Overhead per hour displays as e.g. $46.10 and is used correctly in math.
+
+Toggling Historic 1.0 ↔ 1.2 and changing Remodel 0.5 updates budgets/fees live.
+
+PHASE 2 — FEE ANALYSIS IMPLEMENTATION
+(A) Interactive Cost Range Sliders
+
+New Construction and Remodel $/ft² each get a 3‑point slider:
+
+Min and Max: from cost ranges (by design level) × HistoricMultiplier.
+
+Target: default = average(min, max), draggable; allow direct numeric entry.
+
+Display current values and recalc budgets in real time.
+
+(B) Top‑Down Fee Analysis (table)
+
+Columns: Scope · % of Cost · Rate $/ft² · Market Fee · Louis Amy Fee · Consultant Fee · Coordination Fee · In‑House/Outsourced
+Rows (in this order):
+
+Scan to BIM – Site (if siteArea > 0)
+
+Scan to BIM – Building (if existingArea > 0)
+
+Architecture (Design + Consultant Admin.)
+
+Interior design
+
+Landscape architecture
+
+Structural engineer
+
+Civil / site engineer
+
+Mechanical (HVAC, energy, pools)
+
+Electrical (power / lighting)
+
+Plumbing engineer
+
+Telecommunication
+
+Formulas (Top‑Down):
+
+Fee curve constants: A=0.07498, B=0.007824, P=-0.7495.
+
+CategoryMultiplier = {1:0.9, 2:1.0, 3:1.1, 4:1.2, 5:1.3}.
+
+For each scope:
+
+basePct = A + B * ( (budgetRef / 1,000,000) ^ P )
+feePct  = basePct * CategoryMultiplier
+feePct *= ( 0.95*NewBudget + 1.05*RemodelBudget ) / TotalBudget
+if scope in {Architecture, Interior design, Landscape architecture}:
+  feePct *= (1 + (1 - RemodelMultiplier))   // remodel boost
+
+MarketFee   = feePct * ScopeBudget
+RatePerFt2  = MarketFee / TotalArea
+if scope is OUTSOURCED:
+  LouisAmyFee      = 0
+  ConsultantFee    = MarketFee
+  CoordinationFee  = MarketFee * 0.15
+else:
+  LouisAmyFee      = MarketFee
+  ConsultantFee    = 0
+  CoordinationFee  = 0
+
+
+Scan to BIM formulas:
+
+ScanBuildingRate = (0.6 + 0.006 * ((1000 + ExistingArea)/1,000,000)^(-0.7495)) * CategoryMultiplier
+ScanBuildingFee  = ScanBuildingRate * ExistingArea
+
+ScanSiteRate = (1 + 0.00091 * (SiteArea/1,000,000)^(-0.005)) * CategoryMultiplier / (3.28^2) + 0.08
+ScanSiteFee  = ScanSiteRate * SiteArea * (3.28^2)
+
+(C) Bottom‑Up Analysis
+
+Inputs: LabourRate/hr, OverheadRate/hr, MarkupFactor, Discount.
+Steps:
+
+TotalHours     = from Hours (Phase 3)
+LabourCost     = TotalHours * LabourRate
+WithOverhead   = LabourCost + (TotalHours * OverheadRate)
+WithMarkup     = WithOverhead * MarkupFactor
+BottomUpFee    = WithMarkup * (1 - Discount)
+
+
+Show a variance chip (%) vs Top‑Down Market Fee.
+
+(D) Share Override Controls
+
+Make Shell/Interior/Landscape shares editable (0–100 % with sum=100 % validation).
+
+Make Engineering discipline shares editable per discipline (affects discipline budgets).
+
+Acceptance for Phase 2
+
+Sliders work; target is draggable & editable.
+
+Full top‑down table populated, including Scan to BIM and Telecommunication.
+
+Bottom‑up tab computes fee with realistic numbers; variance shown.
+
+Share overrides trigger live recalculation (validated).
+
+PHASE 3 — ADVANCED FEATURES
+(A) Non‑Linear Hours Formula (Excel)
+Area = NewArea + ExistingArea
+BaseFactor = (0.21767 + 11.21274 * (Area ^ -0.53816) - 0.08) * CategoryMultiplier
+NewHoursFactor     = BaseFactor * 0.9
+RemodelHoursFactor = BaseFactor * 0.8
+TotalHours = (NewHoursFactor * NewArea) + (RemodelHoursFactor * ExistingArea * 1.15)
+
+
+Provide toggle to switch to this formula, but default to it.
+
+(B) In‑House vs Outsourced per Discipline
+
+Toggle each scope. Outsourced → move fee to Consultant, add 15 % Coordination.
+
+(C) Scan to BIM Calculations
+
+When toggled on, show rates and fees for Site and Building with formulas above.
+
+(D) Category Multiplier Display/Override
+
+Show Category 1‑5 and computed multiplier; allow override for power users.
+
+Acceptance for Phase 3
+
+TotalHours changes when areas, category, or toggle changes.
+
+In‑House vs Outsourced immediately changes fee attribution & coordination.
+
+Scan to BIM rows appear with correct rates/fees when applicable.
+
+PHASE 4 — UI/UX IMPROVEMENTS
+
+Discipline new vs remodel splits: In each budget card, show New and Remodel components for every discipline. Structural remodel uses RemodelMultiplier (50 % default); other disciplines do not reduce remodel budgets.
+
+Sanity Check panel: Compare Top‑Down vs Bottom‑Up:
+
+Percent difference, dollar difference.
+
+“Market Price”, “Max Discount”, “Discounted Final Price”, “Applied Discount %”.
+
+Manual discount override input.
+
+Visualisations:
+
+Donut chart for New vs Remodel ratios.
+
+Stacked bar for Discipline budgets (new/remodel segments).
+
+Range bars for cost targets and shares.
+
+Validation & UX: Prevent shares from exceeding 100 %. Format all currency with thousands separators and 2 decimals.
+
+Acceptance for Phase 4
+
+Users can view new/remodel splits per discipline.
+
+Sanity Check panel present and functioning.
+
+Donut/stacked bars render with live updates.
+
+Inputs validated with helpful toasts/tooltips.
+
+CORE BUDGET & DISCIPLINE LOGIC (must exactly match)
+
+Cost ranges (example defaults; use DB/CSV in app):
+
+Pull allInMin/allInMax and default Shell/Interior/Landscape shares from the cost ranges table by building type + design level.
+
+Budgets:
+
+NewCostMin  = allInMin * HistoricMultiplier
+NewCostMax  = allInMax * HistoricMultiplier
+NewTarget   = avg(NewCostMin, NewCostMax)  // overridden by slider
+RemCostMin  = NewCostMin * RemodelMultiplier
+RemCostMax  = NewCostMax * RemodelMultiplier
+RemTarget   = avg(RemCostMin, RemCostMax)  // overridden by slider
+
+NewBudget      = NewArea * NewTarget
+RemodelBudget  = ExistingArea * RemTarget
+TotalBudget    = NewBudget + RemodelBudget
+
+ShellNew      = NewBudget * ShellShare
+ShellRemodel  = RemodelBudget * ShellShare
+InteriorNew   = NewBudget * InteriorShare
+InteriorRemod = RemodelBudget * InteriorShare
+LandNew       = NewBudget * LandscapeShare
+LandRemod     = RemodelBudget * LandscapeShare
+
+
+Engineering discipline budgets (from Shell only):
+
+structural = (ShellNew * structuralShare) + (ShellRemodel * structuralShare * RemodelMultiplier)
+civil      = (ShellNew * civilShare)      + (ShellRemodel * civilShare)
+mechanical = (ShellNew * mechanicalShare) + (ShellRemodel * mechanicalShare)
+electrical = (ShellNew * electricalShare) + (ShellRemodel * electricalShare)
+plumbing   = (ShellNew * plumbingShare)   + (ShellRemodel * plumbingShare)
+telecom    = (ShellNew * telecomShare)    + (ShellRemodel * telecomShare)
+
+engSum = structural + civil + mechanical + electrical + plumbing + telecom
+architecture = (ShellNew + ShellRemodel) - engSum
+interior     = (InteriorNew + InteriorRemod)
+landscape    = (LandNew + LandRemod)
+
+
+UI requirements: For each discipline card show Total, New, Remodel amounts.
+
+DATA / SCHEMA CHANGES
+
+Add per‑project fields:
+
+historicMultiplier, remodelMultiplier
+
+category and categoryMultiplierOverride?
+
+newCostTarget, remodelCostTarget
+
+shellShareOverride, interiorShareOverride, landscapeShareOverride
+
+Per‑discipline share overrides (structural..telecom)
+
+InHouse/Outsourced flags per discipline
+
+Bottom‑Up params: labourRate, overheadRate, markupFactor, discount
+
+Toggles: useNonLinearHours, enableScanToBIM
+
+Persist and hydrate these between sessions.
+
+TEST SCENARIO (functional acceptance)
+
+Use: Residential / Private Residence / Mid‑Range Standard Residential / Design Level 3 / Category 5 / New 2,000 ft² + Remodel 2,000 ft² / Site 1,000 m² / Historic off / Remodel 0.5.
+
+Verify:
+
+Sliders allow target movement; budgets recompute instantly.
+
+Telecom budget > 0 produces a non‑zero telecommunication fee (top‑down).
+
+Overhead shows $46.10/hr (not 4600).
+
+In‑House → fee goes to Louis Amy; Outsourced → fee goes to Consultant + adds 15 % coordination.
+
+Discipline cards show New vs Remodel splits; Structural remodel uses 0.5 factor; others do not.
+
+Non‑linear hours toggle changes total hours reasonably (hours increase with area).
+
+Sanity Check shows top‑down vs bottom‑up variance and discount controls.
+
+DONE =
+
+All Phase 1–4 acceptance bullets satisfied.
+
+No TypeScript errors or console warnings.
+
+All numbers formatted ($#,###.##; % with 2 decimals).
+
+Calculations match the spreadsheet’s formulas for multiple scenarios.

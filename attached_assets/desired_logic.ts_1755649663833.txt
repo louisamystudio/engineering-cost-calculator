@@ -1,0 +1,460 @@
+/* desired_logic.ts
+ * Implements the core calculation logic for the Project Quote app.
+ * It provides functions to compute cost ranges, budgets, engineering budgets,
+ * top‑down fees, bottom‑up fees, and hours distribution based on a set of
+ * inputs similar to those in the Excel model.
+ */
+
+export interface ProjectInput {
+  buildingType: string;      // e.g. "High-End Custom Residential"
+  designLevel: number;       // 1=Basic, 2=Standard, 3=Full Design
+  category: number;          // 1..5 maps to multiplier 0.9..1.3
+  newArea: number;           // new construction area, ft²
+  existingArea: number;      // remodel area, ft²
+  siteArea: number;          // site area, m²
+  historicMultiplier: number;// 1 for none, 1.2 if historic
+  remodelMultiplier: number; // e.g. 0.5 (50% cost for remodel)
+  isHistoric?: boolean;
+}
+
+export interface CostData {
+  allInMin: number;      // min cost per ft²
+  allInMax: number;      // max cost per ft²
+  shellShare: number;    // share of total for shell
+  interiorShare: number; // share of total for interior
+  landscapeShare: number;// share of total for landscape
+}
+
+export interface EngineeringShares {
+  structural: number;
+  civil: number;
+  mechanical: number;
+  electrical: number;
+  plumbing: number;
+  telecom: number;
+}
+
+export interface BudgetBreakdown {
+  newBudget: number;
+  remodelBudget: number;
+  totalBudget: number;
+  shell: { new: number; remodel: number; total: number; };
+  interior: { new: number; remodel: number; total: number; };
+  landscape: { new: number; remodel: number; total: number; };
+}
+
+export interface DisciplineBudget {
+  structural: number;
+  civil: number;
+  mechanical: number;
+  electrical: number;
+  plumbing: number;
+  telecom: number;
+  architecture: number;
+  interior: number;
+  landscape: number;
+}
+
+export interface FeeLine {
+  scope: string;
+  percentOfCost: number | null;
+  ratePerSqFt: number;
+  marketFee: number;
+  louisAmyFee: number;
+  consultantFee: number;
+  coordinationFee: number;
+  isInHouse: boolean;
+}
+
+export interface FeeAnalysis {
+  marketFee: number;        // sum of market fees
+  louisAmyFee: number;      // sum of Louis Amy fees
+  lines: FeeLine[];         // detailed breakdown
+}
+
+export interface BottomUpCosts {
+  totalHours: number;
+  labourCost: number;
+  withOverhead: number;
+  withMarkup: number;
+  fee: number;
+}
+
+export interface HoursPhaseDistribution {
+  phase: string;
+  hours: number;
+}
+
+export interface HoursRoleDistribution {
+  role: string;
+  hours: number;
+}
+
+export interface HoursAnalysis {
+  totalProjectHours: number;
+  phases: HoursPhaseDistribution[];
+  roles: HoursRoleDistribution[];
+}
+
+// Static cost and engineering share data (similar to spreadsheet lookups)
+const costRanges: Record<string, Record<number, CostData>> = {
+  "High-End Custom Residential": {
+    1: { allInMin: 400, allInMax: 500, shellShare: 0.72, interiorShare: 0.18, landscapeShare: 0.10 },
+    2: { allInMin: 600, allInMax: 700, shellShare: 0.69, interiorShare: 0.20, landscapeShare: 0.11 },
+    3: { allInMin: 800, allInMax: 900, shellShare: 0.66, interiorShare: 0.22, landscapeShare: 0.12 },
+  },
+  "Mid-Range Standard Residential": {
+    1: { allInMin: 300, allInMax: 320, shellShare: 0.72, interiorShare: 0.18, landscapeShare: 0.10 },
+    2: { allInMin: 340, allInMax: 360, shellShare: 0.69, interiorShare: 0.20, landscapeShare: 0.11 },
+    3: { allInMin: 380, allInMax: 400, shellShare: 0.66, interiorShare: 0.22, landscapeShare: 0.12 },
+  },
+  "Hospitality (Hotel/Resort)": {
+    1: { allInMin: 400, allInMax: 500, shellShare: 0.60, interiorShare: 0.30, landscapeShare: 0.10 },
+    2: { allInMin: 500, allInMax: 600, shellShare: 0.60, interiorShare: 0.30, landscapeShare: 0.10 },
+    3: { allInMin: 600, allInMax: 700, shellShare: 0.60, interiorShare: 0.30, landscapeShare: 0.10 },
+  },
+  "Commercial / Mixed-Use": {
+    1: { allInMin: 150, allInMax: 250, shellShare: 0.70, interiorShare: 0.20, landscapeShare: 0.10 },
+    2: { allInMin: 250, allInMax: 330, shellShare: 0.70, interiorShare: 0.20, landscapeShare: 0.10 },
+    3: { allInMin: 330, allInMax: 400, shellShare: 0.70, interiorShare: 0.20, landscapeShare: 0.10 },
+  },
+};
+
+const engineeringShares: Record<string, Record<number, EngineeringShares>> = {
+  "High-End Custom Residential": {
+    1: { structural: 0.31, civil: 0.06, mechanical: 0.08, electrical: 0.05, plumbing: 0.04, telecom: 0.025 },
+    2: { structural: 0.30, civil: 0.07, mechanical: 0.09, electrical: 0.06, plumbing: 0.05, telecom: 0.035 },
+    3: { structural: 0.29, civil: 0.075, mechanical: 0.10, electrical: 0.07, plumbing: 0.05, telecom: 0.04 },
+  },
+  "Mid-Range Standard Residential": {
+    1: { structural: 0.28, civil: 0.05, mechanical: 0.06, electrical: 0.045, plumbing: 0.035, telecom: 0.015 },
+    2: { structural: 0.27, civil: 0.05, mechanical: 0.06, electrical: 0.045, plumbing: 0.035, telecom: 0.015 },
+    3: { structural: 0.26, civil: 0.05, mechanical: 0.06, electrical: 0.045, plumbing: 0.035, telecom: 0.015 },
+  },
+  "Hospitality (Hotel/Resort)": {
+    1: { structural: 0.23, civil: 0.065, mechanical: 0.125, electrical: 0.075, plumbing: 0.04, telecom: 0.035 },
+    2: { structural: 0.23, civil: 0.065, mechanical: 0.125, electrical: 0.075, plumbing: 0.04, telecom: 0.035 },
+    3: { structural: 0.23, civil: 0.065, mechanical: 0.125, electrical: 0.075, plumbing: 0.04, telecom: 0.035 },
+  },
+  "Commercial / Mixed-Use": {
+    1: { structural: 0.24, civil: 0.05, mechanical: 0.115, electrical: 0.10, plumbing: 0.03, telecom: 0.035 },
+    2: { structural: 0.24, civil: 0.05, mechanical: 0.115, electrical: 0.10, plumbing: 0.03, telecom: 0.035 },
+    3: { structural: 0.24, civil: 0.05, mechanical: 0.115, electrical: 0.10, plumbing: 0.03, telecom: 0.035 },
+  },
+};
+
+// Fee curve constants from the spreadsheet
+const FEE_A = 0.07498;
+const FEE_B = 0.007824;
+const FEE_P = -0.7495;
+
+// Hours calculation constants from the spreadsheet
+const HOURS_A = 0.21767;
+const HOURS_B = 11.21274;
+const HOURS_P = -0.53816;
+const HOURS_SUB = 0.08;
+
+/* Helper functions to retrieve data and compute category multiplier */
+
+export function getCategoryMultiplier(category: number): number {
+  return 0.8 + 0.1 * category; // Category 1=0.9 ... Category 5=1.3
+}
+
+export function getCostData(buildingType: string, designLevel: number): CostData {
+  const tier = costRanges[buildingType] ?? costRanges["Mid-Range Standard Residential"];
+  return tier[designLevel] ?? tier[2];
+}
+
+export function getEngineeringShares(buildingType: string, designLevel: number): EngineeringShares {
+  const tier = engineeringShares[buildingType] ?? engineeringShares["Mid-Range Standard Residential"];
+  return tier[designLevel] ?? tier[2];
+}
+
+/* Calculate budgets for new/remodel and component shares */
+
+export function calculateBudgets(input: ProjectInput, costData: CostData): BudgetBreakdown {
+  const newCostMin = costData.allInMin * input.historicMultiplier;
+  const newCostMax = costData.allInMax * input.historicMultiplier;
+  const newCostTarget = (newCostMin + newCostMax) / 2;
+  const remodelCostMin = newCostMin * input.remodelMultiplier;
+  const remodelCostMax = newCostMax * input.remodelMultiplier;
+  const remodelCostTarget = (remodelCostMin + remodelCostMax) / 2;
+
+  const newBudget = input.newArea * newCostTarget;
+  const remodelBudget = input.existingArea * remodelCostTarget;
+  const totalBudget = newBudget + remodelBudget;
+
+  const shellBudgetNew = newBudget * costData.shellShare;
+  const shellBudgetRemodel = remodelBudget * costData.shellShare;
+  const interiorBudgetNew = newBudget * costData.interiorShare;
+  const interiorBudgetRemodel = remodelBudget * costData.interiorShare;
+  const landscapeBudgetNew = newBudget * costData.landscapeShare;
+  const landscapeBudgetRemodel = remodelBudget * costData.landscapeShare;
+
+  return {
+    newBudget,
+    remodelBudget,
+    totalBudget,
+    shell: { new: shellBudgetNew, remodel: shellBudgetRemodel, total: shellBudgetNew + shellBudgetRemodel },
+    interior: { new: interiorBudgetNew, remodel: interiorBudgetRemodel, total: interiorBudgetNew + interiorBudgetRemodel },
+    landscape: { new: landscapeBudgetNew, remodel: landscapeBudgetRemodel, total: landscapeBudgetNew + landscapeBudgetRemodel },
+  };
+}
+
+/* Calculate budgets for each engineering discipline and architecture */
+
+export function calculateDisciplineBudgets(budgets: BudgetBreakdown, shares: EngineeringShares, remodelMultiplier: number): DisciplineBudget {
+  const { newBudget, remodelBudget, shell } = budgets;
+  const structBudget = (newBudget * shares.structural * shell.total / budgets.totalBudget) +
+                       (remodelBudget * shares.structural * shell.total / budgets.totalBudget * remodelMultiplier);
+  const civilBudget = (newBudget * shares.civil * shell.total / budgets.totalBudget) +
+                      (remodelBudget * shares.civil * shell.total / budgets.totalBudget);
+  const mechBudget = (newBudget * shares.mechanical * shell.total / budgets.totalBudget) +
+                     (remodelBudget * shares.mechanical * shell.total / budgets.totalBudget);
+  const elecBudget = (newBudget * shares.electrical * shell.total / budgets.totalBudget) +
+                     (remodelBudget * shares.electrical * shell.total / budgets.totalBudget);
+  const plumbBudget = (newBudget * shares.plumbing * shell.total / budgets.totalBudget) +
+                      (remodelBudget * shares.plumbing * shell.total / budgets.totalBudget);
+  const telecomBudget = (newBudget * shares.telecom * shell.total / budgets.totalBudget) +
+                        (remodelBudget * shares.telecom * shell.total / budgets.totalBudget);
+
+  const engSum = structBudget + civilBudget + mechBudget + elecBudget + plumbBudget + telecomBudget;
+  const architectureBudget = shell.total - engSum;
+
+  return {
+    structural: structBudget,
+    civil: civilBudget,
+    mechanical: mechBudget,
+    electrical: elecBudget,
+    plumbing: plumbBudget,
+    telecom: telecomBudget,
+    architecture: architectureBudget,
+    interior: budgets.interior.total,
+    landscape: budgets.landscape.total,
+  };
+}
+
+/* Calculate top‑down fee analysis for all scopes (including Scan to BIM) */
+
+export function calculateTopDownFees(
+  input: ProjectInput,
+  budgets: BudgetBreakdown,
+  discBudgets: DisciplineBudget,
+  categoryMultiplier: number
+): FeeAnalysis {
+  const totalArea = input.newArea + input.existingArea;
+  const newBudget = budgets.newBudget;
+  const remodelBudget = budgets.remodelBudget;
+  const totalBudget = budgets.totalBudget;
+
+  function feeFraction(budgetRef: number, includeRemodelBoost: boolean): number {
+    if (!totalBudget) return 0;
+    const basePct = FEE_A + FEE_B * Math.pow(budgetRef / 1_000_000, FEE_P);
+    let pct = basePct * categoryMultiplier;
+    pct *= ((0.95 * newBudget) + (1.05 * remodelBudget)) / totalBudget;
+    if (includeRemodelBoost) {
+      pct *= (1 + (1 - input.remodelMultiplier));
+    }
+    return pct;
+  }
+
+  const scopes: Array<{ key: keyof DisciplineBudget; label: string; remodelBoost: boolean; inHouse: boolean; }> = [
+    { key: 'architecture', label: 'Architecture (Design + Consultant Admin.)', remodelBoost: true, inHouse: true },
+    { key: 'interior', label: 'Interior design', remodelBoost: true, inHouse: true },
+    { key: 'landscape', label: 'Landscape architecture', remodelBoost: true, inHouse: true },
+    { key: 'structural', label: 'Structural engineer', remodelBoost: false, inHouse: true },
+    { key: 'civil', label: 'Civil / site engineer', remodelBoost: false, inHouse: true },
+    { key: 'mechanical', label: 'Mechanical (HVAC, energy, pools)', remodelBoost: false, inHouse: false },
+    { key: 'electrical', label: 'Electrical (power / lighting)', remodelBoost: false, inHouse: false },
+    { key: 'plumbing', label: 'Plumbing engineer', remodelBoost: false, inHouse: true },
+    { key: 'telecom', label: 'Telecommunication', remodelBoost: false, inHouse: false },
+  ];
+
+  const lines: FeeLine[] = [];
+  let marketFeeSum = 0;
+  let louisAmySum = 0;
+
+  scopes.forEach(({ key, label, remodelBoost, inHouse }) => {
+    const scopeBudget = discBudgets[key];
+    const pct = feeFraction(scopeBudget, remodelBoost);
+    const marketFee = pct * scopeBudget;
+    const ratePerSqFt = totalArea > 0 ? (marketFee / totalArea) : 0;
+    let louisAmy = 0;
+    let consultant = 0;
+    let coordination = 0;
+
+    if (inHouse) {
+      louisAmy = marketFee;
+    } else {
+      consultant = marketFee;
+      coordination = marketFee * 0.15; // 15% coordination on outsourced services
+    }
+
+    marketFeeSum += marketFee;
+    louisAmySum += louisAmy;
+
+    lines.push({
+      scope: label,
+      percentOfCost: pct,
+      ratePerSqFt,
+      marketFee,
+      louisAmyFee: louisAmy,
+      consultantFee: consultant,
+      coordinationFee: coordination,
+      isInHouse: inHouse,
+    });
+  });
+
+  // Include Scan to BIM fees (building/site) – always in‑house
+  if (input.existingArea > 0) {
+    const rate = (0.6 + 0.006 * Math.pow((1000 + input.existingArea) / 1_000_000, FEE_P)) * categoryMultiplier;
+    const fee = rate * input.existingArea;
+    lines.unshift({
+      scope: 'Scan to Bim - Building',
+      percentOfCost: null,
+      ratePerSqFt: rate,
+      marketFee: fee,
+      louisAmyFee: fee,
+      consultantFee: 0,
+      coordinationFee: 0,
+      isInHouse: true,
+    });
+    marketFeeSum += fee;
+    louisAmySum += fee;
+  }
+
+  if (input.siteArea > 0) {
+    const rate = (1 + 0.00091 * Math.pow(input.siteArea / 1_000_000, -0.005)) * categoryMultiplier / (3.28 ** 2) + 0.08;
+    const fee = rate * input.siteArea * (3.28 ** 2);
+    lines.unshift({
+      scope: 'Scan to Bim - Site',
+      percentOfCost: null,
+      ratePerSqFt: rate,
+      marketFee: fee,
+      louisAmyFee: fee,
+      consultantFee: 0,
+      coordinationFee: 0,
+      isInHouse: true,
+    });
+    marketFeeSum += fee;
+    louisAmySum += fee;
+  }
+
+  return { marketFee: marketFeeSum, louisAmyFee: louisAmySum, lines };
+}
+
+/* Calculate bottom‑up costs (labour/overhead/markup/discount) */
+
+export function calculateBottomUpCosts(
+  totalHours: number,
+  labourRate: number,
+  overheadRate: number,
+  markupFactor: number,
+  discount: number
+): BottomUpCosts {
+  const labourCost = totalHours * labourRate;
+  const withOverhead = labourCost + (totalHours * overheadRate);
+  const withMarkup = withOverhead * markupFactor;
+  const fee = withMarkup * (1 - discount);
+  return { totalHours, labourCost, withOverhead, withMarkup, fee };
+}
+
+/* Calculate total hours using non‑linear formula (Excel) */
+
+export function calculateTotalHours(input: ProjectInput, categoryMultiplier: number): number {
+  const area = input.newArea + input.existingArea;
+  if (area === 0) return 0;
+  const baseFactor = (HOURS_A + HOURS_B * Math.pow(area, HOURS_P) - HOURS_SUB) * categoryMultiplier;
+  const newFactor = baseFactor * 0.9;
+  const remodelFactor = baseFactor * 0.8;
+  const newHours = newFactor * input.newArea;
+  const remodelHours = remodelFactor * input.existingArea * 1.15;
+  return newHours + remodelHours;
+}
+
+/* Distribute hours across phases and roles */
+
+export function calculateHoursDistribution(totalHours: number): HoursAnalysis {
+  const phasePercents = [
+    { phase: 'Discovery', percent: 0.08 },
+    { phase: 'Creative - Conceptual', percent: 0.08 },
+    { phase: 'Creative - Schematic', percent: 0.34 },
+    { phase: 'Creative - Preliminary', percent: 0.08 },
+    { phase: 'Technical - Schematic', percent: 0.34 },
+    { phase: 'Technical - Preliminary', percent: 0.08 },
+  ];
+
+  const roleLeverage: Record<string, { designer1: number; designer2: number; architect: number; engineer: number; principal: number; }> = {
+    'Discovery': { designer1: 0.37, designer2: 0.37, architect: 0.10, engineer: 0.02, principal: 0.14 },
+    'Creative - Conceptual': { designer1: 0.00, designer2: 0.00, architect: 0.95, engineer: 0.00, principal: 0.05 },
+    'Creative - Schematic': { designer1: 0.32, designer2: 0.32, architect: 0.32, engineer: 0.02, principal: 0.02 },
+    'Creative - Preliminary': { designer1: 0.32, designer2: 0.32, architect: 0.32, engineer: 0.02, principal: 0.02 },
+    'Technical - Schematic': { designer1: 0.26, designer2: 0.26, architect: 0.10, engineer: 0.32, principal: 0.06 },
+    'Technical - Preliminary': { designer1: 0.26, designer2: 0.26, architect: 0.10, engineer: 0.32, principal: 0.06 },
+  };
+
+  const phases: HoursPhaseDistribution[] = [];
+  const roleTotals = { designer1: 0, designer2: 0, architect: 0, engineer: 0, principal: 0 };
+
+  phasePercents.forEach(({ phase, percent }) => {
+    const hours = totalHours * percent;
+    phases.push({ phase, hours });
+    const lev = roleLeverage[phase];
+    roleTotals.designer1 += hours * lev.designer1;
+    roleTotals.designer2 += hours * lev.designer2;
+    roleTotals.architect += hours * lev.architect;
+    roleTotals.engineer += hours * lev.engineer;
+    roleTotals.principal += hours * lev.principal;
+  });
+
+  const roles: HoursRoleDistribution[] = [
+    { role: 'Designer1', hours: roleTotals.designer1 },
+    { role: 'Designer2', hours: roleTotals.designer2 },
+    { role: 'Architect', hours: roleTotals.architect },
+    { role: 'Engineer', hours: roleTotals.engineer },
+    { role: 'Principal', hours: roleTotals.principal },
+  ];
+
+  return { totalProjectHours: totalHours, phases, roles };
+}
+
+/* High‑level function to compute all aspects of a project */
+
+export function calculateProject(
+  input: ProjectInput,
+  labourRate: number = 35.73,
+  overheadRate: number = 46.10,
+  markupFactor: number = 2.0,
+  discount: number = 0
+): {
+  budgets: BudgetBreakdown;
+  disciplineBudgets: DisciplineBudget;
+  topDownFees: FeeAnalysis;
+  bottomUp: BottomUpCosts;
+  hours: HoursAnalysis;
+} {
+  const costData = getCostData(input.buildingType, input.designLevel);
+  const engShares = getEngineeringShares(input.buildingType, input.designLevel);
+  const budgets = calculateBudgets(input, costData);
+  const discBudgets = calculateDisciplineBudgets(budgets, engShares, input.remodelMultiplier);
+  const categoryMultiplier = getCategoryMultiplier(input.category);
+  const fees = calculateTopDownFees(input, budgets, discBudgets, categoryMultiplier);
+  const totalHours = calculateTotalHours(input, categoryMultiplier);
+  const bottomUp = calculateBottomUpCosts(totalHours, labourRate, overheadRate, markupFactor, discount);
+  const hoursDist = calculateHoursDistribution(totalHours);
+  return { budgets, disciplineBudgets: discBudgets, topDownFees: fees, bottomUp, hours: hoursDist };
+}
+
+// Example usage (uncomment for testing):
+// const input: ProjectInput = {
+//   buildingType: 'High-End Custom Residential',
+//   designLevel: 3,
+//   category: 5,
+//   newArea: 2000,
+//   existingArea: 2000,
+//   siteArea: 1000,
+//   historicMultiplier: 1.0,
+//   remodelMultiplier: 0.5,
+// };
+// const result = calculateProject(input);
+// console.log(JSON.stringify(result, null, 2));
