@@ -1,0 +1,89 @@
+After exploring the updated Comprehensive Calculator thoroughly, here’s a detailed report on the interactive elements and calculations:
+
+✅ Functions Working Correctly
+
+Cost range sliders: Both new‑construction and remodel $/ft² sliders are interactive. Dragging the markers recalculates budgets immediately
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Remodel target slider: Once dragged, it updates the remodel budget correctly; for example, setting the remodel target to $172/ft² produces a $994 k remodel budget
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Bottom‑up fee fields: The labour rate, overhead rate, markup factor and discount inputs are editable and propagate into the bottom‑up fee calculation instantly
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Telecom budget & fee: Telecommunication now appears in the budget and fee tables with a non‑zero value
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Historic property and remodel multiplier controls: Toggles and sliders exist to select historic property (1.2× cost) and remodel multiplier (0.5 default)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+In‑house vs outsourced toggles: Each discipline has a switch; outsourced services correctly move fees to the consultant and add coordination (15 %)
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Non‑linear hours formula: A toggle in Advanced Settings enables the non‑linear hours calculation, and the hours distribution table displays hours per phase and per role
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+❗ Problems and Missing Features
+
+Share overrides not wired: Editing Shell, Interior or Landscape share override values (e.g. changing Shell from 70 % to 75 %) does not reallocate budgets; Interior and Landscape shares remain unchanged and totals don’t update
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Discipline share overrides absent: The cards for Structural, Civil, Mechanical, Electrical, Plumbing and Telecommunication have “% Override” labels, but they aren’t interactive
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Area slider increments buggy: Adjusting the New Building Area slider with arrow keys jumps in thousands of square feet, making fine adjustments impossible
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Historic property toggle and remodel factor do not recalc budgets: Turning the historic toggle or changing the remodel multiplier does not update budgets until another slider is moved
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+No new/remodel split per discipline: The discipline budget cards display only a total; they don’t show how much of each budget comes from new vs remodel.
+
+No sanity check section: There’s no panel comparing top‑down vs bottom‑up fees, or showing market price, maximum discount and final contract price, as specified in the Excel.
+
+Category multiplier cannot be changed after creation: The category label (e.g. 1.3× for Category 5) appears but there’s no control to adjust it.
+
+No discipline‑level discount or margin controls: While bottom‑up fields exist, there’s no way to apply discounts or margins per scope, nor to turn disciplines off entirely.
+
+No visual charts: There are no donut charts or stacked bars for new vs remodel ratios or discipline budgets; everything is presented in tables.
+
+🚧 Guidance for Next Steps
+To align the app with the Excel model and the to‑do list:
+
+Make all share overrides functional: When a user changes shell/interior/landscape percentages or discipline shares, recalculate budgets in real time and validate that totals remain 100 %.
+
+Display new vs remodel splits for each discipline: Add fields in the discipline cards to show and edit the new and remodel portions separately, applying the remodel reduction only to structural.
+
+Ensure every input triggers recalculation: Link the historic property toggle, remodel cost factor and area sliders directly to the budget calculation so changes take effect immediately.
+
+Add a sanity check panel: Provide market vs contract price comparison, maximum discount and final price, with manual discount override, and display the variance between top‑down and bottom‑up fees.
+
+Allow category selection and override: Let users choose Category 1‑5 from a dropdown and override the multiplier if needed.
+
+Implement full interactive fee controls: Give the option to toggle disciplines on/off, set labour rates, overhead, markup and discount per discipline and compare top‑down vs bottom‑up results.
+
+Enhance data visualisation: Introduce donut charts for new/remodel ratios, stacked bars for discipline budgets and sliders with min/max/target markers for cost ranges.
+
+Clarifications answered for the agent developer (from earlier requests):
+
+Historic Multiplier: Keep 1.2× (not 1.4×) as the standard multiplier for historic property costs.
+
+Default in‑house disciplines: Architecture, Interior, Landscape, Structural, Civil and Plumbing should default to in‑house; Mechanical, Electrical and Telecommunication should default to outsourced.
+
+Validation thresholds for sanity checks: Current warnings at <0.3 or >1.5 hours/ft² are reasonable; keep these unless directed otherwise.
+
+Export format: The export should include both the configuration values and a summary of the calculation methodology so clients can audit the numbers.
+
+In its current state, the application satisfies many Phase 1–3 requirements but lacks several interactive controls and advanced reporting features. Implementing the above changes will bring it in line with the comprehensive Excel model and fully meet user expectations.
