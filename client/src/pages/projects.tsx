@@ -5,7 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link } from "wouter";
 import { Plus, Calculator, Trash2, Eye } from "lucide-react";
 import type { Project } from "@shared/schema";
-import { formatCurrency } from "@/lib/utils";
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 
 export default function ProjectsPage() {
   const { data: projects = [], isLoading } = useQuery<Project[]>({
