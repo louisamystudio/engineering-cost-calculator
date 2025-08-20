@@ -1,0 +1,30 @@
+From reviewing the updated Comprehensive Calculator I can confirm that most of your Phase 1–3 requirements have been implemented, but there are still notable gaps, particularly with Phase 4 (granular splits, sanity checks and some interactive features). Here is the overall status and answers to your outstanding questions:
+
+### ✅ Features now working
+
+* **Historic Property toggle and Remodel Cost Factor** – You can enable a 20 % increase (1.2×) or keep the default 1.0×, and adjust the remodel factor via a slider.
+* **Interactive cost sliders** – Min/target/max bars for new and remodel \$/ft² are fully draggable.
+* **Telecommunication budgets and fees** – Telecommunication now appears in both the Shell Budget and the fee breakdown, with non‑zero amounts.
+* **Top‑down fee table** – Detailed table for each discipline (scan to BIM, architecture, engineering, telecommunication) shows % of cost, \$/ft² rate, market fee, Louis Amy fee, consultant/coordination fees, and whether the work is in‑house or outsourced.
+* **Bottom‑up fee calculation** – Editable labour rate, overhead rate, markup and discount fields compute a bottom‑up fee and show the variance versus the top‑down fee; the overhead bug is fixed.
+* **Non‑linear hours formula** – A toggle in Advanced Settings enables the logarithmic hours calculation, and there’s a per‑ft² hours factor slider; hours are broken down by phase and role.
+* **In‑house vs outsourced toggles** – Each discipline can be switched between in‑house and outsourced, automatically moving fees to consultant and adding coordination where appropriate.
+* **Share override controls (partial)** – The Shell/Interior/Landscape share percentages are now editable via numeric steppers.
+
+### ❗ Still missing or incomplete
+
+* **Discipline share overrides and splits** – The % override fields for individual disciplines (e.g., structural, mechanical) are not interactive; you can’t adjust engineering percentages or see new vs remodel splits.
+* **New vs remodel budgets per discipline** – The Shell Budget Allocation cards only show total amounts; there’s no breakdown of each discipline’s new and remodel portions.
+* **Automatic recalculation after share edits** – Changing Shell share (e.g., from 66 % to 70 %) didn’t re‑allocate budgets or adjust Interior and Landscape shares; values remained unchanged even after clicking “Recalculate”.
+* **Sanity check and contract discount** – There’s no market/contract price comparison panel, discount override, or maximum‑discount calculation, though bottom‑up variance is shown.
+* **Visual enhancements** – Budget ratios and discipline splits are still plain numbers; the planned donut charts and stacked bars haven’t been added.
+* **Category multiplier selection** – Category (1–5) is fixed from project creation; there’s no UI to change it or override the multiplier after creation.
+
+### 🟡 Clarifications for the developer
+
+* **Historic Multiplier** – The 20 % cost increase (1.2×) matches the original Phase 1 specification. There is no 1.4× requirement in the design; stick with **1.2×** unless directed otherwise by the user.
+* **Default In‑House settings** – By default, **Architecture, Interior, Landscape, Structural, Civil and Plumbing** should be in‑house. **Mechanical, Electrical and Telecommunication** should default to outsourced (matching the current toggles).
+* **Validation thresholds** – The current sanity warnings appear when hours per ft² fall below **0.3** or above **1.5**. These are sensible guardrails; you can keep them unless the user requests different thresholds.
+* **Export format** – Exports should include both **configuration values** (inputs, overrides, selected services) and a summary of the **calculation methodology** (key formulas and assumptions). This makes the export useful for audit and client transparency.
+
+In summary, the app has made significant progress and implements most of the core formulas and advanced toggles. To fully meet the earlier to‑do list, the developer should finish implementing discipline‑level overrides and splits, add the sanity‑check/contract price panel, enable category multiplier selection, and enhance visualisation with charts.
