@@ -266,34 +266,35 @@ export class ProjectCalculatorService {
     const architecturePercentage = Math.max(0, 1 - totalEngineeringPercentage);
     
     // Calculate engineering budgets with proper new/remodel split
-    // Architecture uses its calculated percentage
+    // Note: shellBudgetRemodel already includes the remodel cost reduction
+    // So we don't apply remodelMultiplier again - just apply the percentage directly
     const architectureBudgetNew = shellBudgetNew * architecturePercentage;
-    const architectureBudgetRemodel = shellBudgetRemodel * architecturePercentage * input.remodelMultiplier;
+    const architectureBudgetRemodel = shellBudgetRemodel * architecturePercentage;
     const architectureBudget = architectureBudgetNew + architectureBudgetRemodel;
     
-    // CRITICAL: Only structural gets remodel reduction, others don't
+    // All engineering disciplines use the same approach - percentage of shell budget
     const structuralBudgetNew = shellBudgetNew * engineeringPercentages.structural;
-    const structuralBudgetRemodel = shellBudgetRemodel * engineeringPercentages.structural * input.remodelMultiplier;
+    const structuralBudgetRemodel = shellBudgetRemodel * engineeringPercentages.structural;
     const structuralBudget = structuralBudgetNew + structuralBudgetRemodel;
     
     const civilBudgetNew = shellBudgetNew * engineeringPercentages.civil;
-    const civilBudgetRemodel = shellBudgetRemodel * engineeringPercentages.civil; // NO reduction
+    const civilBudgetRemodel = shellBudgetRemodel * engineeringPercentages.civil;
     const civilBudget = civilBudgetNew + civilBudgetRemodel;
     
     const mechanicalBudgetNew = shellBudgetNew * engineeringPercentages.mechanical;
-    const mechanicalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.mechanical; // NO reduction
+    const mechanicalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.mechanical;
     const mechanicalBudget = mechanicalBudgetNew + mechanicalBudgetRemodel;
     
     const electricalBudgetNew = shellBudgetNew * engineeringPercentages.electrical;
-    const electricalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.electrical; // NO reduction
+    const electricalBudgetRemodel = shellBudgetRemodel * engineeringPercentages.electrical;
     const electricalBudget = electricalBudgetNew + electricalBudgetRemodel;
     
     const plumbingBudgetNew = shellBudgetNew * engineeringPercentages.plumbing;
-    const plumbingBudgetRemodel = shellBudgetRemodel * engineeringPercentages.plumbing; // NO reduction
+    const plumbingBudgetRemodel = shellBudgetRemodel * engineeringPercentages.plumbing;
     const plumbingBudget = plumbingBudgetNew + plumbingBudgetRemodel;
     
     const telecomBudgetNew = shellBudgetNew * engineeringPercentages.telecom;
-    const telecomBudgetRemodel = shellBudgetRemodel * engineeringPercentages.telecom; // NO reduction
+    const telecomBudgetRemodel = shellBudgetRemodel * engineeringPercentages.telecom;
     const telecomBudget = telecomBudgetNew + telecomBudgetRemodel;
     
     return {

@@ -3,13 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -54,6 +55,8 @@ import {
   FileText,
   ChevronRight,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle,
   Download,
   Upload,
   Save
@@ -188,6 +191,33 @@ export default function ProjectDashboardV2() {
   const [electricalShareOverride, setElectricalShareOverride] = useState<number | undefined>();
   const [plumbingShareOverride, setPlumbingShareOverride] = useState<number | undefined>();
   const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
+  
+  // Bottom-up calculation states
+  const [laborRateOverride, setLaborRateOverride] = useState<number | undefined>();
+  const [overheadRateOverride, setOverheadRateOverride] = useState<number | undefined>();
+  const [markupFactorOverride, setMarkupFactorOverride] = useState<number | undefined>();
+  const [contractDiscountOverride, setContractDiscountOverride] = useState<number>(0.15);
+  
+  // Fee adjustment states
+  const [architectureFeeAdjustment, setArchitectureFeeAdjustment] = useState<number>(1.0);
+  const [interiorFeeAdjustment, setInteriorFeeAdjustment] = useState<number>(1.0);
+  const [landscapeFeeAdjustment, setLandscapeFeeAdjustment] = useState<number>(1.0);
+  const [structuralFeeAdjustment, setStructuralFeeAdjustment] = useState<number>(1.0);
+  const [civilFeeAdjustment, setCivilFeeAdjustment] = useState<number>(1.0);
+  const [mechanicalFeeAdjustment, setMechanicalFeeAdjustment] = useState<number>(1.0);
+  const [electricalFeeAdjustment, setElectricalFeeAdjustment] = useState<number>(1.0);
+  const [plumbingFeeAdjustment, setPlumbingFeeAdjustment] = useState<number>(1.0);
+  const [telecomFeeAdjustment, setTelecomFeeAdjustment] = useState<number>(1.0);
+  
+  // Additional UI state variables
+  const [coordinationFeePercent, setCoordinationFeePercent] = useState<number>(15);
+  const [presetName, setPresetName] = useState<string>('');
+  
+  // Fetch project data
+  const { data, isLoading, error } = useQuery<ProjectData>({
+    queryKey: ['/api/projects', projectId],
+    enabled: !!projectId,
+  });
 
   const recalculateMutation = useMutation({
     mutationFn: async () => {
@@ -210,12 +240,24 @@ export default function ProjectDashboardV2() {
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
-        structuralShareOverride,
-        civilShareOverride,
-        mechanicalShareOverride,
-        electricalShareOverride,
-        plumbingShareOverride,
-        telecomShareOverride,
+        structuralPercentageOverride: structuralShareOverride,
+        civilPercentageOverride: civilShareOverride,
+        mechanicalPercentageOverride: mechanicalShareOverride,
+        electricalPercentageOverride: electricalShareOverride,
+        plumbingPercentageOverride: plumbingShareOverride,
+        telecomPercentageOverride: telecomShareOverride,
+        laborRateOverride,
+        overheadRateOverride,
+        markupFactorOverride,
+        architectureFeeAdjustment,
+        interiorFeeAdjustment,
+        landscapeFeeAdjustment,
+        structuralFeeAdjustment,
+        civilFeeAdjustment,
+        mechanicalFeeAdjustment,
+        electricalFeeAdjustment,
+        plumbingFeeAdjustment,
+        telecomFeeAdjustment,
       };
 
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -236,11 +278,82 @@ export default function ProjectDashboardV2() {
       setIsHistoric(parseFloat(data.project.historicMultiplier) > 1.0);
       setHistoricPropertyMultiplier(parseFloat(data.project.historicMultiplier) > 1.0 ? 1.2 : 1.0);
 
+      // Initialize target costs from calculations if available
+      if (data.calculations) {
+        setNewConstructionTargetCost(parseFloat(data.calculations.newCostTarget));
+        setRemodelTargetCost(parseFloat(data.calculations.remodelCostTarget));
+      }
 
-      // Initialize target costs from calculations if not set
-      setNewConstructionTargetCost(parseFloat(data.project.newCostTarget));
-      setRemodelTargetCost(parseFloat(data.project.remodelCostTarget));
+      // Initialize share overrides if saved
+      if (data.project.shellShareOverride) {
+        setShellShareOverride(parseFloat(data.project.shellShareOverride));
+      }
+      if (data.project.interiorShareOverride) {
+        setInteriorShareOverride(parseFloat(data.project.interiorShareOverride));
+      }
+      if (data.project.landscapeShareOverride) {
+        setLandscapeShareOverride(parseFloat(data.project.landscapeShareOverride));
+      }
 
+      // Initialize discipline percentage overrides if saved
+      if (data.project.structuralPercentageOverride) {
+        setStructuralShareOverride(parseFloat(data.project.structuralPercentageOverride));
+      }
+      if (data.project.civilPercentageOverride) {
+        setCivilShareOverride(parseFloat(data.project.civilPercentageOverride));
+      }
+      if (data.project.mechanicalPercentageOverride) {
+        setMechanicalShareOverride(parseFloat(data.project.mechanicalPercentageOverride));
+      }
+      if (data.project.electricalPercentageOverride) {
+        setElectricalShareOverride(parseFloat(data.project.electricalPercentageOverride));
+      }
+      if (data.project.plumbingPercentageOverride) {
+        setPlumbingShareOverride(parseFloat(data.project.plumbingPercentageOverride));
+      }
+      if (data.project.telecomPercentageOverride) {
+        setTelecomShareOverride(parseFloat(data.project.telecomPercentageOverride));
+      }
+
+      // Initialize bottom-up calculation overrides if saved
+      if (data.project.laborRateOverride) {
+        setLaborRateOverride(parseFloat(data.project.laborRateOverride));
+      }
+      if (data.project.overheadRateOverride) {
+        setOverheadRateOverride(parseFloat(data.project.overheadRateOverride));
+      }
+      if (data.project.markupFactorOverride) {
+        setMarkupFactorOverride(parseFloat(data.project.markupFactorOverride));
+      }
+
+      // Initialize fee adjustments if saved
+      if (data.project.architectureFeeAdjustment) {
+        setArchitectureFeeAdjustment(parseFloat(data.project.architectureFeeAdjustment));
+      }
+      if (data.project.interiorFeeAdjustment) {
+        setInteriorFeeAdjustment(parseFloat(data.project.interiorFeeAdjustment));
+      }
+      if (data.project.landscapeFeeAdjustment) {
+        setLandscapeFeeAdjustment(parseFloat(data.project.landscapeFeeAdjustment));
+      }
+      if (data.project.structuralFeeAdjustment) {
+        setStructuralFeeAdjustment(parseFloat(data.project.structuralFeeAdjustment));
+      }
+      if (data.project.civilFeeAdjustment) {
+        setCivilFeeAdjustment(parseFloat(data.project.civilFeeAdjustment));
+      }
+      if (data.project.mechanicalFeeAdjustment) {
+        setMechanicalFeeAdjustment(parseFloat(data.project.mechanicalFeeAdjustment));
+      }
+      if (data.project.electricalFeeAdjustment) {
+        setElectricalFeeAdjustment(parseFloat(data.project.electricalFeeAdjustment));
+      }
+      if (data.project.plumbingFeeAdjustment) {
+        setPlumbingFeeAdjustment(parseFloat(data.project.plumbingFeeAdjustment));
+      }
+      if (data.project.telecomFeeAdjustment) {
+        setTelecomFeeAdjustment(parseFloat(data.project.telecomFeeAdjustment));
+      }
 
       // Load saved presets from localStorage
       const storedPresets = localStorage.getItem('projectPresets');
@@ -269,9 +382,27 @@ export default function ProjectDashboardV2() {
     shellShareOverride,
     interiorShareOverride,
     landscapeShareOverride,
+    structuralShareOverride,
+    civilShareOverride,
+    mechanicalShareOverride,
+    electricalShareOverride,
+    plumbingShareOverride,
+    telecomShareOverride,
+    laborRateOverride,
+    overheadRateOverride,
+    markupFactorOverride,
+    contractDiscountOverride,
+    architectureFeeAdjustment,
+    interiorFeeAdjustment,
+    landscapeFeeAdjustment,
+    structuralFeeAdjustment,
+    civilFeeAdjustment,
+    mechanicalFeeAdjustment,
+    electricalFeeAdjustment,
+    plumbingFeeAdjustment,
+    telecomFeeAdjustment,
     autoRecalc, 
-    data?.project, 
-    recalculateMutation
+    data?.project
   ]);
 
   if (isLoading) {
@@ -312,6 +443,71 @@ export default function ProjectDashboardV2() {
   }
 
   const { project, calculations, fees, hours } = data;
+  
+  // Helper functions for presets
+  const loadPreset = (presetKey: string) => {
+    const preset = savedPresets[presetKey];
+    if (preset) {
+      // Load all override values from preset
+      if (preset.shellShareOverride !== undefined) setShellShareOverride(preset.shellShareOverride);
+      if (preset.interiorShareOverride !== undefined) setInteriorShareOverride(preset.interiorShareOverride);
+      if (preset.landscapeShareOverride !== undefined) setLandscapeShareOverride(preset.landscapeShareOverride);
+      // Add more preset loading logic as needed
+    }
+  };
+  
+  const savePreset = () => {
+    if (!presetName) return;
+    const preset = {
+      name: presetName,
+      shellShareOverride,
+      interiorShareOverride,
+      landscapeShareOverride,
+      structuralShareOverride,
+      civilShareOverride,
+      mechanicalShareOverride,
+      electricalShareOverride,
+      plumbingShareOverride,
+      telecomShareOverride,
+      laborRateOverride,
+      overheadRateOverride,
+      markupFactorOverride,
+      contractDiscountOverride,
+    };
+    const newPresets = { ...savedPresets, [presetName]: preset };
+    setSavedPresets(newPresets);
+    localStorage.setItem('projectPresets', JSON.stringify(newPresets));
+    setPresetName('');
+  };
+  
+  const exportConfiguration = () => {
+    const config = {
+      projectName: project.projectName,
+      buildingType: project.buildingType,
+      overrides: {
+        shellShareOverride,
+        interiorShareOverride,
+        landscapeShareOverride,
+        structuralShareOverride,
+        civilShareOverride,
+        mechanicalShareOverride,
+        electricalShareOverride,
+        plumbingShareOverride,
+        telecomShareOverride,
+        laborRateOverride,
+        overheadRateOverride,
+        markupFactorOverride,
+        contractDiscountOverride,
+      }
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.projectName}_config.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // Calculate totals
   const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
@@ -335,183 +531,7 @@ export default function ProjectDashboardV2() {
   const calculatedRemodelBudget = existingBuildingArea * remodelTarget;
   const calculatedTotalBudget = calculatedNewBudget + calculatedRemodelBudget;
 
-  // Preset management functions
-  const savePreset = () => {
-    if (!presetName) return;
-
-    const preset = {
-      name: presetName,
-      timestamp: new Date().toISOString(),
-      configuration: {
-        // Cost and budget settings
-        newConstructionTargetCost,
-        remodelTargetCost,
-        shellShareOverride,
-        interiorShareOverride,
-        landscapeShareOverride,
-
-        // Discipline percentages
-        architecturePercentage,
-        interiorDesignPercentage,
-        landscapePercentage,
-        structuralPercentage,
-        civilPercentage,
-        mechanicalPercentage,
-        electricalPercentage,
-        plumbingPercentage,
-        telecomPercentage,
-
-        // Bottom-up settings
-        laborRate,
-        overheadRate,
-        markupFactor,
-        discountPercent,
-
-        // Advanced settings
-        useNonLinearHours,
-        disciplineInhouse,
-        scanToBimEnabled,
-        scanToBimArea,
-        scanToBimRate,
-
-        // Other settings
-        categoryMultiplier,
-        coordinationFeePercent,
-        hoursPerSqFt
-      }
-    };
-
-    const updatedPresets = { ...savedPresets, [presetName]: preset };
-    setSavedPresets(updatedPresets);
-    localStorage.setItem('projectPresets', JSON.stringify(updatedPresets));
-    setPresetName('');
-  };
-
-  const loadPreset = (presetKey: string) => {
-    const preset = savedPresets[presetKey];
-    if (!preset) return;
-
-    const config = preset.configuration;
-
-    // Apply all settings from the preset
-    setNewConstructionTargetCost(config.newConstructionTargetCost);
-    setRemodelTargetCost(config.remodelTargetCost);
-    setShellShareOverride(config.shellShareOverride);
-    setInteriorShareOverride(config.interiorShareOverride);
-    setLandscapeShareOverride(config.landscapeShareOverride);
-
-    setArchitecturePercentage(config.architecturePercentage);
-    setInteriorDesignPercentage(config.interiorDesignPercentage);
-    setLandscapePercentage(config.landscapePercentage);
-    setStructuralPercentage(config.structuralPercentage);
-    setCivilPercentage(config.civilPercentage);
-    setMechanicalPercentage(config.mechanicalPercentage);
-    setElectricalPercentage(config.electricalPercentage);
-    setPlumbingPercentage(config.plumbingPercentage);
-    setTelecomPercentage(config.telecomPercentage);
-
-    setLaborRate(config.laborRate);
-    setOverheadRate(config.overheadRate);
-    setMarkupFactor(config.markupFactor);
-    setDiscountPercent(config.discountPercent);
-
-    setUseNonLinearHours(config.useNonLinearHours);
-    setDisciplineInhouse(config.disciplineInhouse);
-    setScanToBimEnabled(config.scanToBimEnabled);
-    setScanToBimArea(config.scanToBimArea);
-    setScanToBimRate(config.scanToBimRate);
-
-    setCategoryMultiplier(config.categoryMultiplier);
-    setCoordinationFeePercent(config.coordinationFeePercent);
-    setHoursPerSqFt(config.hoursPerSqFt);
-  };
-
-  const exportConfiguration = () => {
-    const config = {
-      exportDate: new Date().toISOString(),
-      projectName: data?.project?.projectName || 'Unknown',
-      configuration: {
-        newConstructionTargetCost,
-        remodelTargetCost,
-        shellShareOverride,
-        interiorShareOverride,
-        landscapeShareOverride,
-        architecturePercentage,
-        interiorDesignPercentage,
-        landscapePercentage,
-        structuralPercentage,
-        civilPercentage,
-        mechanicalPercentage,
-        electricalPercentage,
-        plumbingPercentage,
-        telecomPercentage,
-        laborRate,
-        overheadRate,
-        markupFactor,
-        discountPercent,
-        useNonLinearHours,
-        disciplineInhouse,
-        scanToBimEnabled,
-        scanToBimArea,
-        scanToBimRate,
-        categoryMultiplier,
-        coordinationFeePercent,
-        hoursPerSqFt
-      }
-    };
-
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `project-config-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importConfiguration = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const config = JSON.parse(e.target?.result as string);
-        if (config.configuration) {
-          const c = config.configuration;
-          setNewConstructionTargetCost(c.newConstructionTargetCost);
-          setRemodelTargetCost(c.remodelTargetCost);
-          setShellShareOverride(c.shellShareOverride);
-          setInteriorShareOverride(c.interiorShareOverride);
-          setLandscapeShareOverride(c.landscapeShareOverride);
-          setArchitecturePercentage(c.architecturePercentage);
-          setInteriorDesignPercentage(c.interiorDesignPercentage);
-          setLandscapePercentage(c.landscapePercentage);
-          setStructuralPercentage(c.structuralPercentage);
-          setCivilPercentage(c.civilPercentage);
-          setMechanicalPercentage(c.mechanicalPercentage);
-          setElectricalPercentage(c.electricalPercentage);
-          setPlumbingPercentage(c.plumbingPercentage);
-          setTelecomPercentage(c.telecomPercentage);
-          setLaborRate(c.laborRate);
-          setOverheadRate(c.overheadRate);
-          setMarkupFactor(c.markupFactor);
-          setDiscountPercent(c.discountPercent);
-          setUseNonLinearHours(c.useNonLinearHours);
-          setDisciplineInhouse(c.disciplineInhouse);
-          setScanToBimEnabled(c.scanToBimEnabled);
-          setScanToBimArea(c.scanToBimArea);
-          setScanToBimRate(c.scanToBimRate);
-          setCategoryMultiplier(c.categoryMultiplier);
-          setCoordinationFeePercent(c.coordinationFeePercent);
-          setHoursPerSqFt(c.hoursPerSqFt);
-        }
-      } catch (error) {
-        console.error('Failed to import configuration:', error);
-      }
-    };
-    reader.readAsText(file);
-  };
+  // Duplicate functions removed - already defined above
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -1011,7 +1031,7 @@ export default function ProjectDashboardV2() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="topdown" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="inputs" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   Inputs
@@ -1024,15 +1044,178 @@ export default function ProjectDashboardV2() {
                   <Building className="h-4 w-4" />
                   Disciplines
                 </TabsTrigger>
-                <TabsTrigger value="fee-analysis" className="flex items-center gap-2">
+                <TabsTrigger value="topdown" className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Top-Down
+                </TabsTrigger>
+                <TabsTrigger value="bottomup" className="flex items-center gap-2">
                   <Calculator className="h-4 w-4" />
-                  Fees
+                  Bottom-Up
                 </TabsTrigger>
                 <TabsTrigger value="sanity-check" className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
                   Analysis
                 </TabsTrigger>
               </TabsList>
+
+              {/* Inputs Tab - Discipline Percentage Controls */}
+              <TabsContent value="inputs" className="space-y-4 mt-4">
+                <div>
+                  <Label className="text-sm font-semibold mb-3">Engineering Discipline Percentages</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Structural %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={structuralShareOverride ? structuralShareOverride * 100 : 35}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setStructuralShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="35.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Civil %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={civilShareOverride ? civilShareOverride * 100 : 7}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCivilShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="7.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Mechanical %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={mechanicalShareOverride ? mechanicalShareOverride * 100 : 10}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setMechanicalShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="10.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Electrical %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={electricalShareOverride ? electricalShareOverride * 100 : 8}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setElectricalShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="8.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Plumbing %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={plumbingShareOverride ? plumbingShareOverride * 100 : 5}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPlumbingShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="5.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Telecom %</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={telecomShareOverride ? telecomShareOverride * 100 : 3}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setTelecomShareOverride(val ? parseFloat(val) / 100 : undefined);
+                          }}
+                          placeholder="3.0"
+                          className="h-8"
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <Label className="text-sm font-semibold mb-3">Fee Adjustment Multipliers</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { label: 'Architecture', value: architectureFeeAdjustment, setter: setArchitectureFeeAdjustment },
+                      { label: 'Interior', value: interiorFeeAdjustment, setter: setInteriorFeeAdjustment },
+                      { label: 'Landscape', value: landscapeFeeAdjustment, setter: setLandscapeFeeAdjustment },
+                      { label: 'Structural', value: structuralFeeAdjustment, setter: setStructuralFeeAdjustment },
+                      { label: 'Civil', value: civilFeeAdjustment, setter: setCivilFeeAdjustment },
+                      { label: 'Mechanical', value: mechanicalFeeAdjustment, setter: setMechanicalFeeAdjustment },
+                      { label: 'Electrical', value: electricalFeeAdjustment, setter: setElectricalFeeAdjustment },
+                      { label: 'Plumbing', value: plumbingFeeAdjustment, setter: setPlumbingFeeAdjustment },
+                      { label: 'Telecom', value: telecomFeeAdjustment, setter: setTelecomFeeAdjustment },
+                    ].map(({ label, value, setter }) => (
+                      <div key={label} className="space-y-2">
+                        <Label className="text-xs">{label}</Label>
+                        <div className="flex items-center gap-2">
+                          <Slider
+                            value={[value]}
+                            onValueChange={(v) => setter(v[0])}
+                            max={2}
+                            min={0.5}
+                            step={0.05}
+                            className="flex-1"
+                          />
+                          <Badge variant="outline" className="w-12 text-xs">
+                            {value.toFixed(2)}x
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
 
               <TabsContent value="topdown" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -1159,8 +1342,11 @@ export default function ProjectDashboardV2() {
                       <Label className="text-xs">Labor Rate ($/hr)</Label>
                       <Input
                         type="number"
-                        value={laborRate}
-                        onChange={(e) => setLaborRate(parseFloat(e.target.value))}
+                        value={laborRateOverride || 40}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLaborRateOverride(val ? parseFloat(val) : undefined);
+                        }}
                         className="h-8"
                         min={20}
                         max={100}
@@ -1171,8 +1357,11 @@ export default function ProjectDashboardV2() {
                       <Label className="text-xs">Overhead Rate ($/hr)</Label>
                       <Input
                         type="number"
-                        value={overheadRate}
-                        onChange={(e) => setOverheadRate(parseFloat(e.target.value))}
+                        value={overheadRateOverride || 50}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setOverheadRateOverride(val ? parseFloat(val) : undefined);
+                        }}
                         className="h-8"
                         min={20}
                         max={100}
@@ -1183,8 +1372,11 @@ export default function ProjectDashboardV2() {
                       <Label className="text-xs">Markup Factor</Label>
                       <Input
                         type="number"
-                        value={markupFactor}
-                        onChange={(e) => setMarkupFactor(parseFloat(e.target.value))}
+                        value={markupFactorOverride || 2.2}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMarkupFactorOverride(val ? parseFloat(val) : undefined);
+                        }}
                         className="h-8"
                         min={1}
                         max={3}
@@ -1196,8 +1388,11 @@ export default function ProjectDashboardV2() {
                       <div className="flex items-center gap-1">
                         <Input
                           type="number"
-                          value={discountPercent * 100}
-                          onChange={(e) => setDiscountPercent(parseFloat(e.target.value) / 100)}
+                          value={contractDiscountOverride * 100}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setContractDiscountOverride(val ? parseFloat(val) / 100 : 0);
+                          }}
                           className="h-8"
                           min={0}
                           max={50}
@@ -1235,41 +1430,41 @@ export default function ProjectDashboardV2() {
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">× Labor Rate</span>
-                        <span className="text-sm">${laborRate}/hr</span>
+                        <span className="text-sm">${laborRateOverride || 40}/hr</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">Labor Cost</span>
-                        <span className="font-medium">{formatCurrency(totalHours * laborRate)}</span>
+                        <span className="font-medium">{formatCurrency(totalHours * (laborRateOverride || 40))}</span>
                       </div>
                     </div>
 
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">+ Overhead</span>
-                        <span className="text-sm">${overheadRate}/hr × {totalHours.toFixed(0)} hrs</span>
+                        <span className="text-sm">${overheadRateOverride || 50}/hr × {totalHours.toFixed(0)} hrs</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">With Overhead</span>
-                        <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate))}</span>
+                        <span className="font-medium">{formatCurrency(totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)))}</span>
                       </div>
                     </div>
 
                     <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">× Markup</span>
-                        <span className="text-sm">{((markupFactor - 1) * 100).toFixed(0)}%</span>
+                        <span className="text-sm">{(((markupFactorOverride || 2.2) - 1) * 100).toFixed(0)}%</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">With Markup</span>
-                        <span className="font-medium">{formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor)}</span>
+                        <span className="font-medium">{formatCurrency(totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)) * (markupFactorOverride || 2.2))}</span>
                       </div>
                     </div>
 
-                    {discountPercent > 0 && (
+                    {contractDiscountOverride > 0 && (
                       <div className="pl-4 space-y-2 border-l-2 border-gray-300">
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">- Discount</span>
-                          <span className="text-sm">{(discountPercent * 100).toFixed(0)}%</span>
+                          <span className="text-sm">{(contractDiscountOverride * 100).toFixed(0)}%</span>
                         </div>
                       </div>
                     )}
@@ -1279,7 +1474,7 @@ export default function ProjectDashboardV2() {
                     <div className="flex justify-between items-center pt-2">
                       <span className="font-semibold">Bottom-Up Fee</span>
                       <span className="text-2xl font-bold text-green-600">
-                        {formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}
+                        {formatCurrency(totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)) * (markupFactorOverride || 2.2) * (1 - contractDiscountOverride))}
                       </span>
                     </div>
                   </div>
@@ -1295,14 +1490,14 @@ export default function ProjectDashboardV2() {
                     </div>
                     <div className="p-3 border rounded-lg">
                       <div className="text-xs text-muted-foreground mb-1">Bottom-Up</div>
-                      <div className="text-lg font-bold">{formatCurrency(totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent))}</div>
+                      <div className="text-lg font-bold">{formatCurrency(totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)) * (markupFactorOverride || 2.2) * (1 - contractDiscountOverride))}</div>
                     </div>
                   </div>
                   <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
                       <span className="text-sm text-amber-800">
-                        Variance: {formatPercent(Math.abs((totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent) - totalMarketFee) / totalMarketFee))}
+                        Variance: {formatPercent(Math.abs((totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)) * (markupFactorOverride || 2.2) * (1 - contractDiscountOverride) - totalMarketFee) / totalMarketFee))}
                       </span>
                     </div>
                   </div>
@@ -1358,7 +1553,7 @@ export default function ProjectDashboardV2() {
                         <Label className="text-sm font-semibold">Fee Variance (Top-Down vs Bottom-Up)</Label>
                         <div className="p-4 border rounded-lg mt-2">
                           {(() => {
-                            const bottomUpFee = totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent);
+                            const bottomUpFee = totalHours * ((laborRateOverride || 40) + (overheadRateOverride || 50)) * (markupFactorOverride || 2.2) * (1 - contractDiscountOverride);
                             const variance = totalMarketFee ? Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee) : 0;
                             let status = 'info';
                             let message = `Variance: ${formatPercent(variance)}`;

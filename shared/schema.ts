@@ -524,12 +524,6 @@ export const comprehensiveProjectInputSchema = z.object({
   categoryOverride: z.number().optional(),
   newConstructionTargetCostOverride: z.number().optional(),
   remodelTargetCostOverride: z.number().optional(),
-  structuralShareOverride: z.number().min(0).max(1).optional(),
-  civilShareOverride: z.number().min(0).max(1).optional(),
-  mechanicalShareOverride: z.number().min(0).max(1).optional(),
-  electricalShareOverride: z.number().min(0).max(1).optional(),
-  plumbingShareOverride: z.number().min(0).max(1).optional(),
-  telecomShareOverride: z.number().min(0).max(1).optional(),
   // Coordination fee percentage
   coordinationFeePercent: z.number().min(0).optional(),
 });

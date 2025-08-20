@@ -1,0 +1,59 @@
+o bring the Comprehensive Calculator fully in line with the Excel model and the phased requirements, the coding agent should implement the following changes across the front‑end and back‑end:
+
+1. Hook Up All Override Inputs to Recalculation
+
+Share Overrides: Currently, editing shellShareOverride, interiorShareOverride and landscapeShareOverride does not trigger a recalculation. Add onChange handlers that update state and call the back‑end recalculation (e.g. via POST /calculate or an equivalent call) immediately.
+
+Discipline Share Overrides: Expose UI inputs for structural, civil, mechanical, electrical, plumbing and telecom percentages. Bind these values to the new override fields in ComprehensiveProjectInput (structuralPercentageOverride through telecomPercentageOverride) and trigger recalculations.
+
+Labor, Overhead, Markup, Discount Adjustments: The bottom‑up tab’s inputs for labour rate, overhead rate, markup factor and discount should update state and recompute the bottom‑up fee on change. Ensure the discount field is separate and does not overwrite markup.
+
+2. Ensure All Sliders and Toggles Affect Calculations
+
+Area Sliders: Fix the step size on the building‑area sliders (e.g. step of 100 ft²) to prevent giant leaps
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+. Tie their values to recalculation so budgets update without needing to move another slider.
+
+Remodel Factor & Historic Property: When the remodel multiplier or historic property toggle changes, recalculate budgets immediately
+b17d8db1-963b-48a5-9ec0-f17f698e5a4a-00-opn8c8wtw1oj.picard.replit.dev
+.
+
+Category Selector: Allow users to select Category 1–5 after project creation; map to multipliers 0.9–1.3 and refresh calculations.
+
+In‑House vs Outsourced: The UI toggles for each discipline must update Project.architectureInhouse, structuralInhouse, etc., and recompute fees to reflect Louis Amy vs consultant shares, including coordination fees.
+
+3. Expand Budget and Fee Breakdown in the UI
+
+New vs Remodel Splits: Display new and remodel portions for each discipline (e.g. structural budget = $X new + $Y remodel) using the values computed in calculateDisciplineBudgets. Show separate columns or tooltips on the discipline cards.
+
+Discipline‑Level Overrides: Make the “% Override” fields on discipline cards interactive; editing them should update the corresponding engineering share overrides in state.
+
+Sanity Check Panel: Add a new section that compares top‑down and bottom‑up fees. Show market price, maximum discount, discounted final price and applied discount percentage, with an input to override the discount. Compute and display the percentage difference between the top‑down market fee and the bottom‑up fee.
+
+Scan‑to‑BIM Details: Provide a toggle for including Scan‑to‑BIM calculations (scanToBimEnabled) and show the building and site scan fees and rates when enabled.
+
+4. Visual and UX Improvements
+
+Charts: Replace static numbers with visual representations:
+
+A donut or bar chart showing the ratio of new vs remodel budget.
+
+A stacked bar chart for each discipline’s budget (new vs remodel components).
+
+Range sliders that reflect the min/target/max values for cost per ft².
+
+Validation: Ensure shares sum to 100 % (shell + interior + landscape); add warnings or auto‑normalization. Validate that all input percentages stay within 0–100 %.
+
+Export/Import: Extend the export function so it includes both project configuration values and a summary of the calculation methodology (e.g. formulas and assumptions used). Make sure imported files populate overrides and recalc properly.
+
+5. Complete Non‑Linear Hours and Phase Allocation
+
+Hours Factor: Ensure the non‑linear hours toggle truly switches between the linear (fee‑based) hours calculation and the non‑linear formula. Update the hours distribution table when the toggle or hours‑per‑ft² slider changes.
+
+Phase/Role Adjustments: Allow editing phase percentages and role leverage in the advanced settings; update calculateHours() accordingly.
+
+6. Connect Back‑End to UI State
+
+The back‑end already supports all overrides (shares, disciplines, rates, fee adjustments) and has correct formulas. Make sure the front‑end collects the correct values in the ComprehensiveProjectInput and passes them to projectCalculator.calculateProject(). After recalculation, update the UI with the returned ProjectCalculation, ProjectFee[] and ProjectHours[].
+
+Implementing these tasks will ensure that all interactive controls work as intended, budgets and fees reflect user overrides, and the app provides the same depth and transparency as the original Excel spreadsheet.
