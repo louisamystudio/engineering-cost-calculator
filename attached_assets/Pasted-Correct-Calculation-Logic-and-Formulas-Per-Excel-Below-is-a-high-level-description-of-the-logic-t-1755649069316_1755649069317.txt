@@ -1,0 +1,426 @@
+Correct Calculation Logic and Formulas (Per Excel)
+
+Below is a high‑level description of the logic that should be implemented to align with the Excel sheet, with formulas annotated to guide your developer.
+
+2.1 Cost per Square Foot and Budgets
+
+New Construction Cost Min/Max
+
+New Cost Min
+=
+CostRangesLookup
+(
+𝑑
+𝑒
+𝑠
+𝑖
+𝑔
+𝑛
+𝐿
+𝑒
+𝑣
+𝑒
+𝑙
+,
+Low
+)
+×
+HistoricMultiplier
+New Cost Min=CostRangesLookup(designLevel,Low)×HistoricMultiplier
+New Cost Max
+=
+CostRangesLookup
+(
+𝑑
+𝑒
+𝑠
+𝑖
+𝑔
+𝑛
+𝐿
+𝑒
+𝑣
+𝑒
+𝑙
+,
+High
+)
+×
+HistoricMultiplier
+New Cost Max=CostRangesLookup(designLevel,High)×HistoricMultiplier
+
+(Where CostRangesLookup returns columns 6 and 7 from the Cost_Ranges table.)
+
+New Construction Target
+Default to the mid‑point:
+
+NewCostTarget
+=
+New Cost Min
++
+New Cost Max
+2
+NewCostTarget=
+2
+New Cost Min+New Cost Max
+	​
+
+
+but allow the user to adjust it via a slider.
+
+Remodel Cost Min/Max
+
+Remodel Cost Min
+=
+New Cost Min
+×
+RemodelMultiplier
+Remodel Cost Min=New Cost Min×RemodelMultiplier
+Remodel Cost Max
+=
+New Cost Max
+×
+RemodelMultiplier
+Remodel Cost Max=New Cost Max×RemodelMultiplier
+
+with target similarly mid‑point or user‑selected.
+
+Budgets
+
+NewBudget
+=
+NewArea
+×
+NewCostTarget
+NewBudget=NewArea×NewCostTarget
+RemodelBudget
+=
+ExistingArea
+×
+RemodelCostTarget
+RemodelBudget=ExistingArea×RemodelCostTarget
+TotalBudget
+=
+NewBudget
++
+RemodelBudget
+TotalBudget=NewBudget+RemodelBudget
+
+Component Budgets
+Use the Shell/Interior/Landscape shares from the Cost_Ranges table (columns 8–10) or user overrides:
+
+	
+ShellBudgetNew
+	
+=
+NewBudget
+×
+ShellShare
+		
+	
+ShellBudgetRemodel
+	
+=
+RemodelBudget
+×
+ShellShare
+		
+	
+ShellBudgetTotal
+	
+=
+ShellBudgetNew
++
+ShellBudgetRemodel
+		
+ShellBudgetNew
+ShellBudgetRemodel
+ShellBudgetTotal
+	​
+
+=NewBudget×ShellShare
+=RemodelBudget×ShellShare
+=ShellBudgetNew+ShellBudgetRemodel
+	​
+
+	​
+
+
+and analogously for Interior and Landscape.
+
+2.2 Engineering Discipline Budgets
+
+Lookup discipline shares from the Engineering_Costs table by building use/type and tier:
+
+Structural
+
+StructuralBudget
+=
+(
+ShellBudgetNew
+×
+structuralShare
+)
++
+(
+ShellBudgetRemodel
+×
+structuralShare
+×
+RemodelMultiplier
+)
+StructuralBudget=(ShellBudgetNew×structuralShare)+(ShellBudgetRemodel×structuralShare×RemodelMultiplier)
+
+Only structural remodel gets the 50 % reduction; the other disciplines use the full remodel portion.
+
+Other Disciplines
+
+CivilBudget
+=
+ShellBudgetNew
+×
+civilShare
++
+ShellBudgetRemodel
+×
+civilShare
+CivilBudget=ShellBudgetNew×civilShare+ShellBudgetRemodel×civilShare
+
+(and similarly for Mechanical, Electrical, Plumbing, and Telecommunication).
+
+Architecture Budget
+
+ArchitectureBudget
+=
+ShellBudgetTotal
+−
+∑
+(
+discipline budgets
+)
+ArchitectureBudget=ShellBudgetTotal−∑(discipline budgets)
+
+(the remainder of shell cost after engineering.)
+
+2.3 Top‑Down Fee Calculation
+
+Use the non‑linear fee curve constants A=0.07498, B=0.007824, P=−0.7495.
+
+For each discipline, compute its fee percentage of the project cost:
+
+basePct
+=
+𝐴
++
+𝐵
+×
+(
+BudgetRef
+1,000,000
+)
+𝑃
+basePct=A+B×(
+1,000,000
+BudgetRef
+	​
+
+)
+P
+feePct
+=
+basePct
+×
+CategoryMultiplier
+×
+0.95
+×
+NewBudget
++
+1.05
+×
+RemodelBudget
+TotalBudget
+feePct=basePct×CategoryMultiplier×
+TotalBudget
+0.95×NewBudget+1.05×RemodelBudget
+	​
+
+
+If the discipline is Architecture, Interior Design, or Landscape Architecture, multiply the feePct by 
+(
+1
++
+(
+1
+−
+RemodelMultiplier
+)
+)
+(1+(1−RemodelMultiplier)).
+Set BudgetRef to the shell budget for architecture, the interior budget for interior design, and the discipline’s own budget for engineering disciplines (structural, civil, mechanical, electrical, plumbing, telecom).
+
+Then compute:
+
+MarketFee
+=
+feePct
+×
+ScopeBudget
+MarketFee=feePct×ScopeBudget
+RatePerFt²
+=
+MarketFee
+TotalArea
+RatePerFt²=
+TotalArea
+MarketFee
+	​
+
+
+If the discipline is outsourced, set LouisAmyFee = 0, ConsultantFee = MarketFee and CoordinationFee = MarketFee × 0.15 (15 % coordination). Otherwise, LouisAmyFee = MarketFee, ConsultantFee = 0, and CoordinationFee = 0.
+
+2.4 Bottom‑Up Fee Calculation
+
+For the bottom‑up calculation, let:
+
+Labour Rate 
+𝑟
+labour
+r
+labour
+	​
+
+ (e.g., $26/hr from your data).
+
+Overhead per hour 
+𝑟
+overhead
+r
+overhead
+	​
+
+ (e.g., $46/hr – note the 46.00 vs 4600 bug).
+
+Markup factor (e.g., 1.5 = 50 % markup).
+
+Discount 
+𝑑
+d (e.g., 0 if no discount).
+
+Then:
+
+TotalHours
+=
+(
+NewArea
++
+ExistingArea
+)
+×
+HoursPerFt²Factor
+TotalHours=(NewArea+ExistingArea)×HoursPerFt²Factor
+LabourCost
+=
+TotalHours
+×
+𝑟
+labour
+LabourCost=TotalHours×r
+labour
+	​
+
+WithOverhead
+=
+LabourCost
++
+(
+TotalHours
+×
+𝑟
+overhead
+)
+WithOverhead=LabourCost+(TotalHours×r
+overhead
+	​
+
+)
+WithMarkup
+=
+WithOverhead
+×
+MarkupFactor
+WithMarkup=WithOverhead×MarkupFactor
+BottomUpFee
+=
+WithMarkup
+×
+(
+1
+−
+𝑑
+)
+BottomUpFee=WithMarkup×(1−d)
+
+Users should be able to set 
+𝑟
+labour
+,
+𝑟
+overhead
+,
+r
+labour
+	​
+
+,r
+overhead
+	​
+
+, markup, and discount, as well as override the hours-per‑ft² factor.
+
+2.5 Hours and Phase Distribution
+
+Instead of a single hours-per‑ft² slider, use the original non‑linear formula from the Excel sheet:
+
+hoursFactor
+=
+(
+0.21767
++
+11.21274
+×
+(
+Area
+−
+0.53816
+)
+−
+0.08
+)
+×
+CategoryMultiplier
+hoursFactor=(0.21767+11.21274×(Area
+−0.53816
+)−0.08)×CategoryMultiplier
+
+Use 0.9 on the new area and 0.8 on the remodel area, then multiply the remodel hours by 1.15. Sum the two to get total hours. Allow the user to override this factor if desired.
+
+Distribute the hours across project phases using the default percentages (8 % Discovery, 8 % Conceptual, 34 % Creative Schematic, etc.), and allocate to roles (Designer1, Designer2, Architect, Engineer, Principal) using the leverage percentages from the spreadsheet, rounding each role’s hours individually.
+
+3. Recommendations for the Developer
+
+Fix the overhead rate bug – divide the stored overhead rate by 100 (or use the correct value 46.10 instead of 4600). Validate that bottom‑up fees are in a reasonable range.
+
+Implement telecommunication fee calculation – compute the fee for the telecommunication discipline using the same top‑down formula; if outsourced, record the fee in the consultant/coordination fields.
+
+Add interactive overrides – allow users to adjust Shell/Interior/Landscape shares, engineering discipline shares, and the hours factor directly in the dashboard rather than only at project creation. Reflect these overrides in the calculations.
+
+Expose the formulas – display the percent‑of‑cost and rate‑per‑ft² used for each discipline in both top‑down and bottom‑up analyses. Provide input fields for category multiplier, remodel multiplier, and discount.
+
+Enable service selection – let users choose which scopes are in‑house vs outsourced and see the effect on Louis Amy vs consultant fees.
+
+Align with the spreadsheet’s order – present inputs first, then budgets and engineering splits, followed by detailed fee calculations (top‑down and bottom‑up) and hours distribution. Use collapsible sections or tabs to separate top‑down analysis, bottom‑up analysis, and hours.
+
+Use the non‑linear hours formula – replicate the Excel hours factor logic with new vs remodel weighting and the category multiplier rather than a constant factor, and allow overrides for advanced users.
+
+By following these formulas and recommendations, the Comprehensive Calculator will more faithfully reproduce the Excel model’s logic and provide users with a transparent, interactive budgeting and fee calculation tool.
