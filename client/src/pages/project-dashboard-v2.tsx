@@ -387,6 +387,7 @@ export default function ProjectDashboardV2() {
     newConstructionTargetCost,
     remodelTargetCost,
     remodelMultiplier,
+    isHistoric,
     historicPropertyMultiplier,
     shellShareOverride,
     interiorShareOverride,
@@ -411,7 +412,8 @@ export default function ProjectDashboardV2() {
     plumbingFeeAdjustment,
     telecomFeeAdjustment,
     autoRecalc, 
-    data?.project
+    data?.project,
+    recalculateMutation.mutate
   ]);
 
   if (isLoading) {
