@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -26,9 +25,9 @@ export function DisciplineBudgetCard({
   remodelMultiplier = 1.0,
   className = ""
 }: DisciplineBudgetCardProps) {
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
@@ -104,12 +103,12 @@ export function DisciplineBudgetCard({
             {/* Visual Progress Bar */}
             <div className="space-y-1">
               <div className="flex h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-green-500" 
+                <div
+                  className="bg-green-500"
                   style={{ width: `${newPercentage}%` }}
                 />
-                <div 
-                  className="bg-orange-500" 
+                <div
+                  className="bg-orange-500"
                   style={{ width: `${remodelPercentage}%` }}
                 />
               </div>
