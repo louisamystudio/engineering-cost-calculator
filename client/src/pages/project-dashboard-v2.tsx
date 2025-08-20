@@ -374,7 +374,7 @@ export default function ProjectDashboardV2() {
 
   // Memoize the recalculation function to prevent infinite loops
   const performRecalculation = useCallback(() => {
-    if (data?.project && !recalculateMutation.isLoading) {
+    if (data?.project && !recalculateMutation.isPending) {
       recalculateMutation.mutate({
         projectName: data.project.projectName || 'Demo Project',
         buildingType: data.project.buildingType,
@@ -385,7 +385,7 @@ export default function ProjectDashboardV2() {
         existingBuildingArea,
         siteArea,
         isHistoric,
-        historicMultiplier,
+        historicMultiplier: isHistoric ? historicPropertyMultiplier : 1.0,
         remodelMultiplier,
         newConstructionTargetCost,
         remodelTargetCost,
