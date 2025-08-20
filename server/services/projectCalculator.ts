@@ -134,11 +134,11 @@ export class ProjectCalculatorService {
     
     if (existingDemo && input.projectName === 'Demo Project') {
       // Update existing demo project
-      const updated = await storage.updateProject(existingDemo.id, projectData);
+      const updated = await storage.updateProject(existingDemo.id, projectData as any);
       return updated!;
     } else {
       // Create new project
-      const project = await storage.createProject(projectData);
+      const project = await storage.createProject(projectData as any);
       return project;
     }
   }

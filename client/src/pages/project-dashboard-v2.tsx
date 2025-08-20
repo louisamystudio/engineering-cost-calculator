@@ -375,71 +375,13 @@ export default function ProjectDashboardV2() {
   // Memoize the recalculation function to prevent infinite loops
   const performRecalculation = useCallback(() => {
     if (data?.project && !recalculateMutation.isPending) {
-      recalculateMutation.mutate({
-        projectName: data.project.projectName || 'Demo Project',
-        buildingType: data.project.buildingType,
-        buildingTier: data.project.buildingTier,
-        category: data.project.category,
-        designLevel: data.project.designLevel,
-        newBuildingArea,
-        existingBuildingArea,
-        siteArea,
-        isHistoric,
-        historicMultiplier: isHistoric ? historicPropertyMultiplier : 1.0,
-        remodelMultiplier,
-        newConstructionTargetCost,
-        remodelTargetCost,
-        shellShareOverride,
-        interiorShareOverride,
-        landscapeShareOverride,
-
-        // Include all discipline settings
-        architectureInhouse: data.project.architectureInhouse,
-        interiorDesignInhouse: data.project.interiorDesignInhouse,
-        landscapeInhouse: data.project.landscapeInhouse,
-        structuralInhouse: data.project.structuralInhouse,
-        civilInhouse: data.project.civilInhouse,
-        mechanicalInhouse: data.project.mechanicalInhouse,
-        electricalInhouse: data.project.electricalInhouse,
-        plumbingInhouse: data.project.plumbingInhouse,
-        telecomInhouse: data.project.telecomInhouse,
-
-        // Include percentage overrides
-        structuralPercentageOverride: structuralShareOverride,
-        civilPercentageOverride: civilShareOverride,
-        mechanicalPercentageOverride: mechanicalShareOverride,
-        electricalPercentageOverride: electricalShareOverride,
-        plumbingPercentageOverride: plumbingShareOverride,
-        telecomPercentageOverride: telecomShareOverride,
-
-        // Include fee adjustments
-        architectureFeeAdjustment,
-        interiorFeeAdjustment,
-        landscapeFeeAdjustment,
-        structuralFeeAdjustment,
-        civilFeeAdjustment,
-        mechanicalFeeAdjustment,
-        electricalFeeAdjustment,
-        plumbingFeeAdjustment,
-        telecomFeeAdjustment,
-
-        // Include bottom-up calculation parameters
-        laborRateOverride,
-        overheadRateOverride,
-        markupFactorOverride,
-        contractDiscountOverride,
-        useNonLinearHours: data.project.useNonLinearHours,
-
-        // Scan to BIM settings
-        scanToBimEnabled: data.project.scanToBimEnabled,
-        scanToBimArea: parseFloat(data.project.scanToBimArea || '0'),
-        scanToBimRate: parseFloat(data.project.scanToBimRate || '0.5')
-      });
-    }
-  }, [
-    // Area and settings
-    newBuildingArea,
-    existingBuildingArea,
+        // Mutation function already derives necessary input from current state
+        recalculateMutation.mutate();
+      }
+    }, [
+      // Area and settings
+      newBuildingArea,
+      existingBuildingArea,
     siteArea,
     newConstructionTargetCost,
     remodelTargetCost,
@@ -523,6 +465,13 @@ export default function ProjectDashboardV2() {
   }
 
   const { project, calculations, fees, hours } = data;
+
+  // Safely derive the category multiplier from project or calculation data
+  const categoryMultiplier = parseFloat(
+    ((project as any)?.categoryMultiplier ??
+      (calculations as any)?.categoryMultiplier ??
+      1).toString()
+  );
 
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
@@ -1891,7 +1840,7 @@ export default function ProjectDashboardV2() {
                       <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Scan to BIM Cost</span>
-                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate)}</span>
+                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate * categoryMultiplier)}</span>
                         </div>
                       </div>
                     )}
@@ -2162,7 +2111,7 @@ export default function ProjectDashboardV2() {
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <span className="text-xs">Effective Rate</span>
                     <span className="text-sm font-bold">
-                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt, 0)} hrs
+                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt * categoryMultiplier, 0)} hrs
                     </span>
                   </div>
                 </div>
