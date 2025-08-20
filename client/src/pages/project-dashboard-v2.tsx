@@ -10,6 +10,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
@@ -46,7 +53,10 @@ import {
   Percent,
   FileText,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Upload,
+  Save
 } from "lucide-react";
 import {
   BarChart,
@@ -232,6 +242,10 @@ export default function ProjectDashboardV2() {
   
   // UI Controls
   const [autoRecalc, setAutoRecalc] = useState(true);
+  
+  // Preset Management
+  const [presetName, setPresetName] = useState('');
+  const [savedPresets, setSavedPresets] = useState<Record<string, any>>({});
   const [expandedSections, setExpandedSections] = useState({
     inputs: true,
     costRanges: true,
@@ -309,8 +323,192 @@ export default function ProjectDashboardV2() {
       setSiteArea(parseFloat(data.project.siteArea));
       setRemodelMultiplier(parseFloat(data.project.remodelMultiplier));
       setIsHistoric(parseFloat(data.project.historicMultiplier) > 1.0);
+      
+      // Load saved presets from localStorage
+      const storedPresets = localStorage.getItem('projectPresets');
+      if (storedPresets) {
+        setSavedPresets(JSON.parse(storedPresets));
+      }
     }
   }, [data]);
+  
+  // Preset management functions
+  const savePreset = () => {
+    if (!presetName) return;
+    
+    const preset = {
+      name: presetName,
+      timestamp: new Date().toISOString(),
+      configuration: {
+        // Cost and budget settings
+        newConstructionTarget,
+        remodelTarget,
+        shellShareOverride,
+        interiorShareOverride,
+        landscapeShareOverride,
+        
+        // Discipline percentages
+        architecturePercentage,
+        interiorDesignPercentage,
+        landscapePercentage,
+        structuralPercentage,
+        civilPercentage,
+        mechanicalPercentage,
+        electricalPercentage,
+        plumbingPercentage,
+        telecomPercentage,
+        
+        // Bottom-up settings
+        laborRate,
+        overheadRate,
+        markupFactor,
+        discountPercent,
+        
+        // Advanced settings
+        useNonLinearHours,
+        disciplineInhouse,
+        scanToBimEnabled,
+        scanToBimArea,
+        scanToBimRate,
+        
+        // Other settings
+        categoryMultiplier,
+        coordinationFeePercent,
+        hoursPerSqFt
+      }
+    };
+    
+    const updatedPresets = { ...savedPresets, [presetName]: preset };
+    setSavedPresets(updatedPresets);
+    localStorage.setItem('projectPresets', JSON.stringify(updatedPresets));
+    setPresetName('');
+  };
+  
+  const loadPreset = (presetKey: string) => {
+    const preset = savedPresets[presetKey];
+    if (!preset) return;
+    
+    const config = preset.configuration;
+    
+    // Apply all settings from the preset
+    setNewConstructionTarget(config.newConstructionTarget);
+    setRemodelTarget(config.remodelTarget);
+    setShellShareOverride(config.shellShareOverride);
+    setInteriorShareOverride(config.interiorShareOverride);
+    setLandscapeShareOverride(config.landscapeShareOverride);
+    
+    setArchitecturePercentage(config.architecturePercentage);
+    setInteriorDesignPercentage(config.interiorDesignPercentage);
+    setLandscapePercentage(config.landscapePercentage);
+    setStructuralPercentage(config.structuralPercentage);
+    setCivilPercentage(config.civilPercentage);
+    setMechanicalPercentage(config.mechanicalPercentage);
+    setElectricalPercentage(config.electricalPercentage);
+    setPlumbingPercentage(config.plumbingPercentage);
+    setTelecomPercentage(config.telecomPercentage);
+    
+    setLaborRate(config.laborRate);
+    setOverheadRate(config.overheadRate);
+    setMarkupFactor(config.markupFactor);
+    setDiscountPercent(config.discountPercent);
+    
+    setUseNonLinearHours(config.useNonLinearHours);
+    setDisciplineInhouse(config.disciplineInhouse);
+    setScanToBimEnabled(config.scanToBimEnabled);
+    setScanToBimArea(config.scanToBimArea);
+    setScanToBimRate(config.scanToBimRate);
+    
+    setCategoryMultiplier(config.categoryMultiplier);
+    setCoordinationFeePercent(config.coordinationFeePercent);
+    setHoursPerSqFt(config.hoursPerSqFt);
+  };
+  
+  const exportConfiguration = () => {
+    const config = {
+      exportDate: new Date().toISOString(),
+      projectName: data?.project?.projectName || 'Unknown',
+      configuration: {
+        newConstructionTarget,
+        remodelTarget,
+        shellShareOverride,
+        interiorShareOverride,
+        landscapeShareOverride,
+        architecturePercentage,
+        interiorDesignPercentage,
+        landscapePercentage,
+        structuralPercentage,
+        civilPercentage,
+        mechanicalPercentage,
+        electricalPercentage,
+        plumbingPercentage,
+        telecomPercentage,
+        laborRate,
+        overheadRate,
+        markupFactor,
+        discountPercent,
+        useNonLinearHours,
+        disciplineInhouse,
+        scanToBimEnabled,
+        scanToBimArea,
+        scanToBimRate,
+        categoryMultiplier,
+        coordinationFeePercent,
+        hoursPerSqFt
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `project-config-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  
+  const importConfiguration = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const config = JSON.parse(e.target?.result as string);
+        if (config.configuration) {
+          const c = config.configuration;
+          setNewConstructionTarget(c.newConstructionTarget);
+          setRemodelTarget(c.remodelTarget);
+          setShellShareOverride(c.shellShareOverride);
+          setInteriorShareOverride(c.interiorShareOverride);
+          setLandscapeShareOverride(c.landscapeShareOverride);
+          setArchitecturePercentage(c.architecturePercentage);
+          setInteriorDesignPercentage(c.interiorDesignPercentage);
+          setLandscapePercentage(c.landscapePercentage);
+          setStructuralPercentage(c.structuralPercentage);
+          setCivilPercentage(c.civilPercentage);
+          setMechanicalPercentage(c.mechanicalPercentage);
+          setElectricalPercentage(c.electricalPercentage);
+          setPlumbingPercentage(c.plumbingPercentage);
+          setTelecomPercentage(c.telecomPercentage);
+          setLaborRate(c.laborRate);
+          setOverheadRate(c.overheadRate);
+          setMarkupFactor(c.markupFactor);
+          setDiscountPercent(c.discountPercent);
+          setUseNonLinearHours(c.useNonLinearHours);
+          setDisciplineInhouse(c.disciplineInhouse);
+          setScanToBimEnabled(c.scanToBimEnabled);
+          setScanToBimArea(c.scanToBimArea);
+          setScanToBimRate(c.scanToBimRate);
+          setCategoryMultiplier(c.categoryMultiplier);
+          setCoordinationFeePercent(c.coordinationFeePercent);
+          setHoursPerSqFt(c.hoursPerSqFt);
+        }
+      } catch (error) {
+        console.error('Failed to import configuration:', error);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   // Auto-recalculate when parameters change
   useEffect(() => {
@@ -1433,8 +1631,67 @@ export default function ProjectDashboardV2() {
         {/* Advanced Settings */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Advanced Settings</CardTitle>
-            <CardDescription>Configure calculation methods and discipline assignments</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold">Advanced Settings</CardTitle>
+                <CardDescription>Configure calculation methods and discipline assignments</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {Object.keys(savedPresets).length > 0 && (
+                  <Select onValueChange={loadPreset}>
+                    <SelectTrigger className="w-40 h-8">
+                      <SelectValue placeholder="Load preset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(savedPresets).map(([key, preset]) => (
+                        <SelectItem key={key} value={key}>
+                          {preset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Input
+                  type="text"
+                  placeholder="Preset name"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  className="w-32 h-8"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => savePreset()}
+                  disabled={!presetName}
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => exportConfiguration()}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Export
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => document.getElementById('import-config')?.click()}
+                >
+                  <Upload className="h-3 w-3 mr-1" />
+                  Import
+                </Button>
+                <input
+                  id="import-config"
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => importConfiguration(e)}
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
@@ -1549,90 +1806,224 @@ export default function ProjectDashboardV2() {
         {/* Hours Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Hours Distribution</CardTitle>
+            <CardTitle className="text-lg font-semibold">Hours Distribution & Analysis</CardTitle>
+            <CardDescription>Comprehensive phase-based hours allocation with role distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm">Total Project Hours</Label>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Based on area × hours/ft² × complexity factor</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-2xl font-bold">
-                  {hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0).toFixed(0) : "0"} hrs
+            <div className="space-y-6">
+              {/* Total Hours Summary */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-purple-600" />
+                    <Label className="text-sm font-semibold">Total Project Hours</Label>
+                    {useNonLinearHours && (
+                      <Badge variant="secondary" className="text-xs">
+                        Non-Linear Formula
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-3xl font-bold text-purple-600">
+                    {hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0).toFixed(0) : "0"} hrs
+                  </div>
                 </div>
               </div>
 
+              {/* Sanity Checks */}
               <div className="space-y-2">
-                <Label className="text-sm">Hours per ft² Factor</Label>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    value={[hoursPerSqFt]}
-                    onValueChange={([value]) => setHoursPerSqFt(value)}
-                    min={0.1}
-                    max={2}
-                    step={0.1}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="number"
-                    value={hoursPerSqFt}
-                    onChange={(e) => setHoursPerSqFt(parseFloat(e.target.value))}
-                    className="w-20 h-8"
-                    min={0.1}
-                    max={2}
-                    step={0.1}
-                  />
-                </div>
+                {(() => {
+                  const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
+                  const totalArea = newBuildingArea + existingBuildingArea;
+                  const hoursPerSqFtActual = totalArea > 0 ? totalHours / totalArea : 0;
+                  const warnings = [];
+                  
+                  if (hoursPerSqFtActual < 0.2) {
+                    warnings.push({ level: 'error', message: 'Hours per ft² is unusually low (< 0.2)' });
+                  } else if (hoursPerSqFtActual < 0.3) {
+                    warnings.push({ level: 'warning', message: 'Hours per ft² is low (< 0.3)' });
+                  }
+                  
+                  if (hoursPerSqFtActual > 2.0) {
+                    warnings.push({ level: 'error', message: 'Hours per ft² is unusually high (> 2.0)' });
+                  } else if (hoursPerSqFtActual > 1.5) {
+                    warnings.push({ level: 'warning', message: 'Hours per ft² is high (> 1.5)' });
+                  }
+                  
+                  const bottomUpFee = totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent);
+                  const variance = Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee);
+                  
+                  if (variance > 0.5) {
+                    warnings.push({ level: 'error', message: `Fee variance exceeds 50% (${(variance * 100).toFixed(0)}%)` });
+                  } else if (variance > 0.25) {
+                    warnings.push({ level: 'warning', message: `Fee variance exceeds 25% (${(variance * 100).toFixed(0)}%)` });
+                  }
+                  
+                  return warnings.length > 0 ? (
+                    <div className="space-y-2">
+                      {warnings.map((warning, idx) => (
+                        <div key={idx} className={`p-2 rounded-lg flex items-center gap-2 ${
+                          warning.level === 'error' 
+                            ? 'bg-red-50 border border-red-200' 
+                            : 'bg-amber-50 border border-amber-200'
+                        }`}>
+                          <AlertCircle className={`h-4 w-4 ${
+                            warning.level === 'error' ? 'text-red-600' : 'text-amber-600'
+                          }`} />
+                          <span className={`text-sm ${
+                            warning.level === 'error' ? 'text-red-800' : 'text-amber-800'
+                          }`}>
+                            {warning.message}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-800">All metrics within normal ranges</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <Separator />
 
+              {/* Phase-Based Hours Table */}
               <div>
-                <Label className="text-sm mb-2">Distribution by Phase</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {hours && hours.map((hour) => (
-                    <div key={hour.phase} className="p-2 border rounded">
-                      <div className="text-xs text-muted-foreground">{hour.phase}</div>
-                      <div className="font-semibold">{parseFloat(hour.totalHours).toFixed(0)} hrs</div>
-                      <Progress value={(parseFloat(hour.totalHours) / (hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 1) : 1)) * 100} className="h-1 mt-1" />
-                    </div>
-                  ))}
+                <Label className="text-sm font-semibold mb-3">Detailed Phase & Role Distribution</Label>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border p-2 text-left text-xs font-medium">Phase</th>
+                        <th className="border p-2 text-right text-xs font-medium">Total Hours</th>
+                        <th className="border p-2 text-right text-xs font-medium">%</th>
+                        <th className="border p-2 text-right text-xs font-medium">Designer 1</th>
+                        <th className="border p-2 text-right text-xs font-medium">Designer 2</th>
+                        <th className="border p-2 text-right text-xs font-medium">Architect</th>
+                        <th className="border p-2 text-right text-xs font-medium">Engineer</th>
+                        <th className="border p-2 text-right text-xs font-medium">Principal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hours && hours.map((hour, idx) => {
+                        const totalProjectHours = hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0);
+                        return (
+                          <tr key={hour.phase} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                            <td className="border p-2 text-xs font-medium">{hour.phase}</td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.totalHours).toFixed(0)}</td>
+                            <td className="border p-2 text-right text-xs">
+                              {((parseFloat(hour.totalHours) / totalProjectHours) * 100).toFixed(0)}%
+                            </td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.designer1Hours || '0').toFixed(0)}</td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.designer2Hours || '0').toFixed(0)}</td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.architectHours || '0').toFixed(0)}</td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.engineerHours || '0').toFixed(0)}</td>
+                            <td className="border p-2 text-right text-xs">{parseFloat(hour.principalHours || '0').toFixed(0)}</td>
+                          </tr>
+                        );
+                      })}
+                      {hours && (
+                        <tr className="font-semibold bg-gray-100">
+                          <td className="border p-2 text-xs">Total</td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 0).toFixed(0)}
+                          </td>
+                          <td className="border p-2 text-right text-xs">100%</td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.designer1Hours || '0'), 0).toFixed(0)}
+                          </td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.designer2Hours || '0'), 0).toFixed(0)}
+                          </td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.architectHours || '0'), 0).toFixed(0)}
+                          </td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.engineerHours || '0'), 0).toFixed(0)}
+                          </td>
+                          <td className="border p-2 text-right text-xs">
+                            {hours.reduce((sum, h) => sum + parseFloat(h.principalHours || '0'), 0).toFixed(0)}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
+              {/* Role Distribution Chart */}
               <div>
-                <Label className="text-sm mb-2">Distribution by Role</Label>
-                <div className="space-y-2">
+                <Label className="text-sm font-semibold mb-3">Role Distribution Overview</Label>
+                <div className="space-y-3">
                   {[
-                    { label: "Designer1", key: "designer1Hours" },
-                    { label: "Designer2", key: "designer2Hours" },
-                    { label: "Architect", key: "architectHours" },
-                    { label: "Engineer", key: "engineerHours" },
-                    { label: "Principal", key: "principalHours" }
+                    { label: "Designer 1", key: "designer1Hours", color: "bg-blue-500" },
+                    { label: "Designer 2", key: "designer2Hours", color: "bg-green-500" },
+                    { label: "Architect", key: "architectHours", color: "bg-purple-500" },
+                    { label: "Engineer", key: "engineerHours", color: "bg-orange-500" },
+                    { label: "Principal", key: "principalHours", color: "bg-red-500" }
                   ].map((role) => {
                     const roleHours = hours?.reduce((sum, h) => 
                       sum + parseFloat(h[role.key as keyof typeof h] as string || "0"), 0
                     ) || 0;
+                    const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 1;
+                    const percentage = (roleHours / totalHours) * 100;
+                    
                     return (
-                      <div key={role.label} className="flex items-center justify-between">
-                        <span className="text-sm">{role.label}</span>
-                        <div className="flex items-center gap-2">
-                          <Progress value={(roleHours / (hours ? hours.reduce((sum, h) => sum + parseFloat(h.totalHours), 1) : 1)) * 100} className="w-24 h-2" />
-                          <span className="text-sm font-medium w-16 text-right">{roleHours.toFixed(0)} hrs</span>
+                      <div key={role.label} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{role.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold">{roleHours.toFixed(0)} hrs</span>
+                            <Badge variant="outline" className="text-xs">
+                              {percentage.toFixed(0)}%
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="relative w-full h-6 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className={`absolute left-0 top-0 h-full ${role.color} opacity-80 transition-all duration-500`}
+                            style={{ width: `${percentage}%` }}
+                          />
                         </div>
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Hours Configuration */}
+              <div className="p-4 border rounded-lg bg-gray-50">
+                <Label className="text-sm font-semibold mb-3">Hours Configuration</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Hours per ft² Factor</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Slider
+                        value={[hoursPerSqFt]}
+                        onValueChange={([value]) => setHoursPerSqFt(value)}
+                        min={0.1}
+                        max={2}
+                        step={0.1}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        value={hoursPerSqFt}
+                        onChange={(e) => setHoursPerSqFt(parseFloat(e.target.value))}
+                        className="w-20 h-8"
+                        min={0.1}
+                        max={2}
+                        step={0.1}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                    <span className="text-xs">Effective Rate</span>
+                    <span className="text-sm font-bold">
+                      {((newBuildingArea + existingBuildingArea) * hoursPerSqFt).toFixed(0)} hrs
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
