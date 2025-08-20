@@ -265,6 +265,7 @@ export default function ProjectDashboardV2() {
         electricalFeeAdjustment,
         plumbingFeeAdjustment,
         telecomFeeAdjustment,
+        contractDiscountOverride,
       };
 
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -332,6 +333,7 @@ export default function ProjectDashboardV2() {
       if (data.project.markupFactorOverride) {
         setMarkupFactorOverride(parseFloat(data.project.markupFactorOverride));
       }
+      // Contract discount override is initialized at state declaration with default 0.15
 
       // Initialize fee adjustments if saved
       if (data.project.architectureFeeAdjustment) {
@@ -453,7 +455,7 @@ export default function ProjectDashboardV2() {
   
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
-    const preset = savedPresets[presetKey];
+    const preset = savedPresets[presetKey as keyof typeof savedPresets] as any;
     if (preset) {
       // Load all override values from preset
       if (preset.shellShareOverride !== undefined) setShellShareOverride(preset.shellShareOverride);
@@ -530,8 +532,8 @@ export default function ProjectDashboardV2() {
     parseFloat(calculations.landscapeBudgetTotal);
 
   // Determine target costs with overrides
-  const newConstructionTarget = newConstructionTargetCost || parseFloat(data?.project?.newCostTarget || "0");
-  const remodelTarget = remodelTargetCost || parseFloat(data?.project?.remodelCostTarget || "0");
+  const newConstructionTarget = newConstructionTargetCost || parseFloat(calculations?.newCostTarget || "0");
+  const remodelTarget = remodelTargetCost || parseFloat(calculations?.remodelCostTarget || "0");
 
   // Calculate reactive budgets based on current form values
   const calculatedNewBudget = newBuildingArea * newConstructionTarget;
@@ -1929,14 +1931,14 @@ export default function ProjectDashboardV2() {
                     ].filter(share => share.value === undefined || share.value === null);
 
                     if (missingShares.length > 0) {
-                      return <Alert variant="warning">
+                      return <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertDescription>
                           Please define share overrides for: {missingShares.map(s => s.label).join(', ')}.
                         </AlertDescription>
                       </Alert>;
                     } else {
-                      return <Alert variant="success">
+                      return <Alert>
                         <CheckCircle className="h-4 w-4" />
                         <AlertDescription>All discipline share overrides are defined.</AlertDescription>
                       </Alert>;

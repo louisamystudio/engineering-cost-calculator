@@ -114,6 +114,7 @@ export class ProjectCalculatorService {
       electricalFeeAdjustment: input.electricalFeeAdjustment?.toString(),
       plumbingFeeAdjustment: input.plumbingFeeAdjustment?.toString(),
       telecomFeeAdjustment: input.telecomFeeAdjustment?.toString(),
+      contractDiscountOverride: input.contractDiscountOverride?.toString(),
       isDemo: input.projectName === 'Demo Project',
       // Add new fields
       useNonLinearHours: input.useNonLinearHours ?? false,
@@ -377,9 +378,10 @@ export class ProjectCalculatorService {
     const laborRate = input.laborRateOverride ?? this.AVERAGE_LABOR_COST_PER_HOUR;
     const overheadRate = input.overheadRateOverride ?? this.AVERAGE_OVERHEAD_COST_PER_HOUR;
     const markupFactor = input.markupFactorOverride ?? this.MARKUP_FACTOR;
+    const contractDiscount = input.contractDiscountOverride ?? 0.15;
     
     const averagePricingPerHour = Math.round(
-      (laborRate + overheadRate) * markupFactor
+      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount / 100)
     );
     
     const totalArea = input.newBuildingArea + input.existingBuildingArea;

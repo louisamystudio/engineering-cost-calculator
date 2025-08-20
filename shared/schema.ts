@@ -321,6 +321,7 @@ export const projects = pgTable("projects", {
   laborRateOverride: decimal("labor_rate_override", { precision: 10, scale: 2 }),
   overheadRateOverride: decimal("overhead_rate_override", { precision: 10, scale: 2 }),
   markupFactorOverride: decimal("markup_factor_override", { precision: 3, scale: 2 }),
+  contractDiscountOverride: decimal("contract_discount_override", { precision: 5, scale: 2 }),
   // Per-discipline fee adjustments (discount/margin)
   architectureFeeAdjustment: decimal("architecture_fee_adjustment", { precision: 5, scale: 4 }),
   interiorFeeAdjustment: decimal("interior_fee_adjustment", { precision: 5, scale: 4 }),
@@ -491,6 +492,7 @@ export const comprehensiveProjectInputSchema = z.object({
   laborRateOverride: z.number().min(0).optional(),
   overheadRateOverride: z.number().min(0).optional(),
   markupFactorOverride: z.number().min(0).optional(),
+  contractDiscountOverride: z.number().min(0).max(100).optional(),
   // Optional overrides - Fee adjustments (1.0 = no adjustment, 0.9 = 10% discount, 1.1 = 10% premium)
   architectureFeeAdjustment: z.number().min(0).max(2).optional(),
   interiorFeeAdjustment: z.number().min(0).max(2).optional(),
