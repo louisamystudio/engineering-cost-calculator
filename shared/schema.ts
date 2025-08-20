@@ -473,6 +473,13 @@ export const comprehensiveProjectInputSchema = z.object({
   shellShareOverride: z.number().min(0).max(1).optional(),
   interiorShareOverride: z.number().min(0).max(1).optional(),
   landscapeShareOverride: z.number().min(0).max(1).optional(),
+  // Engineering discipline shares
+  structuralShareOverride: z.number().min(0).max(1).optional(),
+  civilShareOverride: z.number().min(0).max(1).optional(),
+  mechanicalShareOverride: z.number().min(0).max(1).optional(),
+  electricalShareOverride: z.number().min(0).max(1).optional(),
+  plumbingShareOverride: z.number().min(0).max(1).optional(),
+  telecomShareOverride: z.number().min(0).max(1).optional(),
   // Optional overrides - Engineering percentages
   telecomPercentageOverride: z.number().min(0).max(1).optional(),
   structuralPercentageOverride: z.number().min(0).max(1).optional(),

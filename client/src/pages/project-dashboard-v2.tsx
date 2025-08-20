@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -64,7 +64,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   PieChart as RechartsPieChart,
   Pie,
@@ -164,104 +164,33 @@ export default function ProjectDashboardV2() {
   const [, navigate] = useLocation();
   const projectId = params.id as string;
 
-  // Section 1: Project Inputs & Parameters
+  // State for interactive controls
   const [newBuildingArea, setNewBuildingArea] = useState(0);
   const [existingBuildingArea, setExistingBuildingArea] = useState(0);
   const [siteArea, setSiteArea] = useState(0);
-  const [remodelMultiplier, setRemodelMultiplier] = useState(0.5);
-  const [isHistoric, setIsHistoric] = useState(false);
-  const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState<number>(1.0);
-
-  // Section 2: Cost Range Controls
   const [newConstructionTargetCost, setNewConstructionTargetCost] = useState<number | undefined>();
   const [remodelTargetCost, setRemodelTargetCost] = useState<number | undefined>();
+  const [remodelMultiplier, setRemodelMultiplier] = useState(0.5);
+  const [isHistoric, setIsHistoric] = useState(false);
+  const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState(1.0);
+  const [autoRecalc, setAutoRecalc] = useState(true);
+  const [savedPresets, setSavedPresets] = useState<any[]>([]);
 
-  // Section 3: Budget Share Overrides
+  // Share override states
   const [shellShareOverride, setShellShareOverride] = useState<number | undefined>();
   const [interiorShareOverride, setInteriorShareOverride] = useState<number | undefined>();
   const [landscapeShareOverride, setLandscapeShareOverride] = useState<number | undefined>();
 
-  // Section 4: Discipline Percentage Overrides
-  const [architecturePercentage, setArchitecturePercentage] = useState<number | undefined>();
-  const [interiorDesignPercentage, setInteriorDesignPercentage] = useState<number | undefined>();
-  const [landscapePercentage, setLandscapePercentage] = useState<number | undefined>();
-  const [structuralPercentage, setStructuralPercentage] = useState<number | undefined>();
-  const [civilPercentage, setCivilPercentage] = useState<number | undefined>();
-  const [mechanicalPercentage, setMechanicalPercentage] = useState<number | undefined>();
-  const [electricalPercentage, setElectricalPercentage] = useState<number | undefined>();
-  const [plumbingPercentage, setPlumbingPercentage] = useState<number | undefined>();
-  const [telecomPercentage, setTelecomPercentage] = useState<number | undefined>();
-
-  // Section 5: Fee Analysis Controls
-  const [categoryMultiplier, setCategoryMultiplier] = useState<number | undefined>();
-  const [discountRate, setDiscountRate] = useState<number>(0);
-  const [coordinationFeePercent, setCoordinationFeePercent] = useState<number>(15);
-
-  // Bottom-up Controls
-  const [laborRate, setLaborRate] = useState<number>(36);
-  const [overheadRate, setOverheadRate] = useState<number>(46);
-  const [markupFactor, setMarkupFactor] = useState<number>(1.5);
-
-  // Service Selection
-  const [includedServices, setIncludedServices] = useState({
-    architecture: true,
-    interior: true,
-    landscape: true,
-    structural: true,
-    civil: true,
-    mechanical: false,
-    electrical: false,
-    plumbing: true,
-    telecom: false
-  });
-
-  // Section 6: Hours Factor Override
-  const [hoursFactorOverride, setHoursFactorOverride] = useState<number | undefined>();
-  const [hoursPerSqFt, setHoursPerSqFt] = useState<number>(0.5);
-  const [discountPercent, setDiscountPercent] = useState<number>(0.0);
+  // Discipline share override states
+  const [structuralShareOverride, setStructuralShareOverride] = useState<number | undefined>();
+  const [civilShareOverride, setCivilShareOverride] = useState<number | undefined>();
+  const [mechanicalShareOverride, setMechanicalShareOverride] = useState<number | undefined>();
+  const [electricalShareOverride, setElectricalShareOverride] = useState<number | undefined>();
+  const [plumbingShareOverride, setPlumbingShareOverride] = useState<number | undefined>();
   const [telecomShareOverride, setTelecomShareOverride] = useState<number | undefined>();
 
-  // Non-linear hours and In-house/Outsourced toggles
-  const [useNonLinearHours, setUseNonLinearHours] = useState(false);
-  const [disciplineInhouse, setDisciplineInhouse] = useState({
-    architecture: true,
-    interiorDesign: true,
-    landscape: true,
-    structural: false,
-    civil: false,
-    mechanical: false,
-    electrical: false,
-    plumbing: false,
-    telecom: false
-  });
-
-  // Scan to BIM settings
-  const [scanToBimEnabled, setScanToBimEnabled] = useState(false);
-  const [scanToBimArea, setScanToBimArea] = useState(0);
-  const [scanToBimRate, setScanToBimRate] = useState(0.5);
-
-  // UI Controls
-  const [autoRecalc, setAutoRecalc] = useState(true);
-
-  // Preset Management
-  const [presetName, setPresetName] = useState('');
-  const [savedPresets, setSavedPresets] = useState<Record<string, any>>({});
-  const [expandedSections, setExpandedSections] = useState({
-    inputs: true,
-    costRanges: true,
-    budgets: true,
-    disciplines: true,
-    fees: true,
-    hours: false,
-    summary: false
-  });
-
-  const { data, isLoading, error } = useQuery<ProjectData>({
-    queryKey: ['/api/projects', projectId],
-  });
-
   const recalculateMutation = useMutation({
-    mutationFn: async (params?: any) => {
+    mutationFn: async () => {
       if (!data?.project) return;
 
       const input = {
@@ -271,40 +200,22 @@ export default function ProjectDashboardV2() {
         buildingTier: data.project.buildingTier,
         designLevel: data.project.designLevel,
         category: data.project.category,
-        newBuildingArea: params?.newBuildingArea ?? newBuildingArea,
-        existingBuildingArea: params?.existingBuildingArea ?? existingBuildingArea,
-        siteArea: params?.siteArea ?? siteArea,
-        historicMultiplier: historicPropertyMultiplier,
-        remodelMultiplier: params?.remodelMultiplier ?? remodelMultiplier,
-        newConstructionTargetCost: newConstructionTargetCost,
-        remodelTargetCost: remodelTargetCost,
+        newBuildingArea,
+        existingBuildingArea,
+        siteArea,
+        historicMultiplier: isHistoric ? historicPropertyMultiplier : 1.0,
+        remodelMultiplier,
+        newConstructionTargetCost,
+        remodelTargetCost,
         shellShareOverride,
         interiorShareOverride,
         landscapeShareOverride,
-        architecturePercentageOverride: architecturePercentage,
-        interiorDesignPercentageOverride: interiorDesignPercentage,
-        landscapePercentageOverride: landscapePercentage,
-        structuralPercentageOverride: structuralPercentage,
-        civilPercentageOverride: civilPercentage,
-        mechanicalPercentageOverride: mechanicalPercentage,
-        electricalPercentageOverride: electricalPercentage,
-        plumbingPercentageOverride: plumbingPercentage,
-        telecomPercentageOverride: telecomPercentage,
-        categoryMultiplier,
-        coordinationFeePercent,
-        useNonLinearHours,
-        architectureInhouse: disciplineInhouse.architecture,
-        interiorDesignInhouse: disciplineInhouse.interiorDesign,
-        landscapeInhouse: disciplineInhouse.landscape,
-        structuralInhouse: disciplineInhouse.structural,
-        civilInhouse: disciplineInhouse.civil,
-        mechanicalInhouse: disciplineInhouse.mechanical,
-        electricalInhouse: disciplineInhouse.electrical,
-        plumbingInhouse: disciplineInhouse.plumbing,
-        telecomInhouse: disciplineInhouse.telecom,
-        scanToBimEnabled,
-        scanToBimArea,
-        scanToBimRate
+        structuralShareOverride,
+        civilShareOverride,
+        mechanicalShareOverride,
+        electricalShareOverride,
+        plumbingShareOverride,
+        telecomShareOverride,
       };
 
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -338,6 +249,82 @@ export default function ProjectDashboardV2() {
       }
     }
   }, [data]);
+
+  // Auto-recalculate when parameters change
+  useEffect(() => {
+    if (autoRecalc && data?.project) {
+      const timer = setTimeout(() => {
+        recalculateMutation.mutate(undefined);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    newBuildingArea, 
+    existingBuildingArea, 
+    siteArea, 
+    newConstructionTargetCost,
+    remodelTargetCost,
+    remodelMultiplier,
+    historicPropertyMultiplier,
+    shellShareOverride,
+    interiorShareOverride,
+    landscapeShareOverride,
+    autoRecalc, 
+    data?.project, 
+    recalculateMutation
+  ]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-lg text-muted-foreground">Loading project data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="container mx-auto p-6">
+          <Card className="text-center py-12">
+            <CardContent>
+              <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
+              <h3 className="text-xl font-semibold mb-2">Project not found</h3>
+              <p className="text-muted-foreground mb-4">
+                The project you're looking for doesn't exist.
+              </p>
+              <Button onClick={() => navigate("/projects")}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Projects
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const { project, calculations, fees, hours } = data;
+
+  // Calculate totals
+  const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
+  const totalLouisAmyFee = fees.reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
+  const totalCoordinationFee = fees.reduce((sum, f) => sum + parseFloat(f.coordinationFee || '0'), 0);
+  const totalConsultantFee = fees.reduce((sum, f) => sum + parseFloat(f.consultantFee || '0'), 0);
+  const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
+
+  // Calculate Working Minimum Budget
+  const workingMinimumBudget = 
+    parseFloat(calculations.shellBudgetTotal) + 
+    parseFloat(calculations.interiorBudgetTotal) + 
+    parseFloat(calculations.landscapeBudgetTotal);
 
   // Determine target costs with overrides
   const newConstructionTarget = newConstructionTargetCost || parseFloat(data?.project?.newCostTarget || "0");
@@ -526,76 +513,6 @@ export default function ProjectDashboardV2() {
     reader.readAsText(file);
   };
 
-  // Auto-recalculate when parameters change
-  useEffect(() => {
-    if (autoRecalc && data?.project) {
-      const timeoutId = setTimeout(() => {
-        recalculateMutation.mutate(undefined);
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [
-    newBuildingArea, existingBuildingArea, siteArea, remodelMultiplier, isHistoric,
-    newConstructionTargetCost, remodelTargetCost, shellShareOverride, interiorShareOverride, landscapeShareOverride,
-    architecturePercentage, interiorDesignPercentage, landscapePercentage,
-    structuralPercentage, civilPercentage, mechanicalPercentage,
-    electricalPercentage, plumbingPercentage, telecomPercentage,
-    categoryMultiplier, coordinationFeePercent, useNonLinearHours,
-    disciplineInhouse, scanToBimEnabled, scanToBimArea, scanToBimRate, autoRecalc
-  ]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
-              <p className="text-lg text-muted-foreground">Loading project data...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="container mx-auto p-6">
-          <Card className="text-center py-12">
-            <CardContent>
-              <AlertCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-              <h3 className="text-xl font-semibold mb-2">Project not found</h3>
-              <p className="text-muted-foreground mb-4">
-                The project you're looking for doesn't exist.
-              </p>
-              <Button onClick={() => navigate("/projects")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Projects
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const { project, calculations, fees, hours } = data;
-
-  // Calculate totals
-  const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
-  const totalLouisAmyFee = fees.reduce((sum, f) => sum + parseFloat(f.louisAmyFee), 0);
-  const totalCoordinationFee = fees.reduce((sum, f) => sum + parseFloat(f.coordinationFee || '0'), 0);
-  const totalConsultantFee = fees.reduce((sum, f) => sum + parseFloat(f.consultantFee || '0'), 0);
-  const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
-
-  // Calculate Working Minimum Budget
-  const workingMinimumBudget = 
-    parseFloat(calculations.shellBudgetTotal) + 
-    parseFloat(calculations.interiorBudgetTotal) + 
-    parseFloat(calculations.landscapeBudgetTotal);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -765,11 +682,10 @@ export default function ProjectDashboardV2() {
                     <div className="flex gap-2">
                       <Slider
                         value={[newBuildingArea]}
-                        onValueChange={(value) => setNewBuildingArea(value[0])}
-                        max={50000}
-                        min={0}
-                        step={100}
-                        className="flex-1"
+                        onValueChange={([value]) => setNewBuildingArea(value)}
+                        max={20000}
+                        step={10}
+                        className="w-full"
                       />
                       <Input
                         type="number"
@@ -785,11 +701,10 @@ export default function ProjectDashboardV2() {
                     <div className="flex gap-2">
                       <Slider
                         value={[existingBuildingArea]}
-                        onValueChange={(value) => setExistingBuildingArea(value[0])}
-                        max={50000}
-                        min={0}
-                        step={100}
-                        className="flex-1"
+                        onValueChange={([value]) => setExistingBuildingArea(value)}
+                        max={20000}
+                        step={10}
+                        className="w-full"
                       />
                       <Input
                         type="number"
@@ -801,21 +716,20 @@ export default function ProjectDashboardV2() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Site Area (m²)</Label>
-                    <div className="flex gap-2">
-                      <Slider
-                        value={[siteArea]}
-                        onValueChange={(value) => setSiteArea(value[0])}
-                        max={10000}
-                        min={0}
-                        step={50}
-                        className="flex-1"
-                      />
+                    <Label>Site Area (ft²)</Label>
+                    <div className="mt-2 space-y-2">
                       <Input
                         type="number"
                         value={siteArea}
-                        onChange={(e) => setSiteArea(parseInt(e.target.value) || 0)}
-                        className="w-24"
+                        onChange={(e) => setSiteArea(parseFloat(e.target.value) || 0)}
+                        className="text-center font-mono"
+                      />
+                      <Slider
+                        value={[siteArea]}
+                        onValueChange={([value]) => setSiteArea(value)}
+                        max={100000}
+                        step={100}
+                        className="w-full"
                       />
                     </div>
                   </div>
@@ -942,7 +856,7 @@ export default function ProjectDashboardV2() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {/* Shell Budget */}
                     <div className="p-4 rounded-lg border bg-card">
                       <div className="flex items-center justify-between mb-3">
@@ -955,8 +869,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={shellShareOverride ? shellShareOverride * 100 : 66}
-                              onChange={(e) => setShellShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                              value={shellShareOverride ? shellShareOverride * 100 : 70}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setShellShareOverride(val ? parseFloat(val) / 100 : undefined);
+                              }}
+                              placeholder="70.0"
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
@@ -998,8 +916,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={interiorShareOverride ? interiorShareOverride * 100 : 22}
-                              onChange={(e) => setInteriorShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                              value={interiorShareOverride ? interiorShareOverride * 100 : 20}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setInteriorShareOverride(val ? parseFloat(val) / 100 : undefined);
+                              }}
+                              placeholder="20.0"
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
@@ -1041,8 +963,12 @@ export default function ProjectDashboardV2() {
                           <div className="flex items-center gap-2 mt-1">
                             <Input
                               type="number"
-                              value={landscapeShareOverride ? landscapeShareOverride * 100 : 12}
-                              onChange={(e) => setLandscapeShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
+                              value={landscapeShareOverride ? landscapeShareOverride * 100 : 10}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setLandscapeShareOverride(val ? parseFloat(val) / 100 : undefined);
+                              }}
+                              placeholder="10.0"
                               className="w-16 h-8 text-xs"
                               min={0}
                               max={100}
@@ -1078,276 +1004,6 @@ export default function ProjectDashboardV2() {
           </Collapsible>
         </Card>
 
-        {/* Shell Budget Allocation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Shell Budget Allocation</CardTitle>
-            <CardDescription>Budget allocation and percentage overrides for shell components including architecture and engineering disciplines</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Architecture */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Architecture</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Architectural design and shell coordination</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-violet-700 dark:text-violet-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.architectureBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.architectureBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={architecturePercentage ? architecturePercentage * 100 : ''}
-                    onChange={(e) => setArchitecturePercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={50}
-                    step={1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Structural */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Structural</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Structural engineering and design</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.structuralBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.structuralBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={structuralPercentage ? structuralPercentage * 100 : ''}
-                    onChange={(e) => setStructuralPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Civil */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Civil</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Site work and civil engineering</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-orange-700 dark:text-orange-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.civilBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.civilBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={civilPercentage ? civilPercentage * 100 : ''}
-                    onChange={(e) => setCivilPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Mechanical */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Mechanical</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">HVAC and mechanical systems</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-red-700 dark:text-red-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.mechanicalBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.mechanicalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={mechanicalPercentage ? mechanicalPercentage * 100 : ''}
-                    onChange={(e) => setMechanicalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Electrical */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Electrical</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Electrical systems and power distribution</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-yellow-700 dark:text-yellow-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.electricalBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.electricalBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={electricalPercentage ? electricalPercentage * 100 : ''}
-                    onChange={(e) => setElectricalPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Plumbing */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Plumbing</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Plumbing and water systems</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-purple-700 dark:text-purple-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.plumbingBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.plumbingBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={plumbingPercentage ? plumbingPercentage * 100 : ''}
-                    onChange={(e) => setPlumbingPercentage(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-
-              {/* Telecommunication */}
-              <div className="p-4 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Telecommunication</span>
-                  <TooltipProvider>
-                    <UITooltip>
-                      <TooltipTrigger>
-                        <Info className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">Low-voltage and IT infrastructure design</p>
-                      </TooltipContent>
-                    </UITooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-2">
-                  {formatCurrency(parseFloat(calculations.telecomBudget || "0"))}
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {((parseFloat(calculations.telecomBudget || "0") / parseFloat(calculations.shellBudgetTotal || "1")) * 100).toFixed(1)}% of shell budget
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs">% Override</Label>
-                  <Input
-                    type="number"
-                    value={telecomShareOverride ? telecomShareOverride * 100 : ''}
-                    onChange={(e) => setTelecomShareOverride(e.target.value ? parseFloat(e.target.value) / 100 : undefined)}
-                    placeholder="Auto"
-                    className="w-16 h-6 text-xs"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                  />
-                  <span className="text-xs text-muted-foreground">%</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Professional Fees Analysis with Tabs */}
         <Card>
           <CardHeader>
@@ -1355,9 +1011,27 @@ export default function ProjectDashboardV2() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="topdown" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="topdown">Top-Down Analysis</TabsTrigger>
-                <TabsTrigger value="bottomup">Bottom-Up Calculation</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="inputs" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Inputs
+                </TabsTrigger>
+                <TabsTrigger value="budget-allocation" className="flex items-center gap-2">
+                  <PieChart className="h-4 w-4" />
+                  Budget
+                </TabsTrigger>
+                <TabsTrigger value="discipline-budgets" className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  Disciplines
+                </TabsTrigger>
+                <TabsTrigger value="fee-analysis" className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Fees
+                </TabsTrigger>
+                <TabsTrigger value="sanity-check" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Analysis
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="topdown" className="space-y-4 mt-4">
@@ -1365,16 +1039,14 @@ export default function ProjectDashboardV2() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Label className="text-sm">Total Market Fee</Label>
-                      <TooltipProvider>
-                        <UITooltip>
-                          <TooltipTrigger>
-                            <Info className="h-3 w-3 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">Sum of all discipline market fees</p>
-                          </TooltipContent>
-                        </UITooltip>
-                      </TooltipProvider>
+                      <UITooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Sum of all discipline market fees</p>
+                        </TooltipContent>
+                      </UITooltip>
                     </div>
                     <div className="text-2xl font-bold text-green-600">
                       {formatCurrency(totalMarketFee)}
@@ -1387,16 +1059,14 @@ export default function ProjectDashboardV2() {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Label className="text-sm">Total Louis Amy Fee</Label>
-                      <TooltipProvider>
-                        <UITooltip>
-                          <TooltipTrigger>
-                            <Info className="h-3 w-3 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">Sum of in-house service fees</p>
-                          </TooltipContent>
-                        </UITooltip>
-                      </TooltipProvider>
+                      <UITooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Sum of in-house service fees</p>
+                        </TooltipContent>
+                      </UITooltip>
                     </div>
                     <div className="text-2xl font-bold text-blue-600">
                       {formatCurrency(totalLouisAmyFee)}
@@ -1548,16 +1218,14 @@ export default function ProjectDashboardV2() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <span className="text-sm">Total Hours</span>
-                        <TooltipProvider>
-                          <UITooltip>
-                            <TooltipTrigger>
-                              <Info className="h-3 w-3 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="text-xs">Based on area × hours/ft² factor</p>
-                            </TooltipContent>
-                          </UITooltip>
-                        </TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger>
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Based on area × hours/ft² factor</p>
+                          </TooltipContent>
+                        </UITooltip>
                       </div>
                       <span className="text-lg font-bold">
                         {totalHours.toFixed(0)} hrs
@@ -1640,6 +1308,117 @@ export default function ProjectDashboardV2() {
                   </div>
                 </div>
               </TabsContent>
+
+              {/* Sanity Check & Analysis */}
+              <TabsContent value="sanity-check">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Comprehensive Sanity Checks</CardTitle>
+                    <CardDescription>Review key project metrics for potential discrepancies.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {/* Hours per SqFt Check */}
+                      <div>
+                        <Label className="text-sm font-semibold">Hours per SqFt Analysis</Label>
+                        <div className="p-4 border rounded-lg mt-2">
+                          {(() => {
+                            const totalHours = hours?.reduce((sum, h) => sum + parseFloat(h.totalHours), 0) || 0;
+                            const totalArea = newBuildingArea + existingBuildingArea;
+                            const hoursPerSqFtActual = totalArea > 0 ? totalHours / totalArea : 0;
+                            let status = 'info';
+                            let message = `Actual: ${hoursPerSqFtActual.toFixed(2)} hrs/ft²`;
+
+                            if (hoursPerSqFtActual < 0.2) {
+                              status = 'error';
+                              message += ' (Unusually Low)';
+                            } else if (hoursPerSqFtActual < 0.3) {
+                              status = 'warning';
+                              message += ' (Low)';
+                            } else if (hoursPerSqFtActual > 2.0) {
+                              status = 'error';
+                              message += ' (Unusually High)';
+                            } else if (hoursPerSqFtActual > 1.5) {
+                              status = 'warning';
+                              message += ' (High)';
+                            }
+                            
+                            return <Alert variant={status as any}>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>{message}</AlertDescription>
+                            </Alert>;
+                          })()}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Fee Variance Check */}
+                      <div>
+                        <Label className="text-sm font-semibold">Fee Variance (Top-Down vs Bottom-Up)</Label>
+                        <div className="p-4 border rounded-lg mt-2">
+                          {(() => {
+                            const bottomUpFee = totalHours * (laborRate + overheadRate) * markupFactor * (1 - discountPercent);
+                            const variance = totalMarketFee ? Math.abs((bottomUpFee - totalMarketFee) / totalMarketFee) : 0;
+                            let status = 'info';
+                            let message = `Variance: ${formatPercent(variance)}`;
+
+                            if (variance > 0.5) {
+                              status = 'error';
+                              message += ' (High)';
+                            } else if (variance > 0.25) {
+                              status = 'warning';
+                              message += ' (Moderate)';
+                            } else {
+                              status = 'success';
+                              message += ' (Normal)';
+                            }
+
+                            return <Alert variant={status as any}>
+                              <Activity className="h-4 w-4" />
+                              <AlertDescription>{message}</AlertDescription>
+                            </Alert>;
+                          })()}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Missing Discipline Shares */}
+                      <div>
+                        <Label className="text-sm font-semibold">Missing Discipline Shares</Label>
+                        <div className="p-4 border rounded-lg mt-2">
+                          {(() => {
+                            const missingShares = [
+                              { label: 'Structural', value: structuralShareOverride },
+                              { label: 'Civil', value: civilShareOverride },
+                              { label: 'Mechanical', value: mechanicalShareOverride },
+                              { label: 'Electrical', value: electricalShareOverride },
+                              { label: 'Plumbing', value: plumbingShareOverride },
+                              { label: 'Telecom', value: telecomShareOverride },
+                            ].filter(share => share.value === undefined || share.value === null);
+
+                            if (missingShares.length > 0) {
+                              return <Alert variant="warning">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription>
+                                  Please define share overrides for: {missingShares.map(s => s.label).join(', ')}.
+                                </AlertDescription>
+                              </Alert>;
+                            } else {
+                              return <Alert variant="success">
+                                <CheckCircle className="h-4 w-4" />
+                                <AlertDescription>All discipline share overrides are defined.</AlertDescription>
+                              </Alert>;
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
             </Tabs>
           </CardContent>
         </Card>
@@ -1904,6 +1683,48 @@ export default function ProjectDashboardV2() {
 
               <Separator />
 
+              {/* Missing Discipline Shares */}
+              <div>
+                <Label className="text-sm font-semibold">Missing Discipline Shares</Label>
+                <div className="p-4 border rounded-lg mt-2">
+                  {(() => {
+                    const missingShares = [
+                      { label: 'Structural', value: structuralShareOverride },
+                      { label: 'Civil', value: civilShareOverride },
+                      { label: 'Mechanical', value: mechanicalShareOverride },
+                      { label: 'Electrical', value: electricalShareOverride },
+                      { label: 'Plumbing', value: plumbingShareOverride },
+                      { label: 'Telecom', value: telecomShareOverride },
+                    ].filter(share => share.value === undefined || share.value === null);
+
+                    if (missingShares.length > 0) {
+                      return <Alert variant="warning">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Please define share overrides for: {missingShares.map(s => s.label).join(', ')}.
+                        </AlertDescription>
+                      </Alert>;
+                    } else {
+                      return <Alert variant="success">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>All discipline share overrides are defined.</AlertDescription>
+                      </Alert>;
+                    }
+                  })()}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Phase-Based Hours Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Hours Distribution</CardTitle>
+            <CardDescription>Detailed phase and role distribution for project hours.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
               {/* Phase-Based Hours Table */}
               <div>
                 <Label className="text-sm font-semibold mb-3">Detailed Phase & Role Distribution</Label>
