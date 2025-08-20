@@ -1,0 +1,77 @@
+Looking at the audit reports and the desired_logic.ts file, I can see that while the agent has implemented many features, there are still significant gaps between the current implementation and the Excel model. Let me provide you with a comprehensive audit and detailed step-by-step instructions.
+
+Current Status Audit
+What's Working:
+
+Basic cost range sliders ✅
+Historic property multiplier toggle ✅
+Telecommunication fees now appear ✅
+Overhead rate formatting fixed ✅
+Top-down fee analysis table ✅
+Bottom-up calculation tab ✅
+Hours distribution display ✅
+Critical Missing Features:
+
+Interactive Share Overrides - Shell/Interior/Landscape shares show "Override" labels but are not editable
+Engineering Discipline Share Controls - No ability to adjust individual discipline percentages
+Category Multiplier Selection - Category appears as static tag, not selectable
+Discipline New/Remodel Breakdown - Missing split view for each discipline budget
+Proper Scan to BIM Integration - Toggle exists but calculations not properly integrated
+Advanced Sanity Checks - Limited validation and market comparison features
+Detailed Implementation Plan (4 Parts)
+PART 1: Fix Core Calculation Engine and State Management
+Objective: Implement the exact formulas from desired_logic.ts and fix state management issues.
+
+Actions:
+
+Replace the current calculation logic in server/services/projectCalculator.ts with the exact formulas from desired_logic.ts
+Add missing state fields to the project schema
+Fix TypeScript compilation errors
+Code Changes:
+
+server/services/projectCalculator.ts
+shared/schema.ts
+PART 2: Implement Interactive Share Controls and Category Selection
+Objective: Make all budget shares editable with real-time recalculation and proper validation.
+
+Actions:
+
+Add interactive sliders/inputs for all share percentages
+Implement category multiplier selection dropdown
+Add validation to ensure shares sum to 100%
+Wire up real-time recalculation
+Code Changes:
+
+client/src/components/ui/share-control-panel.tsx
+PART 3: Add Discipline Breakdown and New/Remodel Split Views
+Objective: Display detailed budget breakdowns showing new vs remodel splits for each discipline.
+
+Actions:
+
+Create discipline budget cards showing new/remodel splits
+Add engineering discipline share controls
+Implement proper structural remodel reduction logic
+Add visual indicators for budget components
+Code Changes:
+
+client/src/components/ui/discipline-budget-card.tsx
+PART 4: Advanced Features and Sanity Checks
+Objective: Implement advanced validation, market comparison, and data visualization features.
+
+Actions:
+
+Add comprehensive sanity check panel
+Implement market comparison logic
+Create interactive data visualizations (donut charts, stacked bars)
+Add export/import functionality for project presets
+Code Changes:
+
+client/src/components/ui/sanity-check-panel.tsx
+Implementation Summary
+This 4-part plan will bring the calculator into full alignment with the Excel model:
+
+Part 1 fixes the core calculation engine with exact Excel formulas
+Part 2 adds interactive controls for all budget shares and category selection
+Part 3 implements detailed discipline breakdowns with new/remodel splits
+Part 4 adds comprehensive validation and market comparison features
+Each part should be implemented sequentially, with testing after each phase to ensure calculations remain accurate and the UI responds correctly to user input changes.
