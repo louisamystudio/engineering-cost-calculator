@@ -17,7 +17,7 @@
 @layer components {
   /* Base Design System Typography */
   .text-display {
-    @apply text-display font-bold tracking-tight;
+    @apply font-bold tracking-tight;
   }
   
   .text-heading-xl {
