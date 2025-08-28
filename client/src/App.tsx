@@ -13,6 +13,7 @@ import DataVizProDashboard from "@/pages/datavizpro-dashboard";
 import NewProjectPage from "@/pages/new-project";
 import ModernProjectDashboard from "@/pages/modern-project-dashboard";
 import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
+import ProjectDashboardSimple from "@/pages/project-dashboard-simple";
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -101,6 +102,7 @@ function Router() {
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />
         <Route path="/projects/:id" component={ProjectDashboardV2} />
+        <Route path="/projects/:id/simple" component={ProjectDashboardSimple} />
         <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />

@@ -681,6 +681,13 @@ export default function ProjectDashboardV2() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/projects/${project.id}/simple`)}
+              >
+                Simple View
+              </Button>
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={autoRecalc} 

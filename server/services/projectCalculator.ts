@@ -6,6 +6,7 @@ import {
   type ProjectHours
 } from "@shared/schema";
 import { storage } from "../storage";
+import { safeParseFloat, roundTo, clamp, validatePercentageSum } from "../utils/numberUtils";
 
 interface CalculationResult {
   project: Project;
@@ -145,7 +146,7 @@ export class ProjectCalculatorService {
   
   private async getCategoryMultiplier(category: number): Promise<number> {
     const multiplierData = await storage.getCategoryMultiplier(category);
-    return multiplierData ? parseFloat(multiplierData.multiplier) : (0.8 + 0.1 * category);
+    return multiplierData ? safeParseFloat(multiplierData.multiplier, 0.8 + 0.1 * category) : (0.8 + 0.1 * category);
   }
   
   private async getBuildingCostData(input: ComprehensiveProjectInput) {
@@ -172,13 +173,13 @@ export class ProjectCalculatorService {
     if (comprehensiveData) {
       // Convert comprehensive data to the expected format for existing calculator logic
       return {
-        allInMin: (parseFloat(comprehensiveData.shellNewMin) + parseFloat(comprehensiveData.interiorNewMin) + 
-                  parseFloat(comprehensiveData.outdoorNewMin)).toString(),
-        allInMax: (parseFloat(comprehensiveData.shellNewMax) + parseFloat(comprehensiveData.interiorNewMax) + 
-                  parseFloat(comprehensiveData.outdoorNewMax)).toString(),
-        archShare: (parseFloat(comprehensiveData.projectShellShare) / 100).toString(),
-        intShare: (parseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
-        landShare: (parseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
+        allInMin: (safeParseFloat(comprehensiveData.shellNewMin) + safeParseFloat(comprehensiveData.interiorNewMin) + 
+                  safeParseFloat(comprehensiveData.outdoorNewMin)).toString(),
+        allInMax: (safeParseFloat(comprehensiveData.shellNewMax) + safeParseFloat(comprehensiveData.interiorNewMax) + 
+                  safeParseFloat(comprehensiveData.outdoorNewMax)).toString(),
+        archShare: (safeParseFloat(comprehensiveData.projectShellShare) / 100).toString(),
+        intShare: (safeParseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
+        landShare: (safeParseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
         comprehensiveData // Pass along the full data for advanced calculations
       };
     } else {
@@ -225,9 +226,9 @@ export class ProjectCalculatorService {
     costData: any,
     categoryMultiplier: number
   ): Promise<ProjectCalculation> {
-    // Use exact Excel formulas from desired_logic.ts
-    const newCostMin = parseFloat(costData.allInMin) * input.historicMultiplier;
-    const newCostMax = parseFloat(costData.allInMax) * input.historicMultiplier;
+    // Use exact Excel formulas from desired_logic.ts with safe parsing
+    const newCostMin = safeParseFloat(costData.allInMin) * input.historicMultiplier;
+    const newCostMax = safeParseFloat(costData.allInMax) * input.historicMultiplier;
     const newCostTarget = input.newConstructionTargetCost || (newCostMin + newCostMax) / 2;
     
     const remodelCostMin = newCostMin * input.remodelMultiplier;
@@ -239,10 +240,20 @@ export class ProjectCalculatorService {
     const remodelBudget = input.existingBuildingArea * remodelCostTarget;
     const totalBudget = newBudget + remodelBudget;
     
-    // Get share percentages with overrides
-    const shellShare = input.shellShareOverride || parseFloat(costData.archShare || '0.70');
-    const interiorShare = input.interiorShareOverride || parseFloat(costData.intShare || '0.20');
-    const landscapeShare = input.landscapeShareOverride || parseFloat(costData.landShare || '0.10');
+    // Get share percentages with overrides and validation
+    const shellShare = clamp(input.shellShareOverride || safeParseFloat(costData.archShare, 0.70), 0, 1);
+    const interiorShare = clamp(input.interiorShareOverride || safeParseFloat(costData.intShare, 0.20), 0, 1);
+    const landscapeShare = clamp(input.landscapeShareOverride || safeParseFloat(costData.landShare, 0.10), 0, 1);
+    
+    // Validate shares sum to 1.0
+    const totalShares = shellShare + interiorShare + landscapeShare;
+    if (Math.abs(totalShares - 1.0) > 0.01) {
+      console.warn(`Budget shares sum to ${totalShares} instead of 1.0 - normalizing`);
+      // Normalize shares if they don't sum to 1.0
+      const normalizedShellShare = shellShare / totalShares;
+      const normalizedInteriorShare = interiorShare / totalShares;
+      const normalizedLandscapeShare = landscapeShare / totalShares;
+    }
     
     // Calculate category budgets with exact Excel splits
     const shellBudgetNew = newBudget * shellShare;
@@ -264,7 +275,21 @@ export class ProjectCalculatorService {
     const totalEngineeringPercentage = engineeringPercentages.structural + engineeringPercentages.civil +
                                        engineeringPercentages.mechanical + engineeringPercentages.electrical +
                                        engineeringPercentages.plumbing + engineeringPercentages.telecom;
-    const architecturePercentage = Math.max(0, 1 - totalEngineeringPercentage);
+    
+    // Validate engineering percentages don't exceed 100%
+    if (totalEngineeringPercentage > 1.0) {
+      console.error(`Engineering percentages sum to ${(totalEngineeringPercentage * 100).toFixed(1)}% which exceeds 100%`);
+      // Scale down engineering percentages proportionally
+      const scale = 0.8 / totalEngineeringPercentage; // Leave 20% for architecture
+      engineeringPercentages.structural *= scale;
+      engineeringPercentages.civil *= scale;
+      engineeringPercentages.mechanical *= scale;
+      engineeringPercentages.electrical *= scale;
+      engineeringPercentages.plumbing *= scale;
+      engineeringPercentages.telecom *= scale;
+    }
+    
+    const architecturePercentage = Math.max(0.1, 1 - totalEngineeringPercentage); // Minimum 10% for architecture
     
     // Calculate engineering budgets with proper new/remodel split
     // Note: shellBudgetRemodel already includes the remodel cost reduction
@@ -333,12 +358,12 @@ export class ProjectCalculatorService {
       const data = await storage.getBuildingCostData(buildingType, buildingTier);
       if (data) {
         const perc = {
-          structural: parseFloat(data.structuralDesignShare?.toString() || '0') / 100,
-          civil: parseFloat(data.civilDesignShare?.toString() || '0') / 100,
-          mechanical: parseFloat(data.mechanicalDesignShare?.toString() || '0') / 100,
-          electrical: parseFloat(data.electricalDesignShare?.toString() || '0') / 100,
-          plumbing: parseFloat(data.plumbingDesignShare?.toString() || '0') / 100,
-          telecom: parseFloat(data.telecommunicationDesignShare?.toString() || '0') / 100,
+          structural: safeParseFloat(data.structuralDesignShare?.toString() || '0') / 100,
+          civil: safeParseFloat(data.civilDesignShare?.toString() || '0') / 100,
+          mechanical: safeParseFloat(data.mechanicalDesignShare?.toString() || '0') / 100,
+          electrical: safeParseFloat(data.electricalDesignShare?.toString() || '0') / 100,
+          plumbing: safeParseFloat(data.plumbingDesignShare?.toString() || '0') / 100,
+          telecom: safeParseFloat(data.telecommunicationDesignShare?.toString() || '0') / 100,
         };
         return {
           structural: input.structuralPercentageOverride ?? perc.structural,
@@ -413,9 +438,9 @@ export class ProjectCalculatorService {
     );
     
     const totalArea = input.newBuildingArea + input.existingBuildingArea;
-    const newBudget = parseFloat(calculations.newBudget);
-    const remodelBudget = parseFloat(calculations.remodelBudget);
-    const totalBudget = parseFloat(calculations.totalBudget);
+    const newBudget = safeParseFloat(calculations.newBudget);
+    const remodelBudget = safeParseFloat(calculations.remodelBudget);
+    const totalBudget = safeParseFloat(calculations.totalBudget);
     
     // Calculate new construction and remodel shares for fee weighting
     const newConstructionShare = totalBudget > 0 ? newBudget / totalBudget : 0;
