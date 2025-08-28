@@ -9,6 +9,7 @@ import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
 import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
 import ProjectsPage from "@/pages/projects";
+import DataVizProDashboard from "@/pages/datavizpro-dashboard";
 import NewProjectPage from "@/pages/new-project";
 import ModernProjectDashboard from "@/pages/modern-project-dashboard";
 import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
@@ -35,8 +36,16 @@ function NavBar() {
                 variant={(location === "/" || location.startsWith("/projects")) ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
-                <span className="hidden lg:inline">Comprehensive Calculator</span>
-                <span className="lg:hidden">Projects</span>
+                <span className="hidden lg:inline">DataVizPro</span>
+                <span className="lg:hidden">Home</span>
+              </Button>
+            </Link>
+            <Link href="/classic">
+              <Button 
+                variant={location === "/classic" ? "default" : "ghost"}
+                className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
+              >
+                Classic
               </Button>
             </Link>
             <Link href="/minimum-budget">
@@ -87,7 +96,8 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
-        <Route path="/" component={ProjectsPage} />
+        <Route path="/" component={DataVizProDashboard} />
+        <Route path="/classic" component={ProjectsPage} />
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />
         <Route path="/projects/:id" component={ProjectDashboardV2} />
