@@ -150,19 +150,19 @@ export class ProjectCalculatorService {
   
   private async getBuildingCostData(input: ComprehensiveProjectInput) {
     // Use the new comprehensive database structure
-    // buildingTier in the input maps directly to building_tier in database
-    let mappedBuildingType = input.buildingTier || input.buildingType;
+    // Ensure we pass the correct building type and normalized tier label
+    let mappedBuildingType = input.buildingType;
     
     // Handle legacy building type mappings
     if (input.buildingType === 'Residence - Private') {
       mappedBuildingType = 'Custom Houses'; // Default to Custom Houses for private residences
     }
     
-    // Map design level to tier text for the new database
+    // Map design level to tier text used in the seeded data (Low/Mid/High)
     const tierMap: Record<number, string> = {
-      1: 'Low-end',
+      1: 'Low',
       2: 'Mid', 
-      3: 'High-end'
+      3: 'High'
     };
     const tierText = tierMap[input.designLevel] || 'Mid';
     
@@ -325,7 +325,35 @@ export class ProjectCalculatorService {
   }
   
   private async getEngineeringPercentages(input: ComprehensiveProjectInput) {
-    // Default engineering percentages from Python code
+    // Prefer engineering design shares from the comprehensive DB when available
+    try {
+      const tierMap: Record<number, string> = { 1: 'Low', 2: 'Mid', 3: 'High' };
+      const buildingType = input.buildingType;
+      const buildingTier = tierMap[input.designLevel] || 'Mid';
+      const data = await storage.getBuildingCostData(buildingType, buildingTier);
+      if (data) {
+        const perc = {
+          structural: parseFloat(data.structuralDesignShare?.toString() || '0') / 100,
+          civil: parseFloat(data.civilDesignShare?.toString() || '0') / 100,
+          mechanical: parseFloat(data.mechanicalDesignShare?.toString() || '0') / 100,
+          electrical: parseFloat(data.electricalDesignShare?.toString() || '0') / 100,
+          plumbing: parseFloat(data.plumbingDesignShare?.toString() || '0') / 100,
+          telecom: parseFloat(data.telecommunicationDesignShare?.toString() || '0') / 100,
+        };
+        return {
+          structural: input.structuralPercentageOverride ?? perc.structural,
+          civil: input.civilPercentageOverride ?? perc.civil,
+          mechanical: input.mechanicalPercentageOverride ?? perc.mechanical,
+          electrical: input.electricalPercentageOverride ?? perc.electrical,
+          plumbing: input.plumbingPercentageOverride ?? perc.plumbing,
+          telecom: input.telecomPercentageOverride ?? perc.telecom,
+        };
+      }
+    } catch (e) {
+      // fall back to defaults below
+    }
+
+    // Default engineering percentages when DB shares are unavailable
     const defaults: Record<string, any> = {
       'High-End Custom Residential': {
         1: { structural: 0.31, civil: 0.06, mechanical: 0.08, electrical: 0.05, plumbing: 0.04, telecom: 0.025 },
@@ -381,7 +409,7 @@ export class ProjectCalculatorService {
     const contractDiscount = input.contractDiscountOverride ?? 0.15;
     
     const averagePricingPerHour = Math.round(
-      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount / 100)
+      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount)
     );
     
     const totalArea = input.newBuildingArea + input.existingBuildingArea;
@@ -582,8 +610,9 @@ export class ProjectCalculatorService {
       }
       
       if (existingArea > 0) {
-        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.8;
-        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // Excel has 1.15 multiplier for remodel
+        // Excel workbook uses 0.77 factor for existing/remodel before the 1.15 adjustment
+        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.77;
+        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // remodel adjustment
       }
       
       totalLAHours = newConstructionHours + existingRemodelHours;
