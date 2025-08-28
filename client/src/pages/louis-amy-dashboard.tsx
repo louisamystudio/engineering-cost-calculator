@@ -258,6 +258,7 @@ export default function LouisAmyDashboard() {
                         { name: 'New Construction', value: 0, fill: '#3b82f6' },
                         { name: 'Remodel', value: 100, fill: '#10b981' }
                       ]}
+                      dataKey="value"
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -412,6 +413,7 @@ export default function LouisAmyDashboard() {
                 <ResponsiveContainer width="100%" height={150}>
                   <RechartsPieChart>
                     <Pie
+                      dataKey="value"
                       data={[
                         { name: 'Designer 1', value: 324, fill: '#3b82f6' },
                         { name: 'Designer 2', value: 324, fill: '#10b981' },
