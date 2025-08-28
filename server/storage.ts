@@ -2,8 +2,7 @@ import {
   users, 
   type User, 
   type InsertUser,
-  buildingCostRangesView,
-  engineeringCostsView,
+
   type BuildingCostRange,
   type EngineeringCost,
   hoursLeverage,
@@ -133,43 +132,56 @@ export class DatabaseStorage implements IStorage {
   // Budget Calculator methods
   async getAllBuildingTypes(): Promise<string[]> {
     const results = await db
-      .selectDistinct({ buildingType: buildingCostRangesView.buildingType })
-      .from(buildingCostRangesView);
-    return results.map(r => r.buildingType);
+      .selectDistinct({ buildingType: buildingCostData.buildingType })
+      .from(buildingCostData);
+    return results.map(r => r.buildingType).sort();
   }
 
   async getTiersByBuildingType(buildingType: string): Promise<number[]> {
     const results = await db
-      .selectDistinct({ tier: buildingCostRangesView.tier })
-      .from(buildingCostRangesView)
-      .where(eq(buildingCostRangesView.buildingType, buildingType));
-    return results.map(r => r.tier).sort();
+      .selectDistinct({ buildingTier: buildingCostData.buildingTier })
+      .from(buildingCostData)
+      .where(eq(buildingCostData.buildingType, buildingType));
+    // Map tier names to numbers: Low=1, Mid=2, High=3
+    const tierMap: Record<string, number> = { 'Low': 1, 'Mid': 2, 'High': 3 };
+    return results
+      .map(r => tierMap[r.buildingTier] || 2)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort();
   }
 
   async getBuildingCostRange(buildingType: string, tier: number): Promise<BuildingCostRange | undefined> {
+    // Map tier number to text: 1=Low, 2=Mid, 3=High
+    const tierText = tier === 1 ? 'Low' : tier === 2 ? 'Mid' : 'High';
     const [result] = await db
       .select()
-      .from(buildingCostRangesView)
+      .from(buildingCostData)
       .where(
         and(
-          eq(buildingCostRangesView.buildingType, buildingType),
-          eq(buildingCostRangesView.tier, tier)
+          eq(buildingCostData.buildingType, buildingType),
+          eq(buildingCostData.buildingTier, tierText)
         )
       );
-    return result || undefined;
+    
+    if (!result) return undefined;
+    
+    // Convert to BuildingCostRange format
+    return {
+      buildingType: result.buildingType,
+      tier,
+      allInMin: parseInt(result.shellNewMin) + parseInt(result.interiorNewMin) + parseInt(result.outdoorNewMin),
+      allInMax: parseInt(result.shellNewMax) + parseInt(result.interiorNewMax) + parseInt(result.outdoorNewMax),
+      archShare: (parseFloat(result.projectShellShare) / 100).toString(),
+      intShare: (parseFloat(result.projectInteriorShare) / 100).toString(),
+      landShare: (parseFloat(result.projectLandscapeShare) / 100).toString()
+    };
   }
 
   async getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]> {
-    const results = await db
-      .select()
-      .from(engineeringCostsView)
-      .where(
-        and(
-          eq(engineeringCostsView.buildingType, buildingType),
-          eq(engineeringCostsView.tier, tier)
-        )
-      );
-    return results;
+    // This legacy method returns empty array since we now use getEngineeringCostData
+    // which provides engineering percentages from building_cost_data_v6
+    // TODO: Remove this method and update any callers to use new data structure
+    return [];
   }
 
   // Hours Leverage methods
