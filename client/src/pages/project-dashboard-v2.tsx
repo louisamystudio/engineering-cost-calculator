@@ -408,6 +408,19 @@ export default function ProjectDashboardV2() {
         setTelecomFeeAdjustment(parseFloat(data.project.telecomFeeAdjustment));
       }
 
+      // Initialize in-house toggles view state from project settings so UI reflects saved values
+      setDisciplineInhouse({
+        architecture: data.project.architectureInhouse ?? true,
+        interiorDesign: data.project.interiorDesignInhouse ?? true,
+        landscape: data.project.landscapeInhouse ?? true,
+        structural: data.project.structuralInhouse ?? false,
+        civil: data.project.civilInhouse ?? false,
+        mechanical: data.project.mechanicalInhouse ?? false,
+        electrical: data.project.electricalInhouse ?? false,
+        plumbing: data.project.plumbingInhouse ?? false,
+        telecom: data.project.telecomInhouse ?? false,
+      });
+
       // Load saved presets from localStorage
       const storedPresets = localStorage.getItem('projectPresets');
       if (storedPresets) {
