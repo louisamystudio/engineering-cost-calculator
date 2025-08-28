@@ -373,7 +373,11 @@ export default function ProjectDashboardV2() {
       if (data.project.markupFactorOverride) {
         setMarkupFactorOverride(parseFloat(data.project.markupFactorOverride));
       }
-      // Contract discount override is initialized at state declaration with default 0.15
+      // Initialize persisted applied discount if present (fraction 0..1)
+      if (data.project.contractDiscountOverride) {
+        const v = parseFloat(data.project.contractDiscountOverride as any);
+        if (!Number.isNaN(v)) setContractDiscountOverride(v);
+      }
 
       // Initialize fee adjustments if saved
       if (data.project.architectureFeeAdjustment) {
