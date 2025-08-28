@@ -134,7 +134,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .selectDistinct({ buildingType: buildingCostData.buildingType })
       .from(buildingCostData);
-    return results.map(r => r.buildingType).sort();
+    return results.map((r: { buildingType: string }) => r.buildingType).sort();
   }
 
   async getTiersByBuildingType(buildingType: string): Promise<number[]> {
@@ -145,8 +145,8 @@ export class DatabaseStorage implements IStorage {
     // Map tier names to numbers: Low=1, Mid=2, High=3
     const tierMap: Record<string, number> = { 'Low': 1, 'Mid': 2, 'High': 3 };
     return results
-      .map(r => tierMap[r.buildingTier] || 2)
-      .filter((v, i, a) => a.indexOf(v) === i)
+      .map((r: { buildingTier: string }) => tierMap[r.buildingTier] || 2)
+      .filter((v: number, i: number, a: number[]) => a.indexOf(v) === i)
       .sort();
   }
 
@@ -406,7 +406,7 @@ export class DatabaseStorage implements IStorage {
       .selectDistinct({ buildingUse: buildingCostData.buildingUse })
       .from(buildingCostData);
     
-    return results.map(r => r.buildingUse).filter(use => use !== null);
+    return results.map((r: { buildingUse: string }) => r.buildingUse).filter((use: string) => use !== null);
   }
   
   async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
@@ -416,7 +416,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingUse, buildingUse));
     
-    return results.map(r => r.buildingType).filter(type => type !== null);
+    return results.map((r: { buildingType: string }) => r.buildingType).filter((type: string) => type !== null);
   }
   
   async getBuildingTiersByType(buildingType: string): Promise<string[]> {
@@ -426,7 +426,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingType, buildingType));
     
-    return results.map(r => r.buildingTier).filter(tier => tier !== null);
+    return results.map((r: { buildingTier: string }) => r.buildingTier).filter((tier: string) => tier !== null);
   }
   
   async getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined> {
