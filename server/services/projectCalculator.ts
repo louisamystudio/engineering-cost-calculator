@@ -6,6 +6,7 @@ import {
   type ProjectHours
 } from "@shared/schema";
 import { storage } from "../storage";
+import { safeParseFloat, roundTo, clamp, validatePercentageSum } from "../utils/numberUtils";
 
 interface CalculationResult {
   project: Project;
@@ -102,6 +103,7 @@ export class ProjectCalculatorService {
       mechanicalPercentageOverride: input.mechanicalPercentageOverride?.toString(),
       electricalPercentageOverride: input.electricalPercentageOverride?.toString(),
       plumbingPercentageOverride: input.plumbingPercentageOverride?.toString(),
+      architecturePercentageOverride: input.architecturePercentageOverride?.toString(),
       laborRateOverride: input.laborRateOverride?.toString(),
       overheadRateOverride: input.overheadRateOverride?.toString(),
       markupFactorOverride: input.markupFactorOverride?.toString(),
@@ -134,35 +136,35 @@ export class ProjectCalculatorService {
     
     if (existingDemo && input.projectName === 'Demo Project') {
       // Update existing demo project
-      const updated = await storage.updateProject(existingDemo.id, projectData);
+      const updated = await storage.updateProject(existingDemo.id, projectData as any);
       return updated!;
     } else {
       // Create new project
-      const project = await storage.createProject(projectData);
+      const project = await storage.createProject(projectData as any);
       return project;
     }
   }
   
   private async getCategoryMultiplier(category: number): Promise<number> {
     const multiplierData = await storage.getCategoryMultiplier(category);
-    return multiplierData ? parseFloat(multiplierData.multiplier) : (0.8 + 0.1 * category);
+    return multiplierData ? safeParseFloat(multiplierData.multiplier, 0.8 + 0.1 * category) : (0.8 + 0.1 * category);
   }
   
   private async getBuildingCostData(input: ComprehensiveProjectInput) {
     // Use the new comprehensive database structure
-    // buildingTier in the input maps directly to building_tier in database
-    let mappedBuildingType = input.buildingTier || input.buildingType;
+    // Ensure we pass the correct building type and normalized tier label
+    let mappedBuildingType = input.buildingType;
     
     // Handle legacy building type mappings
     if (input.buildingType === 'Residence - Private') {
       mappedBuildingType = 'Custom Houses'; // Default to Custom Houses for private residences
     }
     
-    // Map design level to tier text for the new database
+    // Map design level to tier text used in the seeded data (Low/Mid/High)
     const tierMap: Record<number, string> = {
-      1: 'Low-end',
+      1: 'Low',
       2: 'Mid', 
-      3: 'High-end'
+      3: 'High'
     };
     const tierText = tierMap[input.designLevel] || 'Mid';
     
@@ -172,13 +174,13 @@ export class ProjectCalculatorService {
     if (comprehensiveData) {
       // Convert comprehensive data to the expected format for existing calculator logic
       return {
-        allInMin: (parseFloat(comprehensiveData.shellNewMin) + parseFloat(comprehensiveData.interiorNewMin) + 
-                  parseFloat(comprehensiveData.outdoorNewMin)).toString(),
-        allInMax: (parseFloat(comprehensiveData.shellNewMax) + parseFloat(comprehensiveData.interiorNewMax) + 
-                  parseFloat(comprehensiveData.outdoorNewMax)).toString(),
-        archShare: (parseFloat(comprehensiveData.projectShellShare) / 100).toString(),
-        intShare: (parseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
-        landShare: (parseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
+        allInMin: (safeParseFloat(comprehensiveData.shellNewMin) + safeParseFloat(comprehensiveData.interiorNewMin) + 
+                  safeParseFloat(comprehensiveData.outdoorNewMin)).toString(),
+        allInMax: (safeParseFloat(comprehensiveData.shellNewMax) + safeParseFloat(comprehensiveData.interiorNewMax) + 
+                  safeParseFloat(comprehensiveData.outdoorNewMax)).toString(),
+        archShare: (safeParseFloat(comprehensiveData.projectShellShare) / 100).toString(),
+        intShare: (safeParseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
+        landShare: (safeParseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
         comprehensiveData // Pass along the full data for advanced calculations
       };
     } else {
@@ -225,9 +227,9 @@ export class ProjectCalculatorService {
     costData: any,
     categoryMultiplier: number
   ): Promise<ProjectCalculation> {
-    // Use exact Excel formulas from desired_logic.ts
-    const newCostMin = parseFloat(costData.allInMin) * input.historicMultiplier;
-    const newCostMax = parseFloat(costData.allInMax) * input.historicMultiplier;
+    // Use exact Excel formulas from desired_logic.ts with safe parsing
+    const newCostMin = safeParseFloat(costData.allInMin) * input.historicMultiplier;
+    const newCostMax = safeParseFloat(costData.allInMax) * input.historicMultiplier;
     const newCostTarget = input.newConstructionTargetCost || (newCostMin + newCostMax) / 2;
     
     const remodelCostMin = newCostMin * input.remodelMultiplier;
@@ -239,10 +241,20 @@ export class ProjectCalculatorService {
     const remodelBudget = input.existingBuildingArea * remodelCostTarget;
     const totalBudget = newBudget + remodelBudget;
     
-    // Get share percentages with overrides
-    const shellShare = input.shellShareOverride || parseFloat(costData.archShare || '0.70');
-    const interiorShare = input.interiorShareOverride || parseFloat(costData.intShare || '0.20');
-    const landscapeShare = input.landscapeShareOverride || parseFloat(costData.landShare || '0.10');
+    // Get share percentages with overrides and validation
+    const shellShare = clamp(input.shellShareOverride || safeParseFloat(costData.archShare, 0.70), 0, 1);
+    const interiorShare = clamp(input.interiorShareOverride || safeParseFloat(costData.intShare, 0.20), 0, 1);
+    const landscapeShare = clamp(input.landscapeShareOverride || safeParseFloat(costData.landShare, 0.10), 0, 1);
+    
+    // Validate shares sum to 1.0
+    const totalShares = shellShare + interiorShare + landscapeShare;
+    if (Math.abs(totalShares - 1.0) > 0.01) {
+      console.warn(`Budget shares sum to ${totalShares} instead of 1.0 - normalizing`);
+      // Normalize shares if they don't sum to 1.0
+      const normalizedShellShare = shellShare / totalShares;
+      const normalizedInteriorShare = interiorShare / totalShares;
+      const normalizedLandscapeShare = landscapeShare / totalShares;
+    }
     
     // Calculate category budgets with exact Excel splits
     const shellBudgetNew = newBudget * shellShare;
@@ -260,11 +272,28 @@ export class ProjectCalculatorService {
     // Get engineering percentages with exact Excel formulas
     const engineeringPercentages = await this.getEngineeringPercentages(input);
     
-    // Calculate architecture share as per Excel: 1 - (sum of all engineering percentages)
+    // Calculate architecture share as per Excel: (1 - (sum of all engineering percentages)) * shellShare
     const totalEngineeringPercentage = engineeringPercentages.structural + engineeringPercentages.civil +
                                        engineeringPercentages.mechanical + engineeringPercentages.electrical +
                                        engineeringPercentages.plumbing + engineeringPercentages.telecom;
-    const architecturePercentage = Math.max(0, 1 - totalEngineeringPercentage);
+    
+    // Enforce minimum Architecture share and proportionally-scale engineering if needed
+    const archFloor = input.architecturePercentageOverride ?? 0.10; // default 10%
+    let engSumWorking = totalEngineeringPercentage;
+    if (engSumWorking > 1.0 - archFloor) {
+      console.warn(`Engineering shares ${(engSumWorking * 100).toFixed(1)}% exceed available ${(100 - archFloor * 100).toFixed(1)}% — scaling`);
+      const scale = (1.0 - archFloor) / engSumWorking;
+      engineeringPercentages.structural *= scale;
+      engineeringPercentages.civil *= scale;
+      engineeringPercentages.mechanical *= scale;
+      engineeringPercentages.electrical *= scale;
+      engineeringPercentages.plumbing *= scale;
+      engineeringPercentages.telecom *= scale;
+      engSumWorking = engineeringPercentages.structural + engineeringPercentages.civil + engineeringPercentages.mechanical + engineeringPercentages.electrical + engineeringPercentages.plumbing + engineeringPercentages.telecom;
+    }
+    
+    // Architecture is the remainder of shell after engineering, with a minimum floor
+    const architecturePercentage = Math.max(archFloor, 1 - engSumWorking);
     
     // Calculate engineering budgets with proper new/remodel split
     // Note: shellBudgetRemodel already includes the remodel cost reduction
@@ -325,7 +354,35 @@ export class ProjectCalculatorService {
   }
   
   private async getEngineeringPercentages(input: ComprehensiveProjectInput) {
-    // Default engineering percentages from Python code
+    // Prefer engineering design shares from the comprehensive DB when available
+    try {
+      const tierMap: Record<number, string> = { 1: 'Low', 2: 'Mid', 3: 'High' };
+      const buildingType = input.buildingType;
+      const buildingTier = tierMap[input.designLevel] || 'Mid';
+      const data = await storage.getBuildingCostData(buildingType, buildingTier);
+      if (data) {
+        const perc = {
+          structural: safeParseFloat(data.structuralDesignShare?.toString() || '0') / 100,
+          civil: safeParseFloat(data.civilDesignShare?.toString() || '0') / 100,
+          mechanical: safeParseFloat(data.mechanicalDesignShare?.toString() || '0') / 100,
+          electrical: safeParseFloat(data.electricalDesignShare?.toString() || '0') / 100,
+          plumbing: safeParseFloat(data.plumbingDesignShare?.toString() || '0') / 100,
+          telecom: safeParseFloat(data.telecommunicationDesignShare?.toString() || '0') / 100,
+        };
+        return {
+          structural: input.structuralPercentageOverride ?? perc.structural,
+          civil: input.civilPercentageOverride ?? perc.civil,
+          mechanical: input.mechanicalPercentageOverride ?? perc.mechanical,
+          electrical: input.electricalPercentageOverride ?? perc.electrical,
+          plumbing: input.plumbingPercentageOverride ?? perc.plumbing,
+          telecom: input.telecomPercentageOverride ?? perc.telecom,
+        };
+      }
+    } catch (e) {
+      // fall back to defaults below
+    }
+
+    // Default engineering percentages when DB shares are unavailable
     const defaults: Record<string, any> = {
       'High-End Custom Residential': {
         1: { structural: 0.31, civil: 0.06, mechanical: 0.08, electrical: 0.05, plumbing: 0.04, telecom: 0.025 },
@@ -381,13 +438,13 @@ export class ProjectCalculatorService {
     const contractDiscount = input.contractDiscountOverride ?? 0.15;
     
     const averagePricingPerHour = Math.round(
-      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount / 100)
+      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount)
     );
     
     const totalArea = input.newBuildingArea + input.existingBuildingArea;
-    const newBudget = parseFloat(calculations.newBudget);
-    const remodelBudget = parseFloat(calculations.remodelBudget);
-    const totalBudget = parseFloat(calculations.totalBudget);
+    const newBudget = safeParseFloat(calculations.newBudget);
+    const remodelBudget = safeParseFloat(calculations.remodelBudget);
+    const totalBudget = safeParseFloat(calculations.totalBudget);
     
     // Calculate new construction and remodel shares for fee weighting
     const newConstructionShare = totalBudget > 0 ? newBudget / totalBudget : 0;
@@ -406,7 +463,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanBuildingRate.toString(),
         marketFee: scanBuildingFee.toString(),
         louisAmyFee: scanBuildingFee.toString(),
-        hours: (scanBuildingFee / averagePricingPerHour).toString(),
+        hours: ((averagePricingPerHour > 0 ? (scanBuildingFee / averagePricingPerHour) : 0)).toString(),
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -425,7 +482,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanSiteRate.toString(),
         marketFee: scanSiteFee.toString(),
         louisAmyFee: scanSiteFee.toString(),
-        hours: (scanSiteFee / averagePricingPerHour).toString(),
+        hours: ((averagePricingPerHour > 0 ? (scanSiteFee / averagePricingPerHour) : 0)).toString(),
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -538,10 +595,10 @@ export class ProjectCalculatorService {
         projectId: project.id,
         scope: disc.scope,
         percentOfCost: feePercentage.toString(),
-        ratePerSqFt: (adjustedMarketFee / totalArea).toString(),
+        ratePerSqFt: (totalArea > 0 ? (adjustedMarketFee / totalArea) : 0).toString(),
         marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
-        hours: disc.isInhouse ? (louisAmyFee / averagePricingPerHour).toString() : '0',
+        hours: disc.isInhouse ? ((averagePricingPerHour > 0 ? (louisAmyFee / averagePricingPerHour) : 0)).toString() : '0',
         coordinationFee: coordinationFee.toString(),
         consultantFee: consultantFee.toString(),
         isInhouse: disc.isInhouse
@@ -582,8 +639,9 @@ export class ProjectCalculatorService {
       }
       
       if (existingArea > 0) {
-        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.8;
-        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // Excel has 1.15 multiplier for remodel
+        // Excel workbook uses 0.77 factor for existing/remodel before the 1.15 adjustment
+        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.77;
+        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // remodel adjustment
       }
       
       totalLAHours = newConstructionHours + existingRemodelHours;

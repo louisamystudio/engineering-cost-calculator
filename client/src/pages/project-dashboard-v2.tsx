@@ -178,6 +178,14 @@ export default function ProjectDashboardV2() {
   const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState(1.0);
   const [autoRecalc, setAutoRecalc] = useState(true);
   const [savedPresets, setSavedPresets] = useState<any[]>([]);
+  // Project header selectors
+  const [buildingUse, setBuildingUse] = useState<string>("");
+  const [buildingType, setBuildingType] = useState<string>("");
+  const [designLevel, setDesignLevel] = useState<number>(2);
+  const [category, setCategory] = useState<number>(3);
+  // Pricing config
+  const [maxDiscountCap, setMaxDiscountCap] = useState<number>(0.25);
+  const [baselineMode, setBaselineMode] = useState<'max' | 'avg'>('max');
 
   // Share override states
   const [shellShareOverride, setShellShareOverride] = useState<number | undefined>();
@@ -225,6 +233,20 @@ export default function ProjectDashboardV2() {
     queryKey: ['/api/projects', projectId],
     enabled: !!projectId,
   });
+  // Options for header selectors
+  const { data: buildingUses = [] } = useQuery<string[]>({
+    queryKey: ['/api/building-uses'],
+  });
+  const { data: buildingTypes = [] } = useQuery<string[]>({
+    queryKey: ['/api/building-uses', buildingUse, 'types'],
+    enabled: !!buildingUse,
+  });
+  const { data: categoryMultipliers = [] } = useQuery<Array<{ category: number; description: string; multiplier: string }>>({
+    queryKey: ['/api/category-multipliers'],
+  });
+  const { data: feeDefaults } = useQuery<{ laborOverhead: any[]; hourlyRates: any[]; config: Record<string, number> }>({
+    queryKey: ['/api/fee-defaults'],
+  });
 
   const recalculateMutation = useMutation({
     mutationFn: async () => {
@@ -232,11 +254,11 @@ export default function ProjectDashboardV2() {
 
       const input = {
         projectName: data.project.projectName,
-        buildingUse: data.project.buildingUse,
-        buildingType: data.project.buildingType,
+        buildingUse,
+        buildingType,
         buildingTier: data.project.buildingTier,
-        designLevel: data.project.designLevel,
-        category: data.project.category,
+        designLevel,
+        category,
         newBuildingArea,
         existingBuildingArea,
         siteArea,
@@ -265,7 +287,20 @@ export default function ProjectDashboardV2() {
         electricalFeeAdjustment,
         plumbingFeeAdjustment,
         telecomFeeAdjustment,
+        // Discount is a fraction (e.g., 0.15 = 15%)
         contractDiscountOverride,
+        // Non-linear hours toggle
+        useNonLinearHours,
+        // In-house vs outsourced discipline toggles (fall back to saved project values)
+        architectureInhouse: disciplineInhouse.architecture ?? data.project.architectureInhouse,
+        interiorDesignInhouse: disciplineInhouse.interiorDesign ?? data.project.interiorDesignInhouse,
+        landscapeInhouse: disciplineInhouse.landscape ?? data.project.landscapeInhouse,
+        structuralInhouse: disciplineInhouse.structural ?? data.project.structuralInhouse,
+        civilInhouse: disciplineInhouse.civil ?? data.project.civilInhouse,
+        mechanicalInhouse: disciplineInhouse.mechanical ?? data.project.mechanicalInhouse,
+        electricalInhouse: disciplineInhouse.electrical ?? data.project.electricalInhouse,
+        plumbingInhouse: disciplineInhouse.plumbing ?? data.project.plumbingInhouse,
+        telecomInhouse: disciplineInhouse.telecom ?? data.project.telecomInhouse,
       };
 
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -285,6 +320,11 @@ export default function ProjectDashboardV2() {
       setRemodelMultiplier(parseFloat(data.project.remodelMultiplier));
       setIsHistoric(parseFloat(data.project.historicMultiplier) > 1.0);
       setHistoricPropertyMultiplier(parseFloat(data.project.historicMultiplier) > 1.0 ? 1.2 : 1.0);
+      // Initialize header selectors from project
+      setBuildingUse(data.project.buildingUse);
+      setBuildingType(data.project.buildingType);
+      setDesignLevel(data.project.designLevel);
+      setCategory(data.project.category);
 
       // Initialize target costs from calculations if available
       if (data.calculations) {
@@ -333,7 +373,11 @@ export default function ProjectDashboardV2() {
       if (data.project.markupFactorOverride) {
         setMarkupFactorOverride(parseFloat(data.project.markupFactorOverride));
       }
-      // Contract discount override is initialized at state declaration with default 0.15
+      // Initialize persisted applied discount if present (fraction 0..1)
+      if (data.project.contractDiscountOverride) {
+        const v = parseFloat(data.project.contractDiscountOverride as any);
+        if (!Number.isNaN(v)) setContractDiscountOverride(v);
+      }
 
       // Initialize fee adjustments if saved
       if (data.project.architectureFeeAdjustment) {
@@ -364,6 +408,19 @@ export default function ProjectDashboardV2() {
         setTelecomFeeAdjustment(parseFloat(data.project.telecomFeeAdjustment));
       }
 
+      // Initialize in-house toggles view state from project settings so UI reflects saved values
+      setDisciplineInhouse({
+        architecture: data.project.architectureInhouse ?? true,
+        interiorDesign: data.project.interiorDesignInhouse ?? true,
+        landscape: data.project.landscapeInhouse ?? true,
+        structural: data.project.structuralInhouse ?? false,
+        civil: data.project.civilInhouse ?? false,
+        mechanical: data.project.mechanicalInhouse ?? false,
+        electrical: data.project.electricalInhouse ?? false,
+        plumbing: data.project.plumbingInhouse ?? false,
+        telecom: data.project.telecomInhouse ?? false,
+      });
+
       // Load saved presets from localStorage
       const storedPresets = localStorage.getItem('projectPresets');
       if (storedPresets) {
@@ -372,80 +429,45 @@ export default function ProjectDashboardV2() {
     }
   }, [data]);
 
+  // Initialize pricing config from feeDefaults
+  useEffect(() => {
+    if (feeDefaults?.config) {
+      const cfg = feeDefaults.config as Record<string, number>;
+      if (typeof cfg.max_discount === 'number') {
+        // cfg is numeric (e.g., 0.25)
+        setMaxDiscountCap(cfg.max_discount);
+      }
+      // support baseline_mode via numeric 0/1 or 'avg'/'max'
+      const rawBaseline: any = (feeDefaults.config as any).baseline_mode;
+      if (rawBaseline === 'avg' || rawBaseline === 'max') {
+        setBaselineMode(rawBaseline);
+      } else if (typeof rawBaseline === 'number') {
+        setBaselineMode(rawBaseline >= 0.5 ? 'avg' : 'max');
+      }
+    }
+  }, [feeDefaults]);
+
   // Memoize the recalculation function to prevent infinite loops
   const performRecalculation = useCallback(() => {
     if (data?.project && !recalculateMutation.isPending) {
-      recalculateMutation.mutate({
-        projectName: data.project.projectName || 'Demo Project',
-        buildingType: data.project.buildingType,
-        buildingTier: data.project.buildingTier,
-        category: data.project.category,
-        designLevel: data.project.designLevel,
-        newBuildingArea,
-        existingBuildingArea,
-        siteArea,
-        isHistoric,
-        historicMultiplier: isHistoric ? historicPropertyMultiplier : 1.0,
-        remodelMultiplier,
-        newConstructionTargetCost,
-        remodelTargetCost,
-        shellShareOverride,
-        interiorShareOverride,
-        landscapeShareOverride,
-
-        // Include all discipline settings
-        architectureInhouse: data.project.architectureInhouse,
-        interiorDesignInhouse: data.project.interiorDesignInhouse,
-        landscapeInhouse: data.project.landscapeInhouse,
-        structuralInhouse: data.project.structuralInhouse,
-        civilInhouse: data.project.civilInhouse,
-        mechanicalInhouse: data.project.mechanicalInhouse,
-        electricalInhouse: data.project.electricalInhouse,
-        plumbingInhouse: data.project.plumbingInhouse,
-        telecomInhouse: data.project.telecomInhouse,
-
-        // Include percentage overrides
-        structuralPercentageOverride: structuralShareOverride,
-        civilPercentageOverride: civilShareOverride,
-        mechanicalPercentageOverride: mechanicalShareOverride,
-        electricalPercentageOverride: electricalShareOverride,
-        plumbingPercentageOverride: plumbingShareOverride,
-        telecomPercentageOverride: telecomShareOverride,
-
-        // Include fee adjustments
-        architectureFeeAdjustment,
-        interiorFeeAdjustment,
-        landscapeFeeAdjustment,
-        structuralFeeAdjustment,
-        civilFeeAdjustment,
-        mechanicalFeeAdjustment,
-        electricalFeeAdjustment,
-        plumbingFeeAdjustment,
-        telecomFeeAdjustment,
-
-        // Include bottom-up calculation parameters
-        laborRateOverride,
-        overheadRateOverride,
-        markupFactorOverride,
-        contractDiscountOverride,
-        useNonLinearHours: data.project.useNonLinearHours,
-
-        // Scan to BIM settings
-        scanToBimEnabled: data.project.scanToBimEnabled,
-        scanToBimArea: parseFloat(data.project.scanToBimArea || '0'),
-        scanToBimRate: parseFloat(data.project.scanToBimRate || '0.5')
-      });
-    }
-  }, [
-    // Area and settings
-    newBuildingArea,
-    existingBuildingArea,
+        // Mutation function already derives necessary input from current state
+        recalculateMutation.mutate();
+      }
+    }, [
+      // Area and settings
+      newBuildingArea,
+      existingBuildingArea,
     siteArea,
     newConstructionTargetCost,
     remodelTargetCost,
     remodelMultiplier,
     isHistoric,
     historicPropertyMultiplier,
+    // Header selectors
+    buildingUse,
+    buildingType,
+    designLevel,
+    category,
     shellShareOverride,
     interiorShareOverride,
     landscapeShareOverride,
@@ -523,6 +545,13 @@ export default function ProjectDashboardV2() {
   }
 
   const { project, calculations, fees, hours } = data;
+
+  // Safely derive the category multiplier from project or calculation data
+  const categoryMultiplier = parseFloat(
+    ((project as any)?.categoryMultiplier ??
+      (calculations as any)?.categoryMultiplier ??
+      1).toString()
+  );
 
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
@@ -611,13 +640,42 @@ export default function ProjectDashboardV2() {
   const calculatedRemodelBudget = existingBuildingArea * remodelTarget;
   const calculatedTotalBudget = calculatedNewBudget + calculatedRemodelBudget;
 
+  // Market pricing + contract price figures (single-page visibility)
+  const topDownPrice = totalMarketFee;
+  const markup = (markupFactorOverride ?? 2.0);
+  const labor = (laborRateOverride ?? 35.73);
+  const overhead = (overheadRateOverride ?? 46.10);
+  const bottomUpPrice = totalHours * (labor + overhead) * markup;
+  const baselinePrice = baselineMode === 'avg' ? (topDownPrice + bottomUpPrice) / 2 : Math.max(topDownPrice, bottomUpPrice);
+  const marketPrice = baselinePrice;
+  const maxDiscount = maxDiscountCap;
+  const appliedDiscount = Math.min(contractDiscountOverride, maxDiscount);
+  const finalContractPrice = marketPrice * (1 - appliedDiscount);
+  const totalArea = (newBuildingArea + existingBuildingArea) || 1;
+  const effectiveRate = finalContractPrice / totalArea;
+  const baseCostPerHour = (laborRateOverride ?? 35.73) + (overheadRateOverride ?? 46.10);
+  const costBase = totalHours * baseCostPerHour;
+  const projectMargin = finalContractPrice > 0 ? (finalContractPrice - costBase) / finalContractPrice : 0;
+
+  // Discounted per-scope amounts for distribution and in-house list
+  const discountedByScope = fees.map(f => ({
+    scope: f.scope,
+    isInhouse: f.isInhouse,
+    discounted: parseFloat(f.marketFee) * (1 - appliedDiscount),
+  }));
+  const distScan = discountedByScope.filter(x => /Scan to Bim/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
+  const distShell = discountedByScope.filter(x => /(Architecture|Structural|Civil|Mechanical|Electrical|Plumbing|Telecom)/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
+  const distInterior = discountedByScope.filter(x => /Interior design/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
+  const distLandscape = discountedByScope.filter(x => /Landscape architecture/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
+  const distTotal = distScan + distShell + distInterior + distLandscape || 1;
+
   // Duplicate functions removed - already defined above
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-6 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
@@ -628,22 +686,21 @@ export default function ProjectDashboardV2() {
               <div>
                 <h1 className="text-xl font-bold">{project.projectName}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingUse}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingType}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingTier}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Category {project.category}
-                  </Badge>
+                  <Badge variant="outline" className="text-xs">{buildingUse || project.buildingUse}</Badge>
+                  <Badge variant="outline" className="text-xs">{buildingType || project.buildingType}</Badge>
+                  <Badge variant="outline" className="text-xs">Level {designLevel}</Badge>
+                  <Badge variant="outline" className="text-xs">Category {category}</Badge>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/projects/${project.id}/simple`)}
+              >
+                Simple View
+              </Button>
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={autoRecalc} 
@@ -664,6 +721,63 @@ export default function ProjectDashboardV2() {
                 )}
                 Recalculate
               </Button>
+            </div>
+          </div>
+          {/* Header selectors row */}
+          <div className="mt-3 grid gap-3 md:grid-cols-4">
+            <div>
+              <Label className="text-xs">Building Use</Label>
+              <Select value={buildingUse} onValueChange={(v) => { setBuildingUse(v); setBuildingType(""); }}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select use" />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingUses.map((use) => (
+                    <SelectItem key={use} value={use}>{use}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Building Type</Label>
+              <Select value={buildingType} onValueChange={setBuildingType} disabled={!buildingUse}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Design Level</Label>
+              <Select value={designLevel.toString()} onValueChange={(v) => setDesignLevel(parseInt(v))}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 - Basic</SelectItem>
+                  <SelectItem value="2">2 - Standard</SelectItem>
+                  <SelectItem value="3">3 - Full</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Category</Label>
+              <Select value={category.toString()} onValueChange={(v) => setCategory(parseInt(v))}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryMultipliers.map((c) => (
+                    <SelectItem key={c.category} value={c.category.toString()}>
+                      Category {c.category} - {c.description} (×{c.multiplier})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -987,19 +1101,21 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.shellBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const newBudget = parseFloat(calculations.newBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.shellBudgetTotal) / totalBudget : 0;
+                            return newBudget * share;
+                          })())}</p>
                         </div>
                         <div className="p-2 bg-green-50 rounded">
                           <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.shellBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const remodelBudget = parseFloat(calculations.remodelBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.shellBudgetTotal) / totalBudget : 0;
+                            return remodelBudget * share;
+                          })())}</p>
                         </div>
                       </div>
                     </div>
@@ -1034,19 +1150,21 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.interiorBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const newBudget = parseFloat(calculations.newBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.interiorBudgetTotal) / totalBudget : 0;
+                            return newBudget * share;
+                          })())}</p>
                         </div>
                         <div className="p-2 bg-green-50 rounded">
                           <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.interiorBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const remodelBudget = parseFloat(calculations.remodelBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.interiorBudgetTotal) / totalBudget : 0;
+                            return remodelBudget * share;
+                          })())}</p>
                         </div>
                       </div>
                     </div>
@@ -1081,19 +1199,21 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.landscapeBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const newBudget = parseFloat(calculations.newBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.landscapeBudgetTotal) / totalBudget : 0;
+                            return newBudget * share;
+                          })())}</p>
                         </div>
                         <div className="p-2 bg-green-50 rounded">
                           <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.landscapeBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
+                          <p className="font-medium">{formatCurrency((() => {
+                            const totalBudget = parseFloat(calculations.totalBudget || '0');
+                            const remodelBudget = parseFloat(calculations.remodelBudget || '0');
+                            const share = totalBudget > 0 ? parseFloat(calculations.landscapeBudgetTotal) / totalBudget : 0;
+                            return remodelBudget * share;
+                          })())}</p>
                         </div>
                       </div>
                     </div>
@@ -1698,6 +1818,147 @@ export default function ProjectDashboardV2() {
           </CardContent>
         </Card>
 
+        {/* Sanity Check & Pricing (single-page control) */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Sanity Check & Pricing</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              {/* Sanity Check */}
+              <div className="p-4 border rounded-lg bg-white">
+                <div className="text-sm text-muted-foreground mb-2">Sanity Check</div>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-xs">Top-Down</span>
+                    <span className="text-xs font-semibold">{formatCurrency(marketPrice)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-xs">Bottom-Up</span>
+                    <span className="text-xs font-semibold">{formatCurrency(totalHours * baseCostPerHour)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-xs">Variance</span>
+                    <span className={`text-xs font-semibold ${Math.abs((marketPrice - totalHours * baseCostPerHour) / Math.max(marketPrice,1)) > 0.25 ? 'text-red-600':'text-green-600'}`}>
+                      {formatCurrency((marketPrice - totalHours * baseCostPerHour))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Market Pricing */}
+              <div className="p-4 border rounded-lg bg-white">
+                <div className="text-sm text-muted-foreground mb-2">Market Pricing</div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Market Price</span>
+                    <span className="text-sm font-semibold">{formatCurrency(marketPrice)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Maximum Discount</span>
+                    <Badge variant="secondary">{formatPercent(maxDiscount)}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs">Discount Selection</span>
+                    <Badge variant="outline">{formatPercent(appliedDiscount)}</Badge>
+                  </div>
+                  <div>
+                    <Slider value={[appliedDiscount * 100]} min={0} max={maxDiscount * 100} step={1}
+                      onValueChange={(v) => setContractDiscountOverride((v[0] || 0) / 100)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contract Price */}
+              <div className="p-4 border rounded-lg bg-white">
+                <div className="text-sm text-muted-foreground mb-2">Contract Price</div>
+                <div className="space-y-2">
+                  <div className="text-3xl font-bold text-green-600">{formatCurrency(finalContractPrice)}</div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Effective Rate</span>
+                    <span className="font-semibold">${formatNumber(effectiveRate, 2)}/ft²</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Project Margin</span>
+                    <span className={`font-semibold ${projectMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatPercent(projectMargin)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Total Hours</span>
+                    <span className="font-semibold">{formatNumber(totalHours, 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Investment Summary */}
+            <div className="mt-6 p-4 rounded-lg bg-slate-900 text-white">
+              <div className="text-center text-sm opacity-80 mb-2">Your Investment Summary</div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="p-3 bg-slate-800 rounded text-center">
+                  <div className="text-xs opacity-80">Market Rate</div>
+                  <div className="text-xl font-bold">{formatCurrency(totalMarketFee)}</div>
+                </div>
+                <div className="p-3 bg-slate-800 rounded text-center">
+                  <div className="text-xs opacity-80">Louis Amy Price</div>
+                  <div className="text-xl font-bold">{formatCurrency(totalLouisAmyFee)}</div>
+                </div>
+                <div className="p-3 bg-slate-800 rounded text-center">
+                  <div className="text-xs opacity-80">Final Contract Price</div>
+                  <div className="text-xl font-bold text-green-300">{formatCurrency(finalContractPrice)}</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Included Services + Distribution */}
+        <Card className="mt-6">
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* In-House Services Included */}
+              <div className="p-4 rounded-lg border bg-white">
+                <div className="text-sm font-semibold mb-3">In‑House Services Included</div>
+                <div className="space-y-2">
+                  {discountedByScope.filter(s => s.isInhouse).map((s, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm">
+                      <span>{s.scope}</span>
+                      <span className="font-medium">{formatCurrency(s.discounted)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Design Services Distribution */}
+              <div className="p-4 rounded-lg border bg-white">
+                <div className="text-sm font-semibold mb-3">Design Services Distribution</div>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Scan to BIM', value: distScan, color: 'bg-blue-500' },
+                    { label: 'Building Shell', value: distShell, color: 'bg-emerald-500' },
+                    { label: 'Interior', value: distInterior, color: 'bg-purple-500' },
+                    { label: 'Landscape', value: distLandscape, color: 'bg-green-500' },
+                  ].map((row) => {
+                    const pct = (row.value / distTotal) * 100;
+                    return (
+                      <div key={row.label}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span>{row.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{formatCurrency(row.value)}</span>
+                            <Badge variant="outline" className="text-[10px]">{pct.toFixed(0)}%</Badge>
+                          </div>
+                        </div>
+                        <div className="w-full h-2 bg-gray-100 rounded">
+                          <div className={`${row.color} h-2 rounded`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Advanced Settings */}
         <Card>
           <CardHeader>
@@ -1891,7 +2152,7 @@ export default function ProjectDashboardV2() {
                       <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Scan to BIM Cost</span>
-                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate)}</span>
+                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate * categoryMultiplier)}</span>
                         </div>
                       </div>
                     )}
@@ -2162,7 +2423,7 @@ export default function ProjectDashboardV2() {
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <span className="text-xs">Effective Rate</span>
                     <span className="text-sm font-bold">
-                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt, 0)} hrs
+                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt * categoryMultiplier, 0)} hrs
                     </span>
                   </div>
                 </div>
