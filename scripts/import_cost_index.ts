@@ -5,13 +5,8 @@
 import fs from 'fs';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
-import { neonConfig, Pool } from '@neondatabase/serverless';
-import ws from 'ws';
-import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from '../shared/schema';
 import { and, eq } from 'drizzle-orm';
-
-neonConfig.webSocketConstructor = ws as any;
 
 function die(msg: string): never { console.error(msg); process.exit(1); }
 
@@ -25,8 +20,28 @@ const records: any[] = parse(raw, {
   skip_empty_lines: true,
 });
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
-const db = drizzle({ client: pool, schema });
+// Determine database type and use appropriate driver
+const isNeonDb = process.env.DATABASE_URL!.includes('neon.tech');
+
+let db: any;
+let pool: any;
+
+if (isNeonDb) {
+  const { Pool: NeonPool, neonConfig } = await import('@neondatabase/serverless');
+  const { drizzle: neonDrizzle } = await import('drizzle-orm/neon-serverless');
+  const ws = await import('ws');
+  
+  neonConfig.webSocketConstructor = ws.default as any;
+  pool = new NeonPool({ connectionString: process.env.DATABASE_URL! });
+  db = neonDrizzle({ client: pool, schema });
+} else {
+  const pg = await import('pg');
+  const { drizzle: pgDrizzle } = await import('drizzle-orm/node-postgres');
+  
+  const { Pool: PgPool } = pg.default;
+  pool = new PgPool({ connectionString: process.env.DATABASE_URL! });
+  db = pgDrizzle(pool, { schema });
+}
 
 function num(v: any): number {
   if (v === undefined || v === null || v === '') return 0;

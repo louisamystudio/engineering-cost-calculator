@@ -271,25 +271,28 @@ export class ProjectCalculatorService {
     // Get engineering percentages with exact Excel formulas
     const engineeringPercentages = await this.getEngineeringPercentages(input);
     
-    // Calculate architecture share as per Excel: 1 - (sum of all engineering percentages)
+    // Calculate architecture share as per Excel: (1 - (sum of all engineering percentages)) * shellShare
     const totalEngineeringPercentage = engineeringPercentages.structural + engineeringPercentages.civil +
                                        engineeringPercentages.mechanical + engineeringPercentages.electrical +
                                        engineeringPercentages.plumbing + engineeringPercentages.telecom;
     
-    // Validate engineering percentages don't exceed 100%
-    if (totalEngineeringPercentage > 1.0) {
-      console.error(`Engineering percentages sum to ${(totalEngineeringPercentage * 100).toFixed(1)}% which exceeds 100%`);
-      // Scale down engineering percentages proportionally
-      const scale = 0.8 / totalEngineeringPercentage; // Leave 20% for architecture
+    // Enforce minimum Architecture share and proportionally-scale engineering if needed
+    const archFloor = input.architecturePercentageOverride ?? 0.10; // default 10%
+    let engSumWorking = totalEngineeringPercentage;
+    if (engSumWorking > 1.0 - archFloor) {
+      console.warn(`Engineering shares ${(engSumWorking * 100).toFixed(1)}% exceed available ${(100 - archFloor * 100).toFixed(1)}% — scaling`);
+      const scale = (1.0 - archFloor) / engSumWorking;
       engineeringPercentages.structural *= scale;
       engineeringPercentages.civil *= scale;
       engineeringPercentages.mechanical *= scale;
       engineeringPercentages.electrical *= scale;
       engineeringPercentages.plumbing *= scale;
       engineeringPercentages.telecom *= scale;
+      engSumWorking = engineeringPercentages.structural + engineeringPercentages.civil + engineeringPercentages.mechanical + engineeringPercentages.electrical + engineeringPercentages.plumbing + engineeringPercentages.telecom;
     }
     
-    const architecturePercentage = Math.max(0.1, 1 - totalEngineeringPercentage); // Minimum 10% for architecture
+    // Architecture is the remainder of shell after engineering, with a minimum floor
+    const architecturePercentage = Math.max(archFloor, 1 - engSumWorking);
     
     // Calculate engineering budgets with proper new/remodel split
     // Note: shellBudgetRemodel already includes the remodel cost reduction
@@ -459,7 +462,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanBuildingRate.toString(),
         marketFee: scanBuildingFee.toString(),
         louisAmyFee: scanBuildingFee.toString(),
-        hours: (scanBuildingFee / averagePricingPerHour).toString(),
+        hours: ((averagePricingPerHour > 0 ? (scanBuildingFee / averagePricingPerHour) : 0)).toString(),
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -478,7 +481,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanSiteRate.toString(),
         marketFee: scanSiteFee.toString(),
         louisAmyFee: scanSiteFee.toString(),
-        hours: (scanSiteFee / averagePricingPerHour).toString(),
+        hours: ((averagePricingPerHour > 0 ? (scanSiteFee / averagePricingPerHour) : 0)).toString(),
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -594,7 +597,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: (adjustedMarketFee / totalArea).toString(),
         marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
-        hours: disc.isInhouse ? (louisAmyFee / averagePricingPerHour).toString() : '0',
+        hours: disc.isInhouse ? ((averagePricingPerHour > 0 ? (louisAmyFee / averagePricingPerHour) : 0)).toString() : '0',
         coordinationFee: coordinationFee.toString(),
         consultantFee: consultantFee.toString(),
         isInhouse: disc.isInhouse
