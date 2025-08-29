@@ -167,6 +167,54 @@ export default function ProjectDashboardV2() {
   const [, navigate] = useLocation();
   const projectId = params.id as string;
 
+  // Auto-create demo project if no ID provided (for root route)
+  useEffect(() => {
+    if (!projectId) {
+      (async () => {
+        try {
+          // Try to find existing demo project
+          const res = await fetch('/api/projects', { credentials: 'include' });
+          const projects = await res.json();
+          let demo = projects.find((p: any) => p.isDemo);
+          if (!demo) {
+            // Create demo with sensible defaults matching exact schema
+            const demoInput = {
+              projectName: 'TESTPROJECT',
+              buildingUse: 'Residential',
+              buildingType: 'Custom Houses',
+              buildingTier: 'Mid',
+              designLevel: 2,
+              category: 5,
+              newBuildingArea: 2000,
+              existingBuildingArea: 2000,
+              siteArea: 972,
+              historicMultiplier: 1.0,
+              remodelMultiplier: 0.5,
+              // Add missing required fields
+              architectureInhouse: true,
+              interiorDesignInhouse: true,
+              landscapeInhouse: true,
+              structuralInhouse: false,
+              civilInhouse: false,
+              mechanicalInhouse: false,
+              electricalInhouse: false,
+              plumbingInhouse: false,
+              telecomInhouse: false,
+              useNonLinearHours: false,
+            };
+            const createRes = await apiRequest('POST', '/api/projects/calculate', demoInput);
+            const data = await createRes.json();
+            demo = data.project;
+          }
+          if (demo?.id) navigate(`/projects/${demo.id}`, { replace: true });
+        } catch (e) {
+          console.error('Failed to create demo project:', e);
+          navigate('/projects');
+        }
+      })();
+    }
+  }, [projectId, navigate]);
+
   // State for interactive controls
   const [newBuildingArea, setNewBuildingArea] = useState(0);
   const [existingBuildingArea, setExistingBuildingArea] = useState(0);

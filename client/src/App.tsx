@@ -96,7 +96,7 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
-        <Route path="/" component={ModernProjectDashboard} />
+        <Route path="/" component={ProjectDashboardV2} />
         <Route path="/classic" component={ProjectsPage} />
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />
