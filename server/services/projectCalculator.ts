@@ -587,8 +587,14 @@ export class ProjectCalculatorService {
         const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
         const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
-        marketFee = feePercentage * disc.budget;
+        // Prevent division by zero and infinite values
+        if (totalBudget <= 0) {
+          feePercentage = 0;
+          marketFee = 0;
+        } else {
+          feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
+          marketFee = feePercentage * disc.budget;
+        }
       } else if (disc.scope.includes('Interior') || disc.scope.includes('Landscape')) {
         // Excel formulas for Interior (Line 87) and Landscape (Line 88) - same as Architecture
         // =((((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-$B$12))
@@ -598,8 +604,14 @@ export class ProjectCalculatorService {
         const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
         const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
-        marketFee = feePercentage * disc.budget;
+        // Prevent division by zero and infinite values
+        if (totalBudget <= 0) {
+          feePercentage = 0;
+          marketFee = 0;
+        } else {
+          feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
+          marketFee = feePercentage * disc.budget;
+        }
       } else {
         // Engineering disciplines (Lines 89-94): Excel formula without (1+(1-remodelMultiplier)) factor
         // =(((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76
@@ -609,8 +621,14 @@ export class ProjectCalculatorService {
         const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
         const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = (newWeightedFee + remodelWeightedFee) / totalBudget;
-        marketFee = feePercentage * disc.budget;
+        // Prevent division by zero and infinite values
+        if (totalBudget <= 0) {
+          feePercentage = 0;
+          marketFee = 0;
+        } else {
+          feePercentage = (newWeightedFee + remodelWeightedFee) / totalBudget;
+          marketFee = feePercentage * disc.budget;
+        }
       }
       
       // Apply fee adjustment (discount or premium)
@@ -619,11 +637,14 @@ export class ProjectCalculatorService {
       const coordinationFee = disc.isInhouse ? 0 : adjustedMarketFee * this.COORDINATION_FEE_PERCENT;
       const consultantFee = disc.isInhouse ? 0 : adjustedMarketFee;
       
+      // Clamp percentOfCost to database constraints (precision 5, scale 4: -9.9999 to 9.9999)
+      const clampedPercentOfCost = Math.max(-9.9999, Math.min(9.9999, feePercentage));
+      
       fees.push({
         id: '',
         projectId: project.id,
         scope: disc.scope,
-        percentOfCost: feePercentage.toString(),
+        percentOfCost: clampedPercentOfCost.toString(),
         ratePerSqFt: (totalArea > 0 ? (adjustedMarketFee / totalArea) : 0).toString(),
         marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
