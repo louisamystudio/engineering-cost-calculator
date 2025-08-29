@@ -1,0 +1,247 @@
+Louis Amy Quote 	Calculation Formulas	//Notes to AI Agent Coder				
+Building Use	Residential	//Drop Drown Selection 				
+Building Type	Residence - Private	//Drop Drown Selection filtered by Building Type				
+Building Tier	Mid-Range Standard Residential	//Drop Drown Selection filtered by Building use selection				
+Category	Category 5	//Map Category by previous selections // Category 1 = 0.9 // Category 2 = 1.0 // Category 3 =1.1 // Category 4 = 1.2 // Category 5 = 1.3				
+Design Level	3	//Map "Design Level" equals to " Tier  (1,2,3)" // 1=Basic Design // 2=Standard Design // 3=Full Design // map this to the databbase "cost_ranges" this afect construction cost and interior exterior and shell shares				
+New Building Area (ft²)	2000	//New Construction				
+Existing Building Area (ft²)	2000	//Reconstruction / Remodel				
+Site Area (m2)	972	//Use Site Area for Scan to Bim calculation				
+Multipliers	Selection					
+Historic Property Multiplier	1	1	1.2			
+Remodel Multiplier	0.5					
+Key	=B4 & "|" & B6	// Do not display				
+New Construction 	=B7/(B7+B8)	//display with a dounugth chart				
+Existing to Remodel	=B8/(B7+B8)	//display with a dougnuth chart				
+New Construction Min $/ft²	=VLOOKUP(B13, Cost_Ranges!$A$2:$K$13,6,FALSE)*B11	// minimum end (bracket)  of slider //Fixed 				
+Existing to Remodel Min $/ft²	=B16*B12	// minimum end (bracket)  of slider //Fixed 				
+New Construction Target $/ft²	=(B16+B20)/2	// Average by default // Allow Overwrite by moving a dot on the slider 				
+Existing to Remodel Target $/ft²	=(B17+B21)/2	// Average by default // Allow Overwrite by moving a dot on the slider 				
+New Construction  Max $/ft²	=VLOOKUP(B13, Cost_Ranges!$A$2:$K$13,7,FALSE)*B11	// Max end (bracket)  of slider //Fixed 				
+Existing to Remodel Max $/ft²	=B20*B12	// Max end (bracket)  of slider //Fixed 				
+Total Budget 	=B23+B24	//Calculate				
+New Construction Budget 	=(B7) * B18					
+Existing to Remodel Budget	=(B8) * B19					
+Project Shell  Share	=VLOOKUP(B13, Cost_Ranges!$A$2:$K$13,8,FALSE)	//From database to set the default // Allow Overwrite with a slider				
+Project Interior Share	=VLOOKUP(B13, Cost_Ranges!$A$2:$K$13,9,FALSE)	//From database to set the default // Allow Overwrite with a slider				
+Project Landscape Share	=VLOOKUP(B13, Cost_Ranges!$A$2:$K$13,10,FALSE)	//From database to set the default // Allow Overwrite with a slider				
+Building Shell Minimum Total Budget	=B29+B30	//Card				
+New Construction Shell Minimum Total Budget	=B23 * B25	Hidden inside - display number and graphically 				
+Existing to Remodel Shell Minimum Total Budget	=B24 * B25	Hidden inside - display number and graphically 				
+Interior Minimum Budget	=B32+B33	//Card				
+New Construction Interior Minimum Total Budget	=B23*B26	Hidden inside - display number and graphically 				
+Existing to Remodel Interior Minimum Total Budget	=B24*B26	Hidden inside - display number and graphically 				
+Landscape Minimum Budget	=B35+B36	//Card				
+New Construction Landscape Minimum Total Budget	=B23*B27	Hidden inside - display number and graphically 				
+Existing to Remodel Landscape Minimum Total Budget	=B24*B27	Hidden inside - display number and graphically 				
+// 3 column table	New construction Leverage	Existing to Remodel Leverage				
+Architectural Design Share	=(1-(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Structural", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Civil & Site", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Mechanical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Electrical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Plumbing", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)+IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Low-Voltage", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)))*$B$25	=1-SUM(C39:C46)				
+Interior Design Share	=B26	=B39				
+Landscape Design Share	=B27	=B40				
+Structural Design Share	= IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Structural", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B41*B12				
+Civil Design Share	= IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Civil & Site", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B42				
+Mechanical Design Share	=IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Mechanical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B43				
+Electrical Design Share	=IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Electrical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B44				
+Plumbing Design Share	=IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Plumbing", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B45				
+Telecomunication Design	=IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Low-Voltage", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0)*$B$25	=B46				
+						
+Architecture Budget	=B49+B50	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=B23*B38	//Hidden inside - display number and graphically 				
+Existing to Remodel	=B24*C38	//Hidden inside - display number and graphically 				
+Interior Budget	=B52+B53	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=B32	//Hidden inside - display number and graphically 				
+Existing to Remodel	=B33	//Hidden inside - display number and graphically 				
+Landscape Budget	=B55+B56	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=B35	//Hidden inside - display number and graphically 				
+Existing to Remodel	=B36	//Hidden inside - display number and graphically 				
+Structural Budget	=B58+B59	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(B29*IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Structural", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(B30*IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Structural", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B12	//Hidden inside - display number and graphically 				
+Civil Budget	=B61+B62	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(B29 * IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Civil & Site", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(B30 * IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Civil & Site", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))	//Hidden inside - display number and graphically 				
+Mechanical Budget	=B64+B65	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Mechanical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B29	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Mechanical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B30	//Hidden inside - display number and graphically 				
+Electrical Budget	=B67+B68	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Electrical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B29	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Electrical", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B30	//Hidden inside - display number and graphically 				
+Plumbing Budget	=B70+B71	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Plumbing", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B29	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Plumbing", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B30	//Hidden inside - display number and graphically 				
+Telecomunication Budget	=B73+B74	// Visualize data graphicaly inside a card // expand when click to reveal hidden info.				
+New Construction	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Low-Voltage", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B29	//Hidden inside - display number and graphically 				
+Existing to Remodel	=(IFERROR(VLOOKUP($B$4 & "|" & $B$6 & "|" & "Low-Voltage", Engineering_Costs!$A$2:$I$55, 5, FALSE), 0))*B30	//Hidden inside - display number and graphically 				
+						
+Working Minimum Budget	=B48+B51+B54+B57+B60+B63+B66+B69+B72					
+New Construction	=B49+B52+B55+B58+B61+B64+B67+B70+B73	Hidden inside - display number and graphically 				
+Existing to Remodel	=B50+B53+B56+B59+B62+B65+B68+B71+B74	Hidden inside - display number and graphically 				
+Category Multiplier	1.3	// Do Not Display  // Base on Building Category 				
+Coordination Fee	0.15					
+Markup	1					
+//next find a 8 column table						
+Scope	Percent of Project Cost %	Rate per sq-ft	Market Fee	Louis Amy Market Fee	Aproximate Hours	Cordination Fee
+Scan to Bim - Building		=(0.6+0.006*((1000+$B$8)/1000000)^(-0.7495))*B79	=C84*B8	=D84	=E84/$G$110	0
+Scan to Bim - Site		=(1+0.00091*($B$9/1000000)^(-0.005))*B79/(3.28^2)+0.08	=C85*(B9*(3.28^2))	=D85	=E85/$G$110	0
+Architecture (Design + Consultant Admin.)	=((((0.07498+0.007824*($B$28/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$28/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-$B$12))	=D86/($B$7+$B$8)	=B86*B48	=D86	=E86/$G$110	0
+Interior design	=((((0.07498+0.007824*($B$34/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$34/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-$B$12))	=D87/($B$7+$B$8)	=B87*B31	=D87	=E87/$G$110	0
+Landscape architecture	=((((0.07498+0.007824*($B$31/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$31/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-B12))	=D88/($B$7+$B$8)	=B88*B34	=D88	=E88/$G$110	0
+Structural engineer	=(((0.07498+0.007824*($B$57/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$57/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D89/($B$7+$B$8)	=B89*B57	=D89	=E89/$G$110	0
+Civil / site engineer	=(((0.07498+0.007824*($B$60/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$60/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D90/($B$7+$B$8)	=B90*B60	=D90	=E90/$G$110	0
+Mechanical (HVAC, energy, pools)	=(((0.07498+0.007824*($B$63/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$63/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D91/($B$7+$B$8)	=B91*B63	0	=E91/$G$110	=H91*B80
+Electrical (power / lighting)	=(((0.07498+0.007824*($B$66/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$66/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D92/($B$7+$B$8)	=B92*B66	0	=E92/$G$110	=H92*B80
+Plumbing engineer	=(((0.07498+0.007824*($B$69/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$69/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D93/($B$7+$B$8)	=B93*B69	=D93	=E93/$G$110	0
+Telecomunication	=(((0.07498+0.007824*($B$72/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$72/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76	=D94/($B$7+$B$8)	=B94*B72	0	=E94/$G$110	=H94*B80
+Total			=SUM(D84:D94)	=SUM(E84:E94)	=SUM(F84:F94)	=SUM(G84:G94)
+						
+//next find a 7 column table						
+I. Buttom Up Fee Analysis						
+Team Member	Designer 1	Designer 2	Architect	Engineer 	Principal	Ave Rates
+Rate 	26	26	26	26	26	
+Total Labor Cost	74318.15	74318.15	74318.15	74318.15	74318.15	371590.75
+Total Expenses	80707.136731682	80707.136731682	93356.7540126978	93356.7540126978	175579.266339301	=SUM(B102:F102)
+Total Expenses	=B101+B102	=C101+C102	=D101+D102	=E101+E102	=F101+F102	=G101+G102
+II. Cost & Pricing-Per Hour						
+Team Member	Designer 1	Designer 2	Architect	Engineer 	Principal	Ave Rates
+Rate- Labor Cost per hour	35.7298798076923	35.7298798076923	35.7298798076923	35.7298798076923	35.7298798076923	=AVERAGE(B106:F106)
+Rate -Overhead per hour	39.4070610304308	39.4070610304308	42.4499541103492	42.4499541103492	66.7930987496964	=AVERAGE(B107:F107)
+Rate -Total Cost	=B106+B107	=C106+C107	=D106+D107	=E106+E107	=F106+F107	=AVERAGE(B108:F108)
+Margin	=(B110-B108)/B110	=(C110-C108)/C110	=(D110-D108)/D110	=(E110-E108)/E110	=(F110-F108)/F110	=(G110-G108)/G110
+Rate -Pricing per hour	=ROUND(B108*(1+$B$81),0)	=ROUND(C108*(1+$B$81),0)	=ROUND(D108*(1+$B$81),0)	=ROUND(E108*(1+$B$81),0)	=ROUND(F108*(1+$B$81),0)	=ROUND(G108*(1+$B$81),0)
+						
+//next find a 3 column table						
+III. Project Hours & Leverage						
+New CostructionHours Factor	=(0.21767+11.21274*((B7+B8) ^ -0.53816)- 0.08)*$B$79*0.9	//Hide Do not show				
+Existing to Remodel  Hours Factor	=(0.21767+11.21274*((B8+B7) ^ -0.53816)- 0.08)*$B$79*0.77	//Hide Do not show				
+New Costruction Total Hours All-In	=$B$114*($B$7)	//Hide Do not show				
+Existing to Remodel Total Hours All-In	=$B$115*($B$8)*1.15	//Hide Do not show				
+						
+						
+//next find a 5 column table						
+Scope	Scope Share Percentage	Hours	Hours by Louis Amy 	Hours Out of Scope		
+Scan to Bim - Building	=D84/(SUM($D$84:$D$94))	=B122*($B$116+B117)	=C122			
+Scan to Bim - Site	=D85/(SUM($D$84:$D$94))	=B123*($B$116+$B$117)	=C123			
+Architecture (Design + Consultant Admin.)	=D86/(SUM($D$84:$D$94))	=B124*($B$116+$B$117)	=C124			
+Interior design	=D87/(SUM($D$84:$D$94))	=B125*($B$116+$B$117)	=C125			
+Landscape architecture	=D88/(SUM($D$84:$D$94))	=B126*($B$116+$B$117)	=C126			
+Structural engineer	=D89/(SUM($D$84:$D$94))	=B127*($B$116+$B$117)	=C127			
+Civil / site engineer	=D90/(SUM($D$84:$D$94))	=B128*($B$116+$B$117)	=C128			
+Mechanical (HVAC, energy, pools)	=D91/(SUM($D$84:$D$94))	=B129*($B$116+$B$117)		=C129		
+Electrical (power / lighting)	=D92/(SUM($D$84:$D$94))	=B130*($B$116+$B$117)		=C130		
+Plumbing engineer	=D93/(SUM($D$84:$D$94))	=B131*($B$116+$B$117)	=C131			
+Telecomunication	=D94/(SUM($D$84:$D$94))	=B132*($B$116+$B$117)		=C132		
+Total	=SUM(B122:B132)	=B133*($B$116+$B$117)	=SUM(D122:D132)	=SUM(E122:E132)		
+						
+						
+//next find a 3 column table						
+Project Hours by Phases						
+Discovery	0.08	=B138*$D$133				
+Creative - Conceptual	0.08	=B139*$D$133				
+Creative - Shematic	0.34	=B140*$D$133				
+Creative - Preliminary	0.08	=B141*$D$133				
+Technical - Shematic	0.34	=B142*$D$133				
+Technical - Preliminary	0.08	=B143*$D$133				
+Total 	=SUM(B138:B143)	=SUM(C138:C143)				
+						
+						
+//next find a 7 column table						
+Leverage % Per Employees	Designer 1 Leverage	Designer 2 Leverage	Architect Leverage	Engineer Leverage	Principal Leverage	Verification
+Discovery	0.37	0.37	0.1	0.02	0.14	=SUM(B149:F149)
+Creative - Conceptual	0	0	0.95	0	0.05	=SUM(B150:F150)
+Creative - Shematic	0.32	0.32	0.32	0.02	0.02	=SUM(B151:F151)
+Creative - Preliminary	0.32	0.32	0.32	0.02	0.02	=SUM(B152:F152)
+Technical - Shematic	0.26	0.26	0.1	0.32	0.06	=SUM(B153:F153)
+Technical - Preliminary	0.26	0.26	0.1	0.32	0.06	=SUM(B154:F154)
+Percentage Sum Product	=SUMPRODUCT(B149:B154, $B$138:$B$143)	=SUMPRODUCT(C149:C154, $B$138:$B$143)	=SUMPRODUCT(D149:D154, $B$138:$B$143)	=SUMPRODUCT(E149:E154, $B$138:$B$143)	=SUMPRODUCT(F149:F154, $B$138:$B$143)	=SUM(B155:F155)
+Total Hours Per Employees	Designer 1 Hours	Designer 2 Hours	Architect Hours	Engineer Hours	Principal Hours	Total 
+Discovery	=ROUND(($C138*B149),0)	=ROUND(($C138*C149),0)	=ROUND(($C138*D149),0)	=ROUND(($C138*E149),0)	=ROUND(($C138*F149),0)	=SUM(B157:F157)
+Creative - Conceptual	=ROUND(($C139*B150),0)	=ROUND(($C139*C150),0)	=ROUND(($C139*D150),0)	=ROUND(($C139*E150),0)	=ROUND(($C139*F150),0)	=SUM(B158:F158)
+Creative - Shematic	=ROUND(($C140*B151),0)	=ROUND(($C140*C151),0)	=ROUND(($C140*D151),0)	=ROUND(($C140*E151),0)	=ROUND(($C140*F151),0)	=SUM(B159:F159)
+Creative - Preliminary	=ROUND(($C141*B152),0)	=ROUND(($C141*C152),0)	=ROUND(($C141*D152),0)	=ROUND(($C141*E152),0)	=ROUND(($C141*F152),0)	=SUM(B160:F160)
+Technical - Shematic	=ROUND(($C142*B153),0)	=ROUND(($C142*C153),0)	=ROUND(($C142*D153),0)	=ROUND(($C142*E153),0)	=ROUND(($C142*F153),0)	=SUM(B161:F161)
+Technical - Preliminary	=ROUND(($C143*B154),0)	=ROUND(($C143*C154),0)	=ROUND(($C143*D154),0)	=ROUND(($C143*E154),0)	=ROUND(($C143*F154),0)	=SUM(B162:F162)
+Total	=SUM(B157:B162)	=SUM(C157:C162)	=SUM(D157:D162)	=SUM(E157:E162)	=SUM(F157:F162)	=SUM(G157:G162)
+Project Fees	Designer 1 Hours	Designer 2 Hours	Architect Hours	Engineer Hours	Principal Hours	Total 
+Discovery	=(B157*$B$110)*(1+$E$185)	=(C157*$C$110)*(1+$E$185)	=(D157*$D$110)*(1+$E$185)	=(E157*$E$110)*(1+$E$185)	=(F157*$F$110)*(1+$E$185)	=SUM(B165:F165)
+Creative - Conceptual	=(B158*$B$110)*(1+$E$185)	=(C158*$C$110)*(1+$E$185)	=(D158*$D$110)*(1+$E$185)	=(E158*$E$110)*(1+$E$185)	=(F158*$F$110)*(1+$E$185)	=SUM(B166:F166)
+Creative - Shematic	=(B159*$B$110)*(1+$E$185)	=(C159*$C$110)*(1+$E$185)	=(D159*$D$110)*(1+$E$185)	=(E159*$E$110)*(1+$E$185)	=(F159*$F$110)*(1+$E$185)	=SUM(B167:F167)
+Creative - Preliminary	=(B160*$B$110)*(1+$E$185)	=(C160*$C$110)*(1+$E$185)	=(D160*$D$110)*(1+$E$185)	=(E160*$E$110)*(1+$E$185)	=(F160*$F$110)*(1+$E$185)	=SUM(B168:F168)
+Technical - Shematic	=(B161*$B$110)*(1+$E$185)	=(C161*$C$110)*(1+$E$185)	=(D161*$D$110)*(1+$E$185)	=(E161*$E$110)*(1+$E$185)	=(F161*$F$110)*(1+$E$185)	=SUM(B169:F169)
+Technical - Preliminary	=(B162*$B$110)*(1+$E$185)	=(C162*$C$110)*(1+$E$185)	=(D162*$D$110)*(1+$E$185)	=(E162*$E$110)*(1+$E$185)	=(F162*$F$110)*(1+$E$185)	=SUM(B170:F170)
+Total	=SUM(B165:B170)	=SUM(C165:C170)	=SUM(D165:D170)	=SUM(E165:E170)	=SUM(F165:F170)	=SUM(G165:G170)
+//next find a 7 column table						
+Sanity Check	Market % of Construction	Market Rate Per (ft²)	Market Total Hours	Market Fee	Percent Diference	Diference
+Top Down Summary	=E174/$B$22	=E174/(B7+B8)	=F95	=E95	=(E174-E175)/E174	=E174*(F174)
+Bottom Up Summary 	=E175/$B$22	=E175/($B$8+$B$9)	=G163	=B163*B110+C163*C110+D163*D110+E163*E110+F163*F110	=(E175-E174)/E175	=E175*(F175)
+						
+						
+						
+						
+Market Price 				=MAX(E174:E175)		
+Maximum Discount				=-E180+E182		
+Discounted Final Price	=E182/$B$22		=E180/G110	=AVERAGE(E174:E175)		
+Applied Discount %				=(1-E182/E180)		
+Discount Manual Overwrite				0.25		
+Discount Selection				=-MAX(E183:E184)		
+Market Price 				=E180		
+Applied Discount 				=E188-E180		
+Contract Price	=E188/$B$22	=E188/($B$8+$B$9)	=E188/G110	=G171		
+						
+Hours Rebalance by Phases						
+Discovery	0.08	=$D$188*B191				
+Creative - Conceptual	0.08	=$D$188*B192				
+Creative - Shematic	0.34	=$D$188*B193				
+Creative - Preliminary	0.08	=$D$188*B194				
+Technical - Shematic	0.34	=$D$188*B195				
+Technical - Preliminary	0.08	=$D$188*B196				
+Total 	=SUM(B191:B196)	=SUM(C191:C196)				
+						
+Rebalanced Hours Per Employees	Designer 1 Hours	Designer 2 Hours	Architect Hours	Engineer Hours	Principal Hours	Total 
+Discovery	=ROUND(($C191*B149),0)	=ROUND(($C191*C149),0)	=ROUND(($C191*D149),0)	=ROUND(($C191*E149),0)	=ROUND(($C191*F149),0)	=SUM(B200:F200)
+Creative - Conceptual	=ROUND(($C192*B150),0)	=ROUND(($C192*C150),0)	=ROUND(($C192*D150),0)	=ROUND(($C192*E150),0)	=ROUND(($C192*F150),0)	=SUM(B201:F201)
+Creative - Shematic	=ROUND(($C193*B151),0)	=ROUND(($C193*C151),0)	=ROUND(($C193*D151),0)	=ROUND(($C193*E151),0)	=ROUND(($C193*F151),0)	=SUM(B202:F202)
+Creative - Preliminary	=ROUND(($C194*B152),0)	=ROUND(($C194*C152),0)	=ROUND(($C194*D152),0)	=ROUND(($C194*E152),0)	=ROUND(($C194*F152),0)	=SUM(B203:F203)
+Technical - Shematic	=ROUND(($C195*B153),0)	=ROUND(($C195*C153),0)	=ROUND(($C195*D153),0)	=ROUND(($C195*E153),0)	=ROUND(($C195*F153),0)	=SUM(B204:F204)
+Technical - Preliminary	=ROUND(($C196*B154),0)	=ROUND(($C196*C154),0)	=ROUND(($C196*D154),0)	=ROUND(($C196*E154),0)	=ROUND(($C196*F154),0)	=SUM(B205:F205)
+Total	=SUM(B200:B205)	=SUM(C200:C205)	=SUM(D200:D205)	=SUM(E200:E205)	=SUM(F200:F205)	=SUM(G200:G205)
+						
+Fee Breakdown 						
+Scan to Bim - Building	=$E$188*B122					
+Scan to Bim - Site	=$E$188*B123					
+Architecture	=$E$188*B124					
+Interior design	=$E$188*B125					
+Landscape architecture	=$E$188*B126					
+Structural engineer	=$E$188*B127					
+Civil / site engineer	=$E$188*B128					
+Mechanical 	=$E$188*B129					
+Electrical	=$E$188*B130					
+Plumbing engineer	=$E$188*B131					
+Telecomunication	=$E$188*B132					
+						
+summary						
+Full Design Market		=D95				
+						
+In-house Louis Amy  Market Price		=E180				
+Amount Discounted		=E187				
+In-house Discounted		=E188				
+						
+Sumary of  In-house services Selected						
+Laser Scan 		=B209+B210				
+Architecture		=B211				
+Interior design		=B212				
+Landscape architecture		=B213				
+Structural engineer		=B214				
+Civil / site engineer		=B215				
+Plumbing engineer		=B218				
+						
+Design Services Summary						
+Laser Scan 		=C229				
+Building Shell		=C230+C233+C234+C235				
+Interior		=C231				
+Landscape		=C232				
+						
+						
+Total Working Hours		=G163				
+Labor cost 		=$G$163*G106				
+Overhead Cost		=G163*G107				
+Profit		=C226-C245-C246				
