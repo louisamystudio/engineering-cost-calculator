@@ -250,11 +250,11 @@ export default function ModernProjectDashboard() {
     );
   }
 
-  const { 
-    project = {}, 
-    calculations = {}, 
-    fees = [], 
-    hours = [] 
+  const {
+    project,
+    calculations,
+    fees,
+    hours
   } = data;
 
   // Calculate totals
