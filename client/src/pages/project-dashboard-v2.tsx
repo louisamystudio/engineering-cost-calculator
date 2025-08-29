@@ -571,6 +571,15 @@ export default function ProjectDashboardV2() {
     );
   }
 
+  // Handle case where no project ID is provided (will auto-redirect)
+  if (!projectId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">Loading DataVizPro Dashboard…</div>
+      </div>
+    );
+  }
+
   if (error || !data) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
