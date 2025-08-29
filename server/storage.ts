@@ -179,7 +179,7 @@ export class DatabaseStorage implements IStorage {
 
   async getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]> {
     // For now, return engineering cost data derived from buildingCostData
-    const tierString = `Tier ${tier}`;
+    const tierString = tier === 1 ? 'Low' : tier === 2 ? 'Mid' : 'High';
     const [data] = await db
       .select()
       .from(buildingCostData)
@@ -374,53 +374,64 @@ export class DatabaseStorage implements IStorage {
   
   // Category Multipliers methods
   async getAllCategoryMultipliers(): Promise<CategoryMultiplier[]> {
-    // Get distinct categories from building cost data
+    // Prefer explicit values from category_multipliers table if present
+    const explicit = await db.select().from(categoryMultipliers);
+    if ((explicit?.length ?? 0) > 0) return explicit;
+
+    // Fallback to standard mapping 0.9–1.3 based on category number
     const results = await db
       .selectDistinct({ category: buildingCostData.category })
       .from(buildingCostData)
       .orderBy(buildingCostData.category);
-    
-    // Map categories with their descriptions and multipliers
-    const categoryDescriptions: Record<number, { description: string, multiplier: number }> = {
-      1: { description: "Simple project - basic complexity", multiplier: 1.0 },
-      2: { description: "Low complexity - minimal coordination required", multiplier: 1.05 },
-      3: { description: "Standard complexity - typical project requirements", multiplier: 1.1 },
-      4: { description: "High complexity - significant coordination needed", multiplier: 1.2 },
-      5: { description: "Very high complexity - extensive coordination and specialized requirements", multiplier: 1.3 }
+
+    const descriptions: Record<number, string> = {
+      1: "Simple project - basic complexity",
+      2: "Low complexity - minimal coordination required",
+      3: "Standard complexity - typical project requirements",
+      4: "High complexity - significant coordination needed",
+      5: "Very high complexity - extensive coordination and specialized requirements",
     };
-    
-    // Format the response to match CategoryMultiplier type
-    return results.map((row: { category: number }) => ({
-      id: `category-${row.category}`,
-      category: row.category,
-      multiplier: categoryDescriptions[row.category]?.multiplier.toFixed(2) || "1.00",
-      description: categoryDescriptions[row.category]?.description || `Category ${row.category}`
-    }));
+
+    return results.map((row: { category: number }) => {
+      const multiplier = 0.8 + 0.1 * row.category; // 1→0.9 ... 5→1.3
+      return {
+        id: `category-${row.category}`,
+        category: row.category,
+        multiplier: multiplier.toFixed(2),
+        description: descriptions[row.category] || `Category ${row.category}`,
+      };
+    });
   }
   
   async getCategoryMultiplier(category: number): Promise<CategoryMultiplier | undefined> {
-    // Check if category exists in building cost data
-    const [result] = await db
+    // Try explicit value from category_multipliers table first
+    const [explicit] = await db
+      .select()
+      .from(categoryMultipliers)
+      .where(eq(categoryMultipliers.category, category));
+    if (explicit) return explicit;
+
+    // Fallback: compute via 0.9–1.3 mapping if category exists in source data
+    const [exists] = await db
       .selectDistinct({ category: buildingCostData.category })
       .from(buildingCostData)
       .where(eq(buildingCostData.category, category));
-    
-    if (!result) return undefined;
-    
-    // Map categories with their descriptions and multipliers
-    const categoryDescriptions: Record<number, { description: string, multiplier: number }> = {
-      1: { description: "Simple project - basic complexity", multiplier: 1.0 },
-      2: { description: "Low complexity - minimal coordination required", multiplier: 1.05 },
-      3: { description: "Standard complexity - typical project requirements", multiplier: 1.1 },
-      4: { description: "High complexity - significant coordination needed", multiplier: 1.2 },
-      5: { description: "Very high complexity - extensive coordination and specialized requirements", multiplier: 1.3 }
+    if (!exists) return undefined;
+
+    const multiplier = 0.8 + 0.1 * category;
+    const descriptions: Record<number, string> = {
+      1: "Simple project - basic complexity",
+      2: "Low complexity - minimal coordination required",
+      3: "Standard complexity - typical project requirements",
+      4: "High complexity - significant coordination needed",
+      5: "Very high complexity - extensive coordination and specialized requirements",
     };
-    
+
     return {
-      id: `category-${result.category}`,
-      category: result.category,
-      multiplier: categoryDescriptions[result.category]?.multiplier.toFixed(2) || "1.00",
-      description: categoryDescriptions[result.category]?.description || `Category ${result.category}`
+      id: `category-${category}`,
+      category,
+      multiplier: multiplier.toFixed(2),
+      description: descriptions[category] || `Category ${category}`,
     };
   }
   
