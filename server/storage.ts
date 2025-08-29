@@ -110,10 +110,7 @@ export interface IStorage {
   getAllBuildingUses(): Promise<string[]>;
   getBuildingTypesByUse(buildingUse: string): Promise<string[]>;
   getBuildingTiersByType(buildingType: string): Promise<string[]>;
-<<<<<<< HEAD
-=======
   getBuildingTypeCategory(buildingType: string): Promise<number | undefined>;
->>>>>>> main
   getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined>;
 }
 
@@ -141,16 +138,11 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .selectDistinct({ buildingType: buildingCostData.buildingType })
       .from(buildingCostData);
-<<<<<<< HEAD
-    return results.map((r: { buildingType: string }) => r.buildingType).sort();
-=======
-    return results.map(r => r.buildingType);
->>>>>>> main
+    return results.map(r => r.buildingType).sort();
   }
 
   async getTiersByBuildingType(buildingType: string): Promise<number[]> {
     const results = await db
-<<<<<<< HEAD
       .selectDistinct({ buildingTier: buildingCostData.buildingTier })
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingType, buildingType));
@@ -166,21 +158,6 @@ export class DatabaseStorage implements IStorage {
     // Map tier number to text: 1=Low, 2=Mid, 3=High
     const tierText = tier === 1 ? 'Low' : tier === 2 ? 'Mid' : 'High';
     const [result] = await db
-=======
-      .selectDistinct({ tier: buildingCostData.buildingTier })
-      .from(buildingCostData)
-      .where(eq(buildingCostData.buildingType, buildingType));
-    // Convert buildingTier string to number (assuming format like "Tier 1")
-    return results.map(r => {
-      const match = r.tier.match(/\d+/);
-      return match ? parseInt(match[0]) : 1;
-    }).sort();
-  }
-
-  async getBuildingCostRange(buildingType: string, tier: number): Promise<BuildingCostRange | undefined> {
-    const tierString = `Tier ${tier}`;
-    const [data] = await db
->>>>>>> main
       .select()
       .from(buildingCostData)
       .where(

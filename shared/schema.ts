@@ -492,12 +492,8 @@ export const comprehensiveProjectInputSchema = z.object({
   laborRateOverride: z.number().min(0).optional(),
   overheadRateOverride: z.number().min(0).optional(),
   markupFactorOverride: z.number().min(0).optional(),
-<<<<<<< HEAD
   // Use fraction units (e.g., 0.15 = 15%)
   contractDiscountOverride: z.number().min(0).max(1).optional(),
-=======
-  contractDiscountOverride: z.number().min(0).max(100).optional(),
->>>>>>> main
   // Optional overrides - Fee adjustments (1.0 = no adjustment, 0.9 = 10% discount, 1.1 = 10% premium)
   architectureFeeAdjustment: z.number().min(0).max(2).optional(),
   interiorFeeAdjustment: z.number().min(0).max(2).optional(),
@@ -618,8 +614,4 @@ export type FeeMatrixV2Result = {
   sectionIV: SectionIV;
   sectionV: SectionV;
   sectionVI: SectionVI;
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> main

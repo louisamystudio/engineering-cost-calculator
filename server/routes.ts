@@ -264,8 +264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-<<<<<<< HEAD
-=======
   // Get category for a specific building type
   app.get("/api/building-types/:type/category", async (req, res) => {
     try {
@@ -280,8 +278,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch building type category" });
     }
   });
-
->>>>>>> main
   const httpServer = createServer(app);
 
   return httpServer;
