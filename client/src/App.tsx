@@ -9,11 +9,17 @@ import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
 import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
 import ProjectsPage from "@/pages/projects";
+<<<<<<< HEAD
 import DataVizProDashboard from "@/pages/datavizpro-dashboard";
 import NewProjectPage from "@/pages/new-project";
 import ModernProjectDashboard from "@/pages/modern-project-dashboard";
 import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
 import ProjectDashboardSimple from "@/pages/project-dashboard-simple";
+=======
+import NewProjectPage from "@/pages/new-project";
+import ModernProjectDashboard from "@/pages/modern-project-dashboard";
+import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
+>>>>>>> main
 import NotFound from "@/pages/not-found";
 
 function NavBar() {
@@ -37,6 +43,7 @@ function NavBar() {
                 variant={(location === "/" || location.startsWith("/projects")) ? "default" : "ghost"}
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
+<<<<<<< HEAD
                 <span className="hidden lg:inline">DataVizPro</span>
                 <span className="lg:hidden">Home</span>
               </Button>
@@ -47,6 +54,10 @@ function NavBar() {
                 className="text-xs sm:text-sm w-full sm:w-auto px-2 sm:px-4 py-2"
               >
                 Classic
+=======
+                <span className="hidden lg:inline">Comprehensive Calculator</span>
+                <span className="lg:hidden">Projects</span>
+>>>>>>> main
               </Button>
             </Link>
             <Link href="/minimum-budget">
@@ -97,12 +108,19 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
+<<<<<<< HEAD
         <Route path="/" component={DataVizProDashboard} />
         <Route path="/classic" component={ProjectsPage} />
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />
         <Route path="/projects/:id" component={ProjectDashboardV2} />
         <Route path="/projects/:id/simple" component={ProjectDashboardSimple} />
+=======
+        <Route path="/" component={ProjectsPage} />
+        <Route path="/projects" component={ProjectsPage} />
+        <Route path="/projects/new" component={NewProjectPage} />
+        <Route path="/projects/:id" component={ProjectDashboardV2} />
+>>>>>>> main
         <Route path="/hourly-factor" component={Calculator} />
         <Route path="/minimum-budget" component={MinimumBudgetCalculator} />
         <Route path="/fee-matrix" component={FeeMatrix} />

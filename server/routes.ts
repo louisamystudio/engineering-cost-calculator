@@ -264,6 +264,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+<<<<<<< HEAD
+=======
+  // Get category for a specific building type
+  app.get("/api/building-types/:type/category", async (req, res) => {
+    try {
+      const category = await storage.getBuildingTypeCategory(decodeURIComponent(req.params.type));
+      if (category !== undefined) {
+        res.json({ category });
+      } else {
+        res.status(404).json({ error: "Building type not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching building type category:", error);
+      res.status(500).json({ error: "Failed to fetch building type category" });
+    }
+  });
+
+>>>>>>> main
   const httpServer = createServer(app);
 
   return httpServer;

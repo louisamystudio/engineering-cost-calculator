@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import { useState, useEffect } from "react";
+>>>>>>> main
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -76,13 +80,34 @@ export default function NewProjectPage() {
     enabled: !!selectedBuildingUse,
   });
 
+<<<<<<< HEAD
 
 
   // Fetch category multipliers
+=======
+  // Fetch category for selected building type
+  const selectedBuildingType = form.watch('buildingType');
+  const { data: buildingCategory } = useQuery<{ category: number }>({
+    queryKey: ['/api/building-types', selectedBuildingType, 'category'],
+    enabled: !!selectedBuildingType,
+  });
+
+  // Fetch category multipliers to show description
+>>>>>>> main
   const { data: categoryMultipliers = [] } = useQuery<Array<{ category: number; description: string; multiplier: string }>>({
     queryKey: ['/api/category-multipliers'],
   });
 
+<<<<<<< HEAD
+=======
+  // Auto-set category when building type changes
+  useEffect(() => {
+    if (buildingCategory?.category) {
+      form.setValue('category', buildingCategory.category);
+    }
+  }, [buildingCategory, form]);
+
+>>>>>>> main
   const createProjectMutation = useMutation({
     mutationFn: async (data: ComprehensiveProjectInput) => {
       const response = await apiRequest('POST', '/api/projects/calculate', data);
@@ -119,6 +144,15 @@ export default function NewProjectPage() {
       console.log(`Preventing submission - not on final step (current: ${step}, total: ${totalSteps})`);
       return;
     }
+<<<<<<< HEAD
+=======
+
+    // Prevent accidental double submission
+    if (createProjectMutation.isPending) {
+      console.log('Preventing double submission - mutation already pending');
+      return;
+    }
+>>>>>>> main
     
     // Map design level to building tier
     const tierMap: Record<number, string> = {
@@ -170,7 +204,16 @@ export default function NewProjectPage() {
           <Progress value={(step / totalSteps) * 100} className="mb-8" />
           
           <Form {...form}>
+<<<<<<< HEAD
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+=======
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" onKeyDown={(e) => {
+              // Prevent form submission on Enter key except for the submit button
+              if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+                e.preventDefault();
+              }
+            }}>
+>>>>>>> main
               {step === 1 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Project Information</h3>
@@ -292,6 +335,7 @@ export default function NewProjectPage() {
                       </FormItem>
                     )}
                   />
+<<<<<<< HEAD
 
                   <FormField
                     control={form.control}
@@ -323,6 +367,8 @@ export default function NewProjectPage() {
                       </FormItem>
                     )}
                   />
+=======
+>>>>>>> main
                 </div>
               )}
 
