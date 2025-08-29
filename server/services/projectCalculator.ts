@@ -183,11 +183,18 @@ export class ProjectCalculatorService {
     
     if (comprehensiveData) {
       // Convert comprehensive data to the expected format for existing calculator logic
+      const newAllInMin = safeParseFloat(comprehensiveData.shellNewMin) + safeParseFloat(comprehensiveData.interiorNewMin) + safeParseFloat(comprehensiveData.outdoorNewMin);
+      const newAllInMax = safeParseFloat(comprehensiveData.shellNewMax) + safeParseFloat(comprehensiveData.interiorNewMax) + safeParseFloat(comprehensiveData.outdoorNewMax);
+      const remodelAllInMin = safeParseFloat(comprehensiveData.shellRemodelMin) + safeParseFloat(comprehensiveData.interiorRemodelMin) + safeParseFloat(comprehensiveData.outdoorRemodelMin);
+      const remodelAllInMax = safeParseFloat(comprehensiveData.shellRemodelMax) + safeParseFloat(comprehensiveData.interiorRemodelMax) + safeParseFloat(comprehensiveData.outdoorRemodelMax);
+
       return {
-        allInMin: (safeParseFloat(comprehensiveData.shellNewMin) + safeParseFloat(comprehensiveData.interiorNewMin) + 
-                  safeParseFloat(comprehensiveData.outdoorNewMin)).toString(),
-        allInMax: (safeParseFloat(comprehensiveData.shellNewMax) + safeParseFloat(comprehensiveData.interiorNewMax) + 
-                  safeParseFloat(comprehensiveData.outdoorNewMax)).toString(),
+        // New construction all-in psf
+        allInMin: newAllInMin.toString(),
+        allInMax: newAllInMax.toString(),
+        // Remodel all-in psf (explicitly from CSV)
+        remodelAllInMin: remodelAllInMin.toString(),
+        remodelAllInMax: remodelAllInMax.toString(),
         archShare: (safeParseFloat(comprehensiveData.projectShellShare) / 100).toString(),
         intShare: (safeParseFloat(comprehensiveData.projectInteriorShare) / 100).toString(),
         landShare: (safeParseFloat(comprehensiveData.projectLandscapeShare) / 100).toString(),
@@ -237,13 +244,16 @@ export class ProjectCalculatorService {
     costData: any,
     categoryMultiplier: number
   ): Promise<ProjectCalculation> {
-    // Use exact Excel formulas from desired_logic.ts with safe parsing
+    // Use all-in psf from CSV for new and remodel, with historic multiplier
     const newCostMin = safeParseFloat(costData.allInMin) * input.historicMultiplier;
     const newCostMax = safeParseFloat(costData.allInMax) * input.historicMultiplier;
     const newCostTarget = input.newConstructionTargetCost || (newCostMin + newCostMax) / 2;
-    
-    const remodelCostMin = newCostMin * input.remodelMultiplier;
-    const remodelCostMax = newCostMax * input.remodelMultiplier;
+
+    // Prefer explicit remodel all-in psf from CSV; fallback to remodelMultiplier scaling if unavailable
+    const csvRemodelMin = safeParseFloat(costData.remodelAllInMin);
+    const csvRemodelMax = safeParseFloat(costData.remodelAllInMax);
+    const remodelCostMin = (csvRemodelMin > 0 ? csvRemodelMin * input.historicMultiplier : newCostMin * input.remodelMultiplier);
+    const remodelCostMax = (csvRemodelMax > 0 ? csvRemodelMax * input.historicMultiplier : newCostMax * input.remodelMultiplier);
     const remodelCostTarget = input.remodelTargetCost || (remodelCostMin + remodelCostMax) / 2;
     
     // Calculate budgets using exact Excel logic
@@ -252,9 +262,9 @@ export class ProjectCalculatorService {
     const totalBudget = newBudget + remodelBudget;
     
     // Get share percentages with overrides and validation
-    const shellShare = clamp(input.shellShareOverride || safeParseFloat(costData.archShare, 0.70), 0, 1);
-    const interiorShare = clamp(input.interiorShareOverride || safeParseFloat(costData.intShare, 0.20), 0, 1);
-    const landscapeShare = clamp(input.landscapeShareOverride || safeParseFloat(costData.landShare, 0.10), 0, 1);
+    let shellShare = clamp(input.shellShareOverride || safeParseFloat(costData.archShare, 0.70), 0, 1);
+    let interiorShare = clamp(input.interiorShareOverride || safeParseFloat(costData.intShare, 0.20), 0, 1);
+    let landscapeShare = clamp(input.landscapeShareOverride || safeParseFloat(costData.landShare, 0.10), 0, 1);
     
     // Validate shares sum to 1.0
     const totalShares = shellShare + interiorShare + landscapeShare;
@@ -264,6 +274,9 @@ export class ProjectCalculatorService {
       const normalizedShellShare = shellShare / totalShares;
       const normalizedInteriorShare = interiorShare / totalShares;
       const normalizedLandscapeShare = landscapeShare / totalShares;
+      shellShare = normalizedShellShare;
+      interiorShare = normalizedInteriorShare;
+      landscapeShare = normalizedLandscapeShare;
     }
     
     // Calculate category budgets with exact Excel splits

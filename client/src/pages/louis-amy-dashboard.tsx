@@ -173,7 +173,7 @@ export default function LouisAmyDashboard() {
   const { project, calculations, fees, hours } = data;
   
   // Calculated values
-  const totalBudget = parseFloat(calculations.minimumBudget || '859365');
+  const totalBudget = parseFloat(calculations.totalBudget || '859365');
   const buildingArea = parseFloat(project.newBuildingArea || '4407');
   const siteArea = parseFloat(project.siteArea || '972');
   const costPerSqFt = totalBudget / buildingArea;
