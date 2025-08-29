@@ -276,7 +276,7 @@ export default function MinimumBudgetCalculator() {
                 <div className="space-y-2">
                   <Label htmlFor="building-type">Building Type</Label>
                   <Select
-                    value={formData.building_type}
+                    value={formData.building_type || undefined}
                     onValueChange={(value) => handleInputChange('building_type', value)}
                   >
                     <SelectTrigger>
@@ -284,11 +284,11 @@ export default function MinimumBudgetCalculator() {
                     </SelectTrigger>
                     <SelectContent>
                       {buildingTypesError ? (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="error" disabled>
                           Error loading building types
                         </SelectItem>
                       ) : buildingTypes.length === 0 && !buildingTypesError ? (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="loading" disabled>
                           Loading building types...
                         </SelectItem>
                       ) : (

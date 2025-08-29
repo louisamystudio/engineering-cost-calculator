@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link } from "wouter";
 import { Plus, Calculator, Trash2, Eye } from "lucide-react";
 import type { Project } from "@shared/schema";
-import { formatCurrency } from "@/lib/utils";
 
 export default function ProjectsPage() {
   const { data: projects = [], isLoading } = useQuery<Project[]>({
