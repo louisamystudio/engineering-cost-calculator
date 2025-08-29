@@ -369,13 +369,25 @@ export class ProjectCalculatorService {
           plumbing: safeParseFloat(data.plumbingDesignShare?.toString() || '0') / 100,
           telecom: safeParseFloat(data.telecommunicationDesignShare?.toString() || '0') / 100,
         };
-        return {
+        
+        // Apply overrides if provided
+        const engineeringPercentages = {
           structural: input.structuralPercentageOverride ?? perc.structural,
           civil: input.civilPercentageOverride ?? perc.civil,
           mechanical: input.mechanicalPercentageOverride ?? perc.mechanical,
           electrical: input.electricalPercentageOverride ?? perc.electrical,
           plumbing: input.plumbingPercentageOverride ?? perc.plumbing,
           telecom: input.telecomPercentageOverride ?? perc.telecom,
+        };
+        
+        // Calculate Architecture percentage as: 1 - sum of engineering percentages (Excel Line 38)
+        const engineeringSum = engineeringPercentages.structural + engineeringPercentages.civil + 
+                              engineeringPercentages.mechanical + engineeringPercentages.electrical + 
+                              engineeringPercentages.plumbing + engineeringPercentages.telecom;
+        
+        return {
+          ...engineeringPercentages,
+          architecture: input.architecturePercentageOverride ?? Math.max(0, 1 - engineeringSum)
         };
       }
     } catch (e) {
@@ -413,13 +425,23 @@ export class ProjectCalculatorService {
                               defaults['Mid-Range Standard Residential'][2];
     
     // Apply overrides if provided
-    return {
+    const engineeringPercentages = {
       structural: input.structuralPercentageOverride ?? defaultPercentages.structural,
       civil: input.civilPercentageOverride ?? defaultPercentages.civil,
       mechanical: input.mechanicalPercentageOverride ?? defaultPercentages.mechanical,
       electrical: input.electricalPercentageOverride ?? defaultPercentages.electrical,
       plumbing: input.plumbingPercentageOverride ?? defaultPercentages.plumbing,
       telecom: input.telecomPercentageOverride ?? defaultPercentages.telecom
+    };
+    
+    // Calculate Architecture percentage as: 1 - sum of engineering percentages (Excel Line 38)
+    const engineeringSum = engineeringPercentages.structural + engineeringPercentages.civil + 
+                          engineeringPercentages.mechanical + engineeringPercentages.electrical + 
+                          engineeringPercentages.plumbing + engineeringPercentages.telecom;
+    
+    return {
+      ...engineeringPercentages,
+      architecture: input.architecturePercentageOverride ?? Math.max(0, 1 - engineeringSum)
     };
   }
   
