@@ -556,31 +556,38 @@ export class ProjectCalculatorService {
       const baseFeeFormula = 0.07498 + 0.007824 * Math.pow(budgetInMillions, -0.7495);
       
       if (disc.scope.includes('Architecture')) {
-        // Excel formula for Architecture (Line 114):
-        // ((((0.07498+0.007824*(Budget/1M)^(-0.7495))*(CategoryMultiplier)*(NewShare*0.95)+
-        // ((0.07498+0.007824*(Budget/1M)^(-0.7495))*(CategoryMultiplier)*(RemodelShare*1.05))/TotalBudget)*(1+(1-RemodelMultiplier))
-        const shellBudget = parseFloat(calculations.shellBudgetTotal);
-        const shellBudgetInMillions = shellBudget / 1000000;
-        const shellFeeFormula = 0.07498 + 0.007824 * Math.pow(shellBudgetInMillions, -0.7495);
+        // Excel formula for Architecture (Line 86): 
+        // =((((0.07498+0.007824*($B$28/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*($B$28/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-$B$12))
+        // Where B28=Architecture Budget, B79=Category Multiplier, B77=New Share, B78=Remodel Share, B76=Total Budget, B12=Remodel Multiplier
+        const architectureBudgetInMillions = disc.budget / 1000000;
+        const baseFeeFormula = 0.07498 + 0.007824 * Math.pow(architectureBudgetInMillions, -0.7495);
         
-        const newWeightedFee = shellFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
-        const remodelWeightedFee = shellFeeFormula * categoryMultiplier * remodelShare * 1.05;
+        const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
+        const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = ((newWeightedFee + remodelWeightedFee) * shellBudget / totalBudget) * (1 + (1 - input.remodelMultiplier));
+        feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
         marketFee = feePercentage * disc.budget;
       } else if (disc.scope.includes('Interior') || disc.scope.includes('Landscape')) {
-        // Interior and Landscape use similar formula with new/remodel weighting
+        // Excel formulas for Interior (Line 87) and Landscape (Line 88) - same as Architecture
+        // =((((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76)*(1+(1-$B$12))
+        const budgetInMillions = disc.budget / 1000000;
+        const baseFeeFormula = 0.07498 + 0.007824 * Math.pow(budgetInMillions, -0.7495);
+        
         const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
         const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = ((newWeightedFee + remodelWeightedFee) * disc.budget / totalBudget) * (1 + (1 - input.remodelMultiplier));
+        feePercentage = ((newWeightedFee + remodelWeightedFee) / totalBudget) * (1 + (1 - input.remodelMultiplier));
         marketFee = feePercentage * disc.budget;
       } else {
-        // Engineering disciplines use formula without the (1+(1-remodelMultiplier)) factor
+        // Engineering disciplines (Lines 89-94): Excel formula without (1+(1-remodelMultiplier)) factor
+        // =(((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$77*0.95)+((0.07498+0.007824*(Budget/1000000)^(-0.7495))*($B$79)*$B$78*1.05))/$B$76
+        const budgetInMillions = disc.budget / 1000000;
+        const baseFeeFormula = 0.07498 + 0.007824 * Math.pow(budgetInMillions, -0.7495);
+        
         const newWeightedFee = baseFeeFormula * categoryMultiplier * newConstructionShare * 0.95;
         const remodelWeightedFee = baseFeeFormula * categoryMultiplier * remodelShare * 1.05;
         
-        feePercentage = (newWeightedFee + remodelWeightedFee) * disc.budget / totalBudget;
+        feePercentage = (newWeightedFee + remodelWeightedFee) / totalBudget;
         marketFee = feePercentage * disc.budget;
       }
       
@@ -626,22 +633,23 @@ export class ProjectCalculatorService {
     let totalLAHours: number;
     
     if (project.useNonLinearHours ?? false) {
-      // Use Excel non-linear hours factor formula
-      // New Construction Hours Factor = (0.21767+11.21274*((Area)^-0.53816)-0.08)*CategoryMultiplier*0.9
-      // Existing Hours Factor = (0.21767+11.21274*((Area)^-0.53816)-0.08)*CategoryMultiplier*0.8
+      // Use exact Excel non-linear hours factor formulas (Lines 114-115)
+      // New Construction Hours Factor: =(0.21767+11.21274*((B7+B8) ^ -0.53816)- 0.08)*$B$79*0.9
+      // Existing to Remodel Hours Factor: =(0.21767+11.21274*((B8+B7) ^ -0.53816)- 0.08)*$B$79*0.77
       
       let newConstructionHours = 0;
       let existingRemodelHours = 0;
       
       if (newArea > 0) {
+        // Excel: Lines 114 & 116 - New Construction Hours Factor * New Area
         const newHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.9;
         newConstructionHours = newHoursFactor * newArea;
       }
       
       if (existingArea > 0) {
-        // Excel workbook uses 0.77 factor for existing/remodel before the 1.15 adjustment
+        // Excel: Lines 115 & 117 - Existing Hours Factor * Existing Area * 1.15
         const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.77;
-        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // remodel adjustment
+        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // 1.15 remodel adjustment from Excel
       }
       
       totalLAHours = newConstructionHours + existingRemodelHours;
