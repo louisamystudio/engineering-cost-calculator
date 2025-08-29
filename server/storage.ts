@@ -2,7 +2,6 @@ import {
   users, 
   type User, 
   type InsertUser,
-
   type BuildingCostRange,
   type EngineeringCost,
   hoursLeverage,
@@ -107,6 +106,7 @@ export interface IStorage {
   getAllBuildingUses(): Promise<string[]>;
   getBuildingTypesByUse(buildingUse: string): Promise<string[]>;
   getBuildingTiersByType(buildingType: string): Promise<string[]>;
+  getBuildingTypeCategory(buildingType: string): Promise<number | undefined>;
   getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined>;
 }
 
@@ -134,7 +134,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .selectDistinct({ buildingType: buildingCostData.buildingType })
       .from(buildingCostData);
-    return results.map(r => r.buildingType).sort();
+    return results.map((r: { buildingType: string }) => r.buildingType).sort();
   }
 
   async getTiersByBuildingType(buildingType: string): Promise<number[]> {
@@ -145,8 +145,8 @@ export class DatabaseStorage implements IStorage {
     // Map tier names to numbers: Low=1, Mid=2, High=3
     const tierMap: Record<string, number> = { 'Low': 1, 'Mid': 2, 'High': 3 };
     return results
-      .map(r => tierMap[r.buildingTier] || 2)
-      .filter((v, i, a) => a.indexOf(v) === i)
+      .map((r: { buildingTier: string }) => tierMap[r.buildingTier] || 2)
+      .filter((v: number, i: number, a: number[]) => a.indexOf(v) === i)
       .sort();
   }
 
@@ -178,10 +178,102 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]> {
-    // This legacy method returns empty array since we now use getEngineeringCostData
-    // which provides engineering percentages from building_cost_data_v6
-    // TODO: Remove this method and update any callers to use new data structure
-    return [];
+    // For now, return engineering cost data derived from buildingCostData
+    const tierString = `Tier ${tier}`;
+    const [data] = await db
+      .select()
+      .from(buildingCostData)
+      .where(
+        and(
+          eq(buildingCostData.buildingType, buildingType),
+          eq(buildingCostData.buildingTier, tierString)
+        )
+      );
+      
+    if (!data) return [];
+    
+    // Create engineering cost entries from the design shares
+    const costs: EngineeringCost[] = [];
+    
+    if (Number(data.structuralDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Structural',
+        percentAvg: (Number(data.structuralDesignShare) / 100).toFixed(3),
+        percentMin: data.structuralDesignShare,
+        percentMax: data.structuralDesignShare,
+        costMinPsf: data.structuralDesignShare,
+        costMaxPsf: data.structuralDesignShare
+      } as EngineeringCost);
+    }
+    
+    if (Number(data.civilDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Civil & Site',
+        percentAvg: (Number(data.civilDesignShare) / 100).toFixed(3),
+        percentMin: data.civilDesignShare,
+        percentMax: data.civilDesignShare,
+        costMinPsf: data.civilDesignShare,
+        costMaxPsf: data.civilDesignShare
+      } as EngineeringCost);
+    }
+    
+    if (Number(data.mechanicalDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Mechanical',
+        percentAvg: (Number(data.mechanicalDesignShare) / 100).toFixed(3),
+        percentMin: data.mechanicalDesignShare,
+        percentMax: data.mechanicalDesignShare,
+        costMinPsf: data.mechanicalDesignShare,
+        costMaxPsf: data.mechanicalDesignShare
+      } as EngineeringCost);
+    }
+    
+    if (Number(data.electricalDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Electrical',
+        percentAvg: (Number(data.electricalDesignShare) / 100).toFixed(3),
+        percentMin: data.electricalDesignShare,
+        percentMax: data.electricalDesignShare,
+        costMinPsf: data.electricalDesignShare,
+        costMaxPsf: data.electricalDesignShare
+      } as EngineeringCost);
+    }
+    
+    if (Number(data.plumbingDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Plumbing',
+        percentAvg: (Number(data.plumbingDesignShare) / 100).toFixed(3),
+        percentMin: data.plumbingDesignShare,
+        percentMax: data.plumbingDesignShare,
+        costMinPsf: data.plumbingDesignShare,
+        costMaxPsf: data.plumbingDesignShare
+      } as EngineeringCost);
+    }
+    
+    if (Number(data.telecommunicationDesignShare) > 0) {
+      costs.push({
+        buildingType,
+        tier,
+        category: 'Low-Voltage',
+        percentAvg: (Number(data.telecommunicationDesignShare) / 100).toFixed(3),
+        percentMin: data.telecommunicationDesignShare,
+        percentMax: data.telecommunicationDesignShare,
+        costMinPsf: data.telecommunicationDesignShare,
+        costMaxPsf: data.telecommunicationDesignShare
+      } as EngineeringCost);
+    }
+    
+    return costs;
   }
 
   // Hours Leverage methods
@@ -282,16 +374,54 @@ export class DatabaseStorage implements IStorage {
   
   // Category Multipliers methods
   async getAllCategoryMultipliers(): Promise<CategoryMultiplier[]> {
-    const results = await db.select().from(categoryMultipliers);
-    return results;
+    // Get distinct categories from building cost data
+    const results = await db
+      .selectDistinct({ category: buildingCostData.category })
+      .from(buildingCostData)
+      .orderBy(buildingCostData.category);
+    
+    // Map categories with their descriptions and multipliers
+    const categoryDescriptions: Record<number, { description: string, multiplier: number }> = {
+      1: { description: "Simple project - basic complexity", multiplier: 1.0 },
+      2: { description: "Low complexity - minimal coordination required", multiplier: 1.05 },
+      3: { description: "Standard complexity - typical project requirements", multiplier: 1.1 },
+      4: { description: "High complexity - significant coordination needed", multiplier: 1.2 },
+      5: { description: "Very high complexity - extensive coordination and specialized requirements", multiplier: 1.3 }
+    };
+    
+    // Format the response to match CategoryMultiplier type
+    return results.map((row: { category: number }) => ({
+      id: `category-${row.category}`,
+      category: row.category,
+      multiplier: categoryDescriptions[row.category]?.multiplier.toFixed(2) || "1.00",
+      description: categoryDescriptions[row.category]?.description || `Category ${row.category}`
+    }));
   }
   
   async getCategoryMultiplier(category: number): Promise<CategoryMultiplier | undefined> {
+    // Check if category exists in building cost data
     const [result] = await db
-      .select()
-      .from(categoryMultipliers)
-      .where(eq(categoryMultipliers.category, category));
-    return result || undefined;
+      .selectDistinct({ category: buildingCostData.category })
+      .from(buildingCostData)
+      .where(eq(buildingCostData.category, category));
+    
+    if (!result) return undefined;
+    
+    // Map categories with their descriptions and multipliers
+    const categoryDescriptions: Record<number, { description: string, multiplier: number }> = {
+      1: { description: "Simple project - basic complexity", multiplier: 1.0 },
+      2: { description: "Low complexity - minimal coordination required", multiplier: 1.05 },
+      3: { description: "Standard complexity - typical project requirements", multiplier: 1.1 },
+      4: { description: "High complexity - significant coordination needed", multiplier: 1.2 },
+      5: { description: "Very high complexity - extensive coordination and specialized requirements", multiplier: 1.3 }
+    };
+    
+    return {
+      id: `category-${result.category}`,
+      category: result.category,
+      multiplier: categoryDescriptions[result.category]?.multiplier.toFixed(2) || "1.00",
+      description: categoryDescriptions[result.category]?.description || `Category ${result.category}`
+    };
   }
   
   async createCategoryMultiplier(data: InsertCategoryMultiplier): Promise<CategoryMultiplier> {
@@ -400,13 +530,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Building data methods
+  async getBuildingTypeCategory(buildingType: string): Promise<number | undefined> {
+    // Get the category for a specific building type from building cost data
+    const [result] = await db
+      .selectDistinct({ category: buildingCostData.category })
+      .from(buildingCostData)
+      .where(eq(buildingCostData.buildingType, buildingType));
+    
+    return result?.category;
+  }
+
   async getAllBuildingUses(): Promise<string[]> {
     // Get building uses from the new comprehensive database
     const results = await db
       .selectDistinct({ buildingUse: buildingCostData.buildingUse })
       .from(buildingCostData);
     
-    return results.map(r => r.buildingUse).filter(use => use !== null);
+    return results.map((r: { buildingUse: string }) => r.buildingUse).filter((use: string) => use !== null);
   }
   
   async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
@@ -416,7 +556,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingUse, buildingUse));
     
-    return results.map(r => r.buildingType).filter(type => type !== null);
+    return results.map((r: { buildingType: string }) => r.buildingType).filter((type: string) => type !== null);
   }
   
   async getBuildingTiersByType(buildingType: string): Promise<string[]> {
@@ -426,7 +566,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingType, buildingType));
     
-    return results.map(r => r.buildingTier).filter(tier => tier !== null);
+    return results.map((r: { buildingTier: string }) => r.buildingTier).filter((tier: string) => tier !== null);
   }
   
   async getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined> {

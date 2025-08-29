@@ -65,12 +65,19 @@ export default function MinimumBudgetCalculator() {
   const totalArea = formData.new_area_ft2 + formData.existing_area_ft2;
 
   // Fetch building types
-  const { data: buildingTypes = [] } = useQuery<string[]>({
+  const { data: buildingTypes = [], isError: buildingTypesError } = useQuery<string[]>({
     queryKey: ['/api/building-types'],
     queryFn: async () => {
       const response = await fetch('/api/building-types');
-      return response.json();
+      if (!response.ok) {
+        throw new Error('Failed to fetch building types');
+      }
+      const data = await response.json();
+      // Ensure data is an array, return empty array if not or on error
+      return Array.isArray(data) ? data : [];
     },
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Fetch tiers for selected building type
@@ -78,6 +85,9 @@ export default function MinimumBudgetCalculator() {
     queryKey: ['/api/building-types', formData.building_type, 'tiers'],
     queryFn: async () => {
       const response = await fetch(`/api/building-types/${encodeURIComponent(formData.building_type)}/tiers`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tiers');
+      }
       return response.json();
     },
     enabled: !!formData.building_type,
@@ -113,7 +123,7 @@ export default function MinimumBudgetCalculator() {
       };
       calculateBudget.mutate(input);
     }
-  }, [formData]);
+  }, [formData, calculateBudget.mutate]); // Added calculateBudget.mutate to dependency array
 
   const handleInputChange = (field: keyof BudgetFormData, value: string | number) => {
     setFormData(prev => ({
@@ -153,25 +163,25 @@ export default function MinimumBudgetCalculator() {
   const getSelectedBudgetTotal = () => {
     if (!result) return 0;
     let total = 0;
-    
+
     if (selectedDisciplines.has('Architecture')) {
       total += result.architecture_budget;
     }
-    
+
     Object.entries(result.engineering_budgets)
       .filter(([key]) => key !== 'sum' && selectedDisciplines.has(key))
       .forEach(([_, budget]) => {
         total += budget;
       });
-    
+
     if (selectedDisciplines.has('Interior')) {
       total += result.minimum_budgets.interior;
     }
-    
+
     if (selectedDisciplines.has('Landscape')) {
       total += result.minimum_budgets.landscape;
     }
-    
+
     return total;
   };
 
@@ -265,19 +275,30 @@ export default function MinimumBudgetCalculator() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="building-type">Building Type</Label>
-                  <Select 
-                    value={formData.building_type} 
+                  <Select
+                    value={formData.building_type || undefined}
                     onValueChange={(value) => handleInputChange('building_type', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select building type" />
+                      <SelectValue placeholder={buildingTypesError ? "Error loading types" : "Select building type"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {buildingTypes.map((type: string) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                      {buildingTypesError ? (
+                        <SelectItem value="error" disabled>
+                          Error loading building types
                         </SelectItem>
-                      ))}
+                      ) : buildingTypes.length === 0 && !buildingTypesError ? (
+                        <SelectItem value="loading" disabled>
+                          Loading building types...
+                        </SelectItem>
+                      ) : (
+                        // Safety check for mapping over buildingTypes
+                        buildingTypes.map((type: string) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -285,8 +306,8 @@ export default function MinimumBudgetCalculator() {
                 {tiersData?.tiers && (
                   <div className="space-y-2">
                     <Label htmlFor="tier">Tier</Label>
-                    <Select 
-                      value={formData.tier.toString()} 
+                    <Select
+                      value={formData.tier.toString()}
                       onValueChange={(value) => handleInputChange('tier', parseInt(value))}
                     >
                       <SelectTrigger>
@@ -430,8 +451,8 @@ export default function MinimumBudgetCalculator() {
                                   {selectedDisciplines.has('Architecture') ? '✓' : '+'}
                                 </Button>
                               </TableCell>
-                              <TableCell 
-                                className="font-medium cursor-pointer" 
+                              <TableCell
+                                className="font-medium cursor-pointer"
                                 onClick={() => toggleTableRow('architecture')}
                               >
                                 Architecture
@@ -442,8 +463,8 @@ export default function MinimumBudgetCalculator() {
                               <TableCell className="text-right">{formatCurrency(result.architecture_budget)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Architecture || 0)}</TableCell>
                               <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('architecture')}>
-                                {expandedTableRows.has('architecture') ? 
-                                  <ChevronUp className="h-4 w-4" /> : 
+                                {expandedTableRows.has('architecture') ?
+                                  <ChevronUp className="h-4 w-4" /> :
                                   <ChevronDown className="h-4 w-4" />
                                 }
                               </TableCell>
@@ -490,8 +511,8 @@ export default function MinimumBudgetCalculator() {
                                           {selectedDisciplines.has(discipline) ? '\u2713' : '+'}
                                         </Button>
                                       </TableCell>
-                                      <TableCell 
-                                        className="cursor-pointer" 
+                                      <TableCell
+                                        className="cursor-pointer"
                                         onClick={() => toggleTableRow(rowId)}
                                       >
                                         {discipline}
@@ -502,8 +523,8 @@ export default function MinimumBudgetCalculator() {
                                       <TableCell className="text-right">{formatCurrency(budget)}</TableCell>
                                       <TableCell className="text-right">{formatPercent(result.design_shares[discipline] || 0)}</TableCell>
                                       <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow(rowId)}>
-                                        {expandedTableRows.has(rowId) ? 
-                                          <ChevronUp className="h-4 w-4" /> : 
+                                        {expandedTableRows.has(rowId) ?
+                                          <ChevronUp className="h-4 w-4" /> :
                                           <ChevronDown className="h-4 w-4" />
                                         }
                                       </TableCell>
@@ -545,8 +566,8 @@ export default function MinimumBudgetCalculator() {
                                   {selectedDisciplines.has('Interior') ? '\u2713' : '+'}
                                 </Button>
                               </TableCell>
-                              <TableCell 
-                                className="font-medium cursor-pointer" 
+                              <TableCell
+                                className="font-medium cursor-pointer"
                                 onClick={() => toggleTableRow('interior')}
                               >
                                 Interior
@@ -557,8 +578,8 @@ export default function MinimumBudgetCalculator() {
                               <TableCell className="text-right">{formatCurrency(result.minimum_budgets.interior)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Interior || 0)}</TableCell>
                               <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('interior')}>
-                                {expandedTableRows.has('interior') ? 
-                                  <ChevronUp className="h-4 w-4" /> : 
+                                {expandedTableRows.has('interior') ?
+                                  <ChevronUp className="h-4 w-4" /> :
                                   <ChevronDown className="h-4 w-4" />
                                 }
                               </TableCell>
@@ -597,8 +618,8 @@ export default function MinimumBudgetCalculator() {
                                   {selectedDisciplines.has('Landscape') ? '\u2713' : '+'}
                                 </Button>
                               </TableCell>
-                              <TableCell 
-                                className="font-medium cursor-pointer" 
+                              <TableCell
+                                className="font-medium cursor-pointer"
                                 onClick={() => toggleTableRow('landscape')}
                               >
                                 Landscape
@@ -609,8 +630,8 @@ export default function MinimumBudgetCalculator() {
                               <TableCell className="text-right">{formatCurrency(result.minimum_budgets.landscape)}</TableCell>
                               <TableCell className="text-right">{formatPercent(result.design_shares.Landscape || 0)}</TableCell>
                               <TableCell className="text-center cursor-pointer" onClick={() => toggleTableRow('landscape')}>
-                                {expandedTableRows.has('landscape') ? 
-                                  <ChevronUp className="h-4 w-4" /> : 
+                                {expandedTableRows.has('landscape') ?
+                                  <ChevronUp className="h-4 w-4" /> :
                                   <ChevronDown className="h-4 w-4" />
                                 }
                               </TableCell>
@@ -689,7 +710,7 @@ export default function MinimumBudgetCalculator() {
                     icon={Building}
                   />
                 </div>
-                
+
                 <Card>
                   <CardContent className="pt-6 text-center">
                     <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />

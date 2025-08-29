@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -76,13 +76,24 @@ export default function NewProjectPage() {
     enabled: !!selectedBuildingUse,
   });
 
+  // Fetch category for selected building type
+  const selectedBuildingType = form.watch('buildingType');
+  const { data: buildingCategory } = useQuery<{ category: number }>({
+    queryKey: ['/api/building-types', selectedBuildingType, 'category'],
+    enabled: !!selectedBuildingType,
+  });
 
-
-  // Fetch category multipliers
+  // Fetch category multipliers to show description
   const { data: categoryMultipliers = [] } = useQuery<Array<{ category: number; description: string; multiplier: string }>>({
     queryKey: ['/api/category-multipliers'],
   });
 
+  // Auto-set category when building type changes
+  useEffect(() => {
+    if (buildingCategory?.category) {
+      form.setValue('category', buildingCategory.category);
+    }
+  }, [buildingCategory, form]);
   const createProjectMutation = useMutation({
     mutationFn: async (data: ComprehensiveProjectInput) => {
       const response = await apiRequest('POST', '/api/projects/calculate', data);
@@ -117,6 +128,12 @@ export default function NewProjectPage() {
     // Only allow submission on the final step
     if (step !== totalSteps) {
       console.log(`Preventing submission - not on final step (current: ${step}, total: ${totalSteps})`);
+      return;
+    }
+
+    // Prevent accidental double submission
+    if (createProjectMutation.isPending) {
+      console.log('Preventing double submission - mutation already pending');
       return;
     }
     
@@ -170,7 +187,12 @@ export default function NewProjectPage() {
           <Progress value={(step / totalSteps) * 100} className="mb-8" />
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" onKeyDown={(e) => {
+              // Prevent form submission on Enter key except for the submit button
+              if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+                e.preventDefault();
+              }
+            }}>
               {step === 1 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Project Information</h3>
@@ -288,37 +310,6 @@ export default function NewProjectPage() {
                             </div>
                           </RadioGroup>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Project Category</FormLabel>
-                        <FormDescription>
-                          Select the project complexity category
-                        </FormDescription>
-                        <Select
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                          defaultValue={field.value?.toString()}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categoryMultipliers.map((cat) => (
-                              <SelectItem key={cat.category} value={cat.category.toString()}>
-                                Category {cat.category} - {cat.description} (×{cat.multiplier})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

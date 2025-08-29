@@ -9,9 +9,8 @@ import MinimumBudgetCalculator from "@/pages/minimum-budget";
 import FeeMatrix from "@/pages/fee-matrix";
 import FeeMatrixBottomUp from "@/pages/fee-matrix-bottom-up";
 import ProjectsPage from "@/pages/projects";
-import DataVizProDashboard from "@/pages/datavizpro-dashboard";
-import NewProjectPage from "@/pages/new-project";
 import ModernProjectDashboard from "@/pages/modern-project-dashboard";
+import NewProjectPage from "@/pages/new-project";
 import ProjectDashboardV2 from "@/pages/project-dashboard-v2";
 import ProjectDashboardSimple from "@/pages/project-dashboard-simple";
 import NotFound from "@/pages/not-found";
@@ -97,7 +96,7 @@ function Router() {
     <div>
       <NavBar />
       <Switch>
-        <Route path="/" component={DataVizProDashboard} />
+        <Route path="/" component={ProjectDashboardV2} />
         <Route path="/classic" component={ProjectsPage} />
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/new" component={NewProjectPage} />

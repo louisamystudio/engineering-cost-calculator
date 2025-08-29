@@ -250,7 +250,12 @@ export default function ModernProjectDashboard() {
     );
   }
 
-  const { project, calculations, fees, hours } = data;
+  const {
+    project,
+    calculations,
+    fees,
+    hours
+  } = data;
 
   // Calculate totals
   const totalMarketFee = fees.reduce((sum, f) => sum + parseFloat(f.marketFee), 0);
@@ -266,12 +271,12 @@ export default function ModernProjectDashboard() {
   const budgetChartData = [
     {
       name: 'New Construction',
-      value: parseFloat(calculations.newBudget),
+      value: parseFloat(calculations.newBudget || '0'),
       color: '#3b82f6'
     },
     {
       name: 'Remodel',
-      value: parseFloat(calculations.remodelBudget),
+      value: parseFloat(calculations.remodelBudget || '0'),
       color: '#10b981'
     }
   ];
@@ -286,15 +291,15 @@ export default function ModernProjectDashboard() {
   const costPerSqFtData = [
     {
       category: 'New Construction',
-      minimum: parseFloat(calculations.newCostMin),
-      target: parseFloat(calculations.newCostTarget),
-      maximum: parseFloat(calculations.newCostMax)
+      minimum: parseFloat(calculations.newCostMin || '0'),
+      target: parseFloat(calculations.newCostTarget || '0'),
+      maximum: parseFloat(calculations.newCostMax || '0')
     },
     {
       category: 'Remodel',
-      minimum: parseFloat(calculations.remodelCostMin),
-      target: parseFloat(calculations.remodelCostTarget),
-      maximum: parseFloat(calculations.remodelCostMax)
+      minimum: parseFloat(calculations.remodelCostMin || '0'),
+      target: parseFloat(calculations.remodelCostTarget || '0'),
+      maximum: parseFloat(calculations.remodelCostMax || '0')
     }
   ];
 
@@ -311,7 +316,7 @@ export default function ModernProjectDashboard() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {project.projectName}
+                  {project.projectName || 'Loading...'}
                   {project.isDemo && (
                     <Badge className="ml-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0">Demo</Badge>
                   )}
@@ -319,14 +324,14 @@ export default function ModernProjectDashboard() {
                 <div className="flex gap-3 text-sm text-muted-foreground mt-1">
                   <span className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
-                    {project.buildingUse}
+                    {project.buildingUse || 'Loading...'}
                   </span>
                   <span>•</span>
-                  <span>{project.buildingType}</span>
+                  <span>{project.buildingType || 'Loading...'}</span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
                     <Target className="h-3 w-3" />
-                    {project.buildingTier}
+                    {project.buildingTier || 'Loading...'}
                   </span>
                 </div>
               </div>

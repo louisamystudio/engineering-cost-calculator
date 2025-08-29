@@ -167,6 +167,54 @@ export default function ProjectDashboardV2() {
   const [, navigate] = useLocation();
   const projectId = params.id as string;
 
+  // Auto-create demo project if no ID provided (for root route)
+  useEffect(() => {
+    if (!projectId) {
+      (async () => {
+        try {
+          // Try to find existing demo project
+          const res = await fetch('/api/projects', { credentials: 'include' });
+          const projects = await res.json();
+          let demo = projects.find((p: any) => p.isDemo);
+          if (!demo) {
+            // Create demo with sensible defaults matching exact schema
+            const demoInput = {
+              projectName: 'TESTPROJECT',
+              buildingUse: 'Residential',
+              buildingType: 'Custom Houses',
+              buildingTier: 'Mid',
+              designLevel: 2,
+              category: 5,
+              newBuildingArea: 2000,
+              existingBuildingArea: 2000,
+              siteArea: 972,
+              historicMultiplier: 1.0,
+              remodelMultiplier: 0.5,
+              // Add missing required fields
+              architectureInhouse: true,
+              interiorDesignInhouse: true,
+              landscapeInhouse: true,
+              structuralInhouse: false,
+              civilInhouse: false,
+              mechanicalInhouse: false,
+              electricalInhouse: false,
+              plumbingInhouse: false,
+              telecomInhouse: false,
+              useNonLinearHours: false,
+            };
+            const createRes = await apiRequest('POST', '/api/projects/calculate', demoInput);
+            const data = await createRes.json();
+            demo = data.project;
+          }
+          if (demo?.id) navigate(`/projects/${demo.id}`, { replace: true });
+        } catch (e) {
+          console.error('Failed to create demo project:', e);
+          navigate('/projects');
+        }
+      })();
+    }
+  }, [projectId, navigate]);
+
   // State for interactive controls
   const [newBuildingArea, setNewBuildingArea] = useState(0);
   const [existingBuildingArea, setExistingBuildingArea] = useState(0);
@@ -178,6 +226,7 @@ export default function ProjectDashboardV2() {
   const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState(1.0);
   const [autoRecalc, setAutoRecalc] = useState(true);
   const [savedPresets, setSavedPresets] = useState<any[]>([]);
+  
   // Project header selectors
   const [buildingUse, setBuildingUse] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
@@ -522,6 +571,15 @@ export default function ProjectDashboardV2() {
     );
   }
 
+  // Handle case where no project ID is provided (will auto-redirect)
+  if (!projectId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">Loading DataVizPro Dashboard…</div>
+      </div>
+    );
+  }
+
   if (error || !data) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -552,7 +610,6 @@ export default function ProjectDashboardV2() {
       (calculations as any)?.categoryMultiplier ??
       1).toString()
   );
-
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
     const preset = savedPresets[presetKey as keyof typeof savedPresets] as any;
@@ -668,7 +725,6 @@ export default function ProjectDashboardV2() {
   const distInterior = discountedByScope.filter(x => /Interior design/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
   const distLandscape = discountedByScope.filter(x => /Landscape architecture/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
   const distTotal = distScan + distShell + distInterior + distLandscape || 1;
-
   // Duplicate functions removed - already defined above
 
   return (
