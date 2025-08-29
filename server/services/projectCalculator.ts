@@ -354,7 +354,6 @@ export class ProjectCalculatorService {
   }
   
   private async getEngineeringPercentages(input: ComprehensiveProjectInput) {
-<<<<<<< HEAD
     // Prefer engineering design shares from the comprehensive DB when available
     try {
       const tierMap: Record<number, string> = { 1: 'Low', 2: 'Mid', 3: 'High' };
@@ -384,9 +383,6 @@ export class ProjectCalculatorService {
     }
 
     // Default engineering percentages when DB shares are unavailable
-=======
-    // Default engineering percentages from Python code
->>>>>>> main
     const defaults: Record<string, any> = {
       'High-End Custom Residential': {
         1: { structural: 0.31, civil: 0.06, mechanical: 0.08, electrical: 0.05, plumbing: 0.04, telecom: 0.025 },
@@ -442,7 +438,6 @@ export class ProjectCalculatorService {
     const contractDiscount = input.contractDiscountOverride ?? 0.15;
     
     const averagePricingPerHour = Math.round(
-<<<<<<< HEAD
       (laborRate + overheadRate) * markupFactor * (1 - contractDiscount)
     );
     
@@ -450,15 +445,6 @@ export class ProjectCalculatorService {
     const newBudget = safeParseFloat(calculations.newBudget);
     const remodelBudget = safeParseFloat(calculations.remodelBudget);
     const totalBudget = safeParseFloat(calculations.totalBudget);
-=======
-      (laborRate + overheadRate) * markupFactor * (1 - contractDiscount / 100)
-    );
-    
-    const totalArea = input.newBuildingArea + input.existingBuildingArea;
-    const newBudget = parseFloat(calculations.newBudget);
-    const remodelBudget = parseFloat(calculations.remodelBudget);
-    const totalBudget = parseFloat(calculations.totalBudget);
->>>>>>> main
     
     // Calculate new construction and remodel shares for fee weighting
     const newConstructionShare = totalBudget > 0 ? newBudget / totalBudget : 0;
@@ -477,11 +463,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanBuildingRate.toString(),
         marketFee: scanBuildingFee.toString(),
         louisAmyFee: scanBuildingFee.toString(),
-<<<<<<< HEAD
         hours: ((averagePricingPerHour > 0 ? (scanBuildingFee / averagePricingPerHour) : 0)).toString(),
-=======
-        hours: (scanBuildingFee / averagePricingPerHour).toString(),
->>>>>>> main
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -500,11 +482,7 @@ export class ProjectCalculatorService {
         ratePerSqFt: scanSiteRate.toString(),
         marketFee: scanSiteFee.toString(),
         louisAmyFee: scanSiteFee.toString(),
-<<<<<<< HEAD
         hours: ((averagePricingPerHour > 0 ? (scanSiteFee / averagePricingPerHour) : 0)).toString(),
-=======
-        hours: (scanSiteFee / averagePricingPerHour).toString(),
->>>>>>> main
         coordinationFee: '0',
         consultantFee: '0',
         isInhouse: true
@@ -617,17 +595,10 @@ export class ProjectCalculatorService {
         projectId: project.id,
         scope: disc.scope,
         percentOfCost: feePercentage.toString(),
-<<<<<<< HEAD
         ratePerSqFt: (totalArea > 0 ? (adjustedMarketFee / totalArea) : 0).toString(),
         marketFee: adjustedMarketFee.toString(),
         louisAmyFee: louisAmyFee.toString(),
         hours: disc.isInhouse ? ((averagePricingPerHour > 0 ? (louisAmyFee / averagePricingPerHour) : 0)).toString() : '0',
-=======
-        ratePerSqFt: (adjustedMarketFee / totalArea).toString(),
-        marketFee: adjustedMarketFee.toString(),
-        louisAmyFee: louisAmyFee.toString(),
-        hours: disc.isInhouse ? (louisAmyFee / averagePricingPerHour).toString() : '0',
->>>>>>> main
         coordinationFee: coordinationFee.toString(),
         consultantFee: consultantFee.toString(),
         isInhouse: disc.isInhouse
@@ -668,14 +639,9 @@ export class ProjectCalculatorService {
       }
       
       if (existingArea > 0) {
-<<<<<<< HEAD
         // Excel workbook uses 0.77 factor for existing/remodel before the 1.15 adjustment
         const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.77;
         existingRemodelHours = existingHoursFactor * existingArea * 1.15; // remodel adjustment
-=======
-        const existingHoursFactor = (0.21767 + 11.21274 * Math.pow(totalArea, -0.53816) - 0.08) * categoryMultiplier * 0.8;
-        existingRemodelHours = existingHoursFactor * existingArea * 1.15; // Excel has 1.15 multiplier for remodel
->>>>>>> main
       }
       
       totalLAHours = newConstructionHours + existingRemodelHours;
@@ -773,8 +739,4 @@ export class ProjectCalculatorService {
   }
 }
 
-<<<<<<< HEAD
 export const projectCalculator = new ProjectCalculatorService();
-=======
-export const projectCalculator = new ProjectCalculatorService();
->>>>>>> main

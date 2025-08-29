@@ -178,7 +178,7 @@ export default function ProjectDashboardV2() {
   const [historicPropertyMultiplier, setHistoricPropertyMultiplier] = useState(1.0);
   const [autoRecalc, setAutoRecalc] = useState(true);
   const [savedPresets, setSavedPresets] = useState<any[]>([]);
-<<<<<<< HEAD
+  
   // Project header selectors
   const [buildingUse, setBuildingUse] = useState<string>("");
   const [buildingType, setBuildingType] = useState<string>("");
@@ -187,8 +187,6 @@ export default function ProjectDashboardV2() {
   // Pricing config
   const [maxDiscountCap, setMaxDiscountCap] = useState<number>(0.25);
   const [baselineMode, setBaselineMode] = useState<'max' | 'avg'>('max');
-=======
->>>>>>> main
 
   // Share override states
   const [shellShareOverride, setShellShareOverride] = useState<number | undefined>();
@@ -236,7 +234,6 @@ export default function ProjectDashboardV2() {
     queryKey: ['/api/projects', projectId],
     enabled: !!projectId,
   });
-<<<<<<< HEAD
   // Options for header selectors
   const { data: buildingUses = [] } = useQuery<string[]>({
     queryKey: ['/api/building-uses'],
@@ -251,8 +248,6 @@ export default function ProjectDashboardV2() {
   const { data: feeDefaults } = useQuery<{ laborOverhead: any[]; hourlyRates: any[]; config: Record<string, number> }>({
     queryKey: ['/api/fee-defaults'],
   });
-=======
->>>>>>> main
 
   const recalculateMutation = useMutation({
     mutationFn: async () => {
@@ -260,19 +255,11 @@ export default function ProjectDashboardV2() {
 
       const input = {
         projectName: data.project.projectName,
-<<<<<<< HEAD
         buildingUse,
         buildingType,
         buildingTier: data.project.buildingTier,
         designLevel,
         category,
-=======
-        buildingUse: data.project.buildingUse,
-        buildingType: data.project.buildingType,
-        buildingTier: data.project.buildingTier,
-        designLevel: data.project.designLevel,
-        category: data.project.category,
->>>>>>> main
         newBuildingArea,
         existingBuildingArea,
         siteArea,
@@ -301,7 +288,6 @@ export default function ProjectDashboardV2() {
         electricalFeeAdjustment,
         plumbingFeeAdjustment,
         telecomFeeAdjustment,
-<<<<<<< HEAD
         // Discount is a fraction (e.g., 0.15 = 15%)
         contractDiscountOverride,
         // Non-linear hours toggle
@@ -316,9 +302,6 @@ export default function ProjectDashboardV2() {
         electricalInhouse: disciplineInhouse.electrical ?? data.project.electricalInhouse,
         plumbingInhouse: disciplineInhouse.plumbing ?? data.project.plumbingInhouse,
         telecomInhouse: disciplineInhouse.telecom ?? data.project.telecomInhouse,
-=======
-        contractDiscountOverride,
->>>>>>> main
       };
 
       const response = await apiRequest('POST', '/api/projects/calculate', input);
@@ -338,14 +321,11 @@ export default function ProjectDashboardV2() {
       setRemodelMultiplier(parseFloat(data.project.remodelMultiplier));
       setIsHistoric(parseFloat(data.project.historicMultiplier) > 1.0);
       setHistoricPropertyMultiplier(parseFloat(data.project.historicMultiplier) > 1.0 ? 1.2 : 1.0);
-<<<<<<< HEAD
       // Initialize header selectors from project
       setBuildingUse(data.project.buildingUse);
       setBuildingType(data.project.buildingType);
       setDesignLevel(data.project.designLevel);
       setCategory(data.project.category);
-=======
->>>>>>> main
 
       // Initialize target costs from calculations if available
       if (data.calculations) {
@@ -394,15 +374,11 @@ export default function ProjectDashboardV2() {
       if (data.project.markupFactorOverride) {
         setMarkupFactorOverride(parseFloat(data.project.markupFactorOverride));
       }
-<<<<<<< HEAD
       // Initialize persisted applied discount if present (fraction 0..1)
       if (data.project.contractDiscountOverride) {
         const v = parseFloat(data.project.contractDiscountOverride as any);
         if (!Number.isNaN(v)) setContractDiscountOverride(v);
       }
-=======
-      // Contract discount override is initialized at state declaration with default 0.15
->>>>>>> main
 
       // Initialize fee adjustments if saved
       if (data.project.architectureFeeAdjustment) {
@@ -433,7 +409,6 @@ export default function ProjectDashboardV2() {
         setTelecomFeeAdjustment(parseFloat(data.project.telecomFeeAdjustment));
       }
 
-<<<<<<< HEAD
       // Initialize in-house toggles view state from project settings so UI reflects saved values
       setDisciplineInhouse({
         architecture: data.project.architectureInhouse ?? true,
@@ -447,8 +422,6 @@ export default function ProjectDashboardV2() {
         telecom: data.project.telecomInhouse ?? false,
       });
 
-=======
->>>>>>> main
       // Load saved presets from localStorage
       const storedPresets = localStorage.getItem('projectPresets');
       if (storedPresets) {
@@ -457,7 +430,6 @@ export default function ProjectDashboardV2() {
     }
   }, [data]);
 
-<<<<<<< HEAD
   // Initialize pricing config from feeDefaults
   useEffect(() => {
     if (feeDefaults?.config) {
@@ -486,90 +458,17 @@ export default function ProjectDashboardV2() {
       // Area and settings
       newBuildingArea,
       existingBuildingArea,
-=======
-  // Memoize the recalculation function to prevent infinite loops
-  const performRecalculation = useCallback(() => {
-    if (data?.project && !recalculateMutation.isPending) {
-      recalculateMutation.mutate({
-        projectName: data.project.projectName || 'Demo Project',
-        buildingType: data.project.buildingType,
-        buildingTier: data.project.buildingTier,
-        category: data.project.category,
-        designLevel: data.project.designLevel,
-        newBuildingArea,
-        existingBuildingArea,
-        siteArea,
-        isHistoric,
-        historicMultiplier: isHistoric ? historicPropertyMultiplier : 1.0,
-        remodelMultiplier,
-        newConstructionTargetCost,
-        remodelTargetCost,
-        shellShareOverride,
-        interiorShareOverride,
-        landscapeShareOverride,
-
-        // Include all discipline settings
-        architectureInhouse: data.project.architectureInhouse,
-        interiorDesignInhouse: data.project.interiorDesignInhouse,
-        landscapeInhouse: data.project.landscapeInhouse,
-        structuralInhouse: data.project.structuralInhouse,
-        civilInhouse: data.project.civilInhouse,
-        mechanicalInhouse: data.project.mechanicalInhouse,
-        electricalInhouse: data.project.electricalInhouse,
-        plumbingInhouse: data.project.plumbingInhouse,
-        telecomInhouse: data.project.telecomInhouse,
-
-        // Include percentage overrides
-        structuralPercentageOverride: structuralShareOverride,
-        civilPercentageOverride: civilShareOverride,
-        mechanicalPercentageOverride: mechanicalShareOverride,
-        electricalPercentageOverride: electricalShareOverride,
-        plumbingPercentageOverride: plumbingShareOverride,
-        telecomPercentageOverride: telecomShareOverride,
-
-        // Include fee adjustments
-        architectureFeeAdjustment,
-        interiorFeeAdjustment,
-        landscapeFeeAdjustment,
-        structuralFeeAdjustment,
-        civilFeeAdjustment,
-        mechanicalFeeAdjustment,
-        electricalFeeAdjustment,
-        plumbingFeeAdjustment,
-        telecomFeeAdjustment,
-
-        // Include bottom-up calculation parameters
-        laborRateOverride,
-        overheadRateOverride,
-        markupFactorOverride,
-        contractDiscountOverride,
-        useNonLinearHours: data.project.useNonLinearHours,
-
-        // Scan to BIM settings
-        scanToBimEnabled: data.project.scanToBimEnabled,
-        scanToBimArea: parseFloat(data.project.scanToBimArea || '0'),
-        scanToBimRate: parseFloat(data.project.scanToBimRate || '0.5')
-      });
-    }
-  }, [
-    // Area and settings
-    newBuildingArea,
-    existingBuildingArea,
->>>>>>> main
     siteArea,
     newConstructionTargetCost,
     remodelTargetCost,
     remodelMultiplier,
     isHistoric,
     historicPropertyMultiplier,
-<<<<<<< HEAD
     // Header selectors
     buildingUse,
     buildingType,
     designLevel,
     category,
-=======
->>>>>>> main
     shellShareOverride,
     interiorShareOverride,
     landscapeShareOverride,
@@ -648,16 +547,12 @@ export default function ProjectDashboardV2() {
 
   const { project, calculations, fees, hours } = data;
 
-<<<<<<< HEAD
   // Safely derive the category multiplier from project or calculation data
   const categoryMultiplier = parseFloat(
     ((project as any)?.categoryMultiplier ??
       (calculations as any)?.categoryMultiplier ??
       1).toString()
   );
-
-=======
->>>>>>> main
   // Helper functions for presets
   const loadPreset = (presetKey: string) => {
     const preset = savedPresets[presetKey as keyof typeof savedPresets] as any;
@@ -745,7 +640,6 @@ export default function ProjectDashboardV2() {
   const calculatedRemodelBudget = existingBuildingArea * remodelTarget;
   const calculatedTotalBudget = calculatedNewBudget + calculatedRemodelBudget;
 
-<<<<<<< HEAD
   // Market pricing + contract price figures (single-page visibility)
   const topDownPrice = totalMarketFee;
   const markup = (markupFactorOverride ?? 2.0);
@@ -774,20 +668,13 @@ export default function ProjectDashboardV2() {
   const distInterior = discountedByScope.filter(x => /Interior design/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
   const distLandscape = discountedByScope.filter(x => /Landscape architecture/i.test(x.scope)).reduce((s, x) => s + x.discounted, 0);
   const distTotal = distScan + distShell + distInterior + distLandscape || 1;
-
-=======
->>>>>>> main
   // Duplicate functions removed - already defined above
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b">
-<<<<<<< HEAD
         <div className="container mx-auto px-6 py-3">
-=======
-        <div className="container mx-auto px-6 py-4">
->>>>>>> main
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" onClick={() => navigate("/projects")}>
@@ -798,30 +685,14 @@ export default function ProjectDashboardV2() {
               <div>
                 <h1 className="text-xl font-bold">{project.projectName}</h1>
                 <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-<<<<<<< HEAD
                   <Badge variant="outline" className="text-xs">{buildingUse || project.buildingUse}</Badge>
                   <Badge variant="outline" className="text-xs">{buildingType || project.buildingType}</Badge>
                   <Badge variant="outline" className="text-xs">Level {designLevel}</Badge>
                   <Badge variant="outline" className="text-xs">Category {category}</Badge>
-=======
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingUse}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingType}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {project.buildingTier}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Category {project.category}
-                  </Badge>
->>>>>>> main
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-<<<<<<< HEAD
               <Button
                 variant="outline"
                 size="sm"
@@ -829,8 +700,6 @@ export default function ProjectDashboardV2() {
               >
                 Simple View
               </Button>
-=======
->>>>>>> main
               <div className="flex items-center gap-2">
                 <Switch 
                   checked={autoRecalc} 
@@ -853,7 +722,6 @@ export default function ProjectDashboardV2() {
               </Button>
             </div>
           </div>
-<<<<<<< HEAD
           {/* Header selectors row */}
           <div className="mt-3 grid gap-3 md:grid-cols-4">
             <div>
@@ -911,8 +779,6 @@ export default function ProjectDashboardV2() {
               </Select>
             </div>
           </div>
-=======
->>>>>>> main
         </div>
       </div>
 
@@ -1089,11 +955,7 @@ export default function ProjectDashboardV2() {
                   <CostRangeSlider
                     label="New Construction Target"
                     min={parseFloat(calculations.newCostMin)}
-<<<<<<< HEAD
                     target={newConstructionTarget}
-=======
-                    target={newConstructionTargetCost || parseFloat(calculations.newCostTarget)}
->>>>>>> main
                     max={parseFloat(calculations.newCostMax)}
                     onChange={setNewConstructionTargetCost}
                   />
@@ -1101,11 +963,7 @@ export default function ProjectDashboardV2() {
                   <CostRangeSlider
                     label="Remodel Target"
                     min={parseFloat(calculations.remodelCostMin)}
-<<<<<<< HEAD
                     target={remodelTarget}
-=======
-                    target={remodelTargetCost || parseFloat(calculations.remodelCostTarget)}
->>>>>>> main
                     max={parseFloat(calculations.remodelCostMax)}
                     onChange={setRemodelTargetCost}
                   />
@@ -1242,7 +1100,6 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-<<<<<<< HEAD
                           <p className="font-medium">{formatCurrency((() => {
                             const totalBudget = parseFloat(calculations.totalBudget || '0');
                             const newBudget = parseFloat(calculations.newBudget || '0');
@@ -1258,21 +1115,6 @@ export default function ProjectDashboardV2() {
                             const share = totalBudget > 0 ? parseFloat(calculations.shellBudgetTotal) / totalBudget : 0;
                             return remodelBudget * share;
                           })())}</p>
-=======
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.shellBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
-                        </div>
-                        <div className="p-2 bg-green-50 rounded">
-                          <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.shellBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
->>>>>>> main
                         </div>
                       </div>
                     </div>
@@ -1307,7 +1149,6 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-<<<<<<< HEAD
                           <p className="font-medium">{formatCurrency((() => {
                             const totalBudget = parseFloat(calculations.totalBudget || '0');
                             const newBudget = parseFloat(calculations.newBudget || '0');
@@ -1323,21 +1164,6 @@ export default function ProjectDashboardV2() {
                             const share = totalBudget > 0 ? parseFloat(calculations.interiorBudgetTotal) / totalBudget : 0;
                             return remodelBudget * share;
                           })())}</p>
-=======
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.interiorBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
-                        </div>
-                        <div className="p-2 bg-green-50 rounded">
-                          <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.interiorBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
->>>>>>> main
                         </div>
                       </div>
                     </div>
@@ -1372,7 +1198,6 @@ export default function ProjectDashboardV2() {
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 bg-blue-50 rounded">
                           <p className="text-muted-foreground">New</p>
-<<<<<<< HEAD
                           <p className="font-medium">{formatCurrency((() => {
                             const totalBudget = parseFloat(calculations.totalBudget || '0');
                             const newBudget = parseFloat(calculations.newBudget || '0');
@@ -1388,21 +1213,6 @@ export default function ProjectDashboardV2() {
                             const share = totalBudget > 0 ? parseFloat(calculations.landscapeBudgetTotal) / totalBudget : 0;
                             return remodelBudget * share;
                           })())}</p>
-=======
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.landscapeBudgetTotal) * (newBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
-                        </div>
-                        <div className="p-2 bg-green-50 rounded">
-                          <p className="text-muted-foreground">Remodel</p>
-                          <p className="font-medium">{formatCurrency(
-                            (newBuildingArea + existingBuildingArea) > 0
-                              ? parseFloat(calculations.landscapeBudgetTotal) * (existingBuildingArea / (newBuildingArea + existingBuildingArea))
-                              : 0
-                          )}</p>
->>>>>>> main
                         </div>
                       </div>
                     </div>
@@ -2007,7 +1817,6 @@ export default function ProjectDashboardV2() {
           </CardContent>
         </Card>
 
-<<<<<<< HEAD
         {/* Sanity Check & Pricing (single-page control) */}
         <Card className="mt-6">
           <CardHeader>
@@ -2149,8 +1958,6 @@ export default function ProjectDashboardV2() {
           </CardContent>
         </Card>
 
-=======
->>>>>>> main
         {/* Advanced Settings */}
         <Card>
           <CardHeader>
@@ -2344,11 +2151,7 @@ export default function ProjectDashboardV2() {
                       <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className="text-sm">Scan to BIM Cost</span>
-<<<<<<< HEAD
                           <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate * categoryMultiplier)}</span>
-=======
-                          <span className="font-semibold">{formatCurrency(scanToBimArea * scanToBimRate)}</span>
->>>>>>> main
                         </div>
                       </div>
                     )}
@@ -2619,11 +2422,7 @@ export default function ProjectDashboardV2() {
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg">
                     <span className="text-xs">Effective Rate</span>
                     <span className="text-sm font-bold">
-<<<<<<< HEAD
                       {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt * categoryMultiplier, 0)} hrs
-=======
-                      {formatNumber((newBuildingArea + existingBuildingArea) * hoursPerSqFt, 0)} hrs
->>>>>>> main
                     </span>
                   </div>
                 </div>
@@ -2634,8 +2433,4 @@ export default function ProjectDashboardV2() {
       </div>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> main

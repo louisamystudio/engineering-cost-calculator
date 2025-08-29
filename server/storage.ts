@@ -2,10 +2,6 @@ import {
   users, 
   type User, 
   type InsertUser,
-<<<<<<< HEAD
-
-=======
->>>>>>> main
   type BuildingCostRange,
   type EngineeringCost,
   hoursLeverage,
@@ -138,7 +134,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .selectDistinct({ buildingType: buildingCostData.buildingType })
       .from(buildingCostData);
-    return results.map(r => r.buildingType).sort();
+    return results.map((r: { buildingType: string }) => r.buildingType).sort();
   }
 
   async getTiersByBuildingType(buildingType: string): Promise<number[]> {
@@ -163,7 +159,6 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(buildingCostData.buildingType, buildingType),
-<<<<<<< HEAD
           eq(buildingCostData.buildingTier, tierText)
         )
       );
@@ -180,33 +175,6 @@ export class DatabaseStorage implements IStorage {
       intShare: (parseFloat(result.projectInteriorShare) / 100).toString(),
       landShare: (parseFloat(result.projectLandscapeShare) / 100).toString()
     };
-  }
-
-  async getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]> {
-    // This legacy method returns empty array since we now use getEngineeringCostData
-    // which provides engineering percentages from building_cost_data_v6
-    // TODO: Remove this method and update any callers to use new data structure
-    return [];
-=======
-          eq(buildingCostData.buildingTier, tierString)
-        )
-      );
-    
-    if (!data) return undefined;
-    
-    // Calculate all-in min/max values from the component costs
-    const allInMin = Number(data.shellNewMin) + Number(data.interiorNewMin) + Number(data.outdoorNewMin);
-    const allInMax = Number(data.shellNewMax) + Number(data.interiorNewMax) + Number(data.outdoorNewMax);
-    
-    return {
-      buildingType: data.buildingType,
-      tier: tier,
-      allInMin: allInMin,
-      allInMax: allInMax,
-      archShare: data.projectShellShare,
-      intShare: data.projectInteriorShare,
-      landShare: data.projectLandscapeShare
-    } as BuildingCostRange;
   }
 
   async getEngineeringCosts(buildingType: string, tier: number): Promise<EngineeringCost[]> {
@@ -306,7 +274,6 @@ export class DatabaseStorage implements IStorage {
     }
     
     return costs;
->>>>>>> main
   }
 
   // Hours Leverage methods
@@ -407,18 +374,6 @@ export class DatabaseStorage implements IStorage {
   
   // Category Multipliers methods
   async getAllCategoryMultipliers(): Promise<CategoryMultiplier[]> {
-<<<<<<< HEAD
-    const results = await db.select().from(categoryMultipliers);
-    return results;
-  }
-  
-  async getCategoryMultiplier(category: number): Promise<CategoryMultiplier | undefined> {
-    const [result] = await db
-      .select()
-      .from(categoryMultipliers)
-      .where(eq(categoryMultipliers.category, category));
-    return result || undefined;
-=======
     // Get distinct categories from building cost data
     const results = await db
       .selectDistinct({ category: buildingCostData.category })
@@ -435,7 +390,7 @@ export class DatabaseStorage implements IStorage {
     };
     
     // Format the response to match CategoryMultiplier type
-    return results.map(row => ({
+    return results.map((row: { category: number }) => ({
       id: `category-${row.category}`,
       category: row.category,
       multiplier: categoryDescriptions[row.category]?.multiplier.toFixed(2) || "1.00",
@@ -467,7 +422,6 @@ export class DatabaseStorage implements IStorage {
       multiplier: categoryDescriptions[result.category]?.multiplier.toFixed(2) || "1.00",
       description: categoryDescriptions[result.category]?.description || `Category ${result.category}`
     };
->>>>>>> main
   }
   
   async createCategoryMultiplier(data: InsertCategoryMultiplier): Promise<CategoryMultiplier> {
@@ -576,8 +530,6 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Building data methods
-<<<<<<< HEAD
-=======
   async getBuildingTypeCategory(buildingType: string): Promise<number | undefined> {
     // Get the category for a specific building type from building cost data
     const [result] = await db
@@ -588,18 +540,13 @@ export class DatabaseStorage implements IStorage {
     return result?.category;
   }
 
->>>>>>> main
   async getAllBuildingUses(): Promise<string[]> {
     // Get building uses from the new comprehensive database
     const results = await db
       .selectDistinct({ buildingUse: buildingCostData.buildingUse })
       .from(buildingCostData);
     
-<<<<<<< HEAD
     return results.map((r: { buildingUse: string }) => r.buildingUse).filter((use: string) => use !== null);
-=======
-    return results.map(r => r.buildingUse).filter(use => use !== null);
->>>>>>> main
   }
   
   async getBuildingTypesByUse(buildingUse: string): Promise<string[]> {
@@ -609,11 +556,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingUse, buildingUse));
     
-<<<<<<< HEAD
     return results.map((r: { buildingType: string }) => r.buildingType).filter((type: string) => type !== null);
-=======
-    return results.map(r => r.buildingType).filter(type => type !== null);
->>>>>>> main
   }
   
   async getBuildingTiersByType(buildingType: string): Promise<string[]> {
@@ -623,11 +566,7 @@ export class DatabaseStorage implements IStorage {
       .from(buildingCostData)
       .where(eq(buildingCostData.buildingType, buildingType));
     
-<<<<<<< HEAD
     return results.map((r: { buildingTier: string }) => r.buildingTier).filter((tier: string) => tier !== null);
-=======
-    return results.map(r => r.buildingTier).filter(tier => tier !== null);
->>>>>>> main
   }
   
   async getBuildingCostData(buildingType: string, buildingTier: string): Promise<BuildingCostData | undefined> {
